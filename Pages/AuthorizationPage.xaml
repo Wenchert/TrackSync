@@ -1,0 +1,186 @@
+﻿ <Page x:Class="TrackSync.Pages.AuthorizationPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+      xmlns:local="clr-namespace:TrackSync.Pages"
+      mc:Ignorable="d" 
+      d:DesignHeight="450" d:DesignWidth="800"
+      Title="TrackSync - Авторизация"
+      Background="White">
+    <Page.CommandBindings>
+        <CommandBinding Command="{x:Static local:AuthorizationPage.Login}" Executed="CommandBindingExecuted"/>
+    </Page.CommandBindings>
+    <Page.InputBindings>
+        <KeyBinding Key="Return" Command="{x:Static local:AuthorizationPage.Login}"/>
+    </Page.InputBindings>
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.4*"/>
+            <ColumnDefinition Width="0.6*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Левая панель - форма авторизации -->
+        <Border Grid.Column="0" Background="White">
+            <Grid Margin="40">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Заголовок -->
+                <StackPanel Grid.Row="0" Margin="0,0,0,30">
+                    <TextBlock Style="{StaticResource TitleText}" FontSize="28" Text="TrackSync" 
+                               Foreground="#3498DB" Margin="0,0,0,5"/>
+                    <TextBlock Style="{StaticResource BodyText}" Text="Планирование туристических походов" 
+                               Foreground="#7F8C8D"/>
+                </StackPanel>
+
+                <!-- Форма -->
+                <StackPanel Grid.Row="1" VerticalAlignment="Center">
+
+                    <!-- Переключатель Вход/Регистрация -->
+                    <StackPanel Orientation="Horizontal" Margin="0,5">
+                        <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
+                                   Foreground="#3498DB" MouseDown="OnLoginMouseDown" 
+                                   x:Name="LoginTitle" Text="Вход" Cursor="Hand"/>
+                        <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
+                                   Text=" / " Margin="5,0,5,0"/>
+                        <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
+                                   Foreground="#95A5A6" MouseDown="OnRegisterMouseDown" 
+                                   x:Name="RegisterTitle" Text="Регистрация" Cursor="Hand"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="LoginPanel" Margin="0,0,0,15">
+                        <TextBlock Style="{StaticResource BodyText}" Text="Логин" 
+                                   Margin="0,0,0,5"/>
+                        <TextBox Style="{StaticResource InputField}" x:Name="LoginText" 
+                                 MaxLength="256"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="PasswordPanel" Margin="0,0,0,20">
+                        <TextBlock Style="{StaticResource BodyText}" Text="Пароль" 
+                                   Margin="0,0,0,5"/>
+                        <PasswordBox Style="{StaticResource PasswordField}" x:Name="PasswordText" 
+                                    MaxLength="256"/>
+                    </StackPanel>
+
+                    <!-- Поля роста и веса (только для регистрации) -->
+                    <StackPanel x:Name="HeightWeightPanel" Visibility="Collapsed" Margin="0,0,0,15">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Рост -->
+                            <StackPanel Grid.Column="0">
+                                <TextBlock Style="{StaticResource BodyText}" Text="Рост (см)" 
+                                           Margin="0,0,0,5"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button x:Name="HeightDecreaseBtn" Grid.Column="0" 
+                                            Content="-" Width="30" Height="30" 
+                                            Click="HeightDecreaseBtn_Click"
+                                            Style="{StaticResource NumberButton}"/>
+
+                                    <TextBox Grid.Column="1" x:Name="HeightText" 
+                                             Style="{StaticResource InputField}" 
+                                             TextAlignment="Center" Text="170"
+                                             PreviewTextInput="NumberPreviewTextInput"
+                                             MaxLength="3"/>
+
+                                    <Button x:Name="HeightIncreaseBtn" Grid.Column="2" 
+                                            Content="+" Width="30" Height="30"
+                                            Click="HeightIncreaseBtn_Click"
+                                            Style="{StaticResource NumberButton}"/>
+                                </Grid>
+                            </StackPanel>
+
+                            <!-- Вес -->
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Style="{StaticResource BodyText}" Text="Вес (кг)" 
+                                           Margin="0,0,0,5"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <Button x:Name="WeightDecreaseBtn" Grid.Column="0" 
+                                            Content="-" Width="30" Height="30"
+                                            Click="WeightDecreaseBtn_Click"
+                                            Style="{StaticResource NumberButton}"/>
+
+                                    <TextBox Grid.Column="1" x:Name="WeightText" 
+                                             Style="{StaticResource InputField}" 
+                                             TextAlignment="Center" Text="70"
+                                             PreviewTextInput="NumberPreviewTextInput"
+                                             MaxLength="3"/>
+
+                                    <Button x:Name="WeightIncreaseBtn" Grid.Column="2" 
+                                            Content="+" Width="30" Height="30"
+                                            Click="WeightIncreaseBtn_Click"
+                                            Style="{StaticResource NumberButton}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- Сообщение об ошибке -->
+                    <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
+                               Foreground="#E74C3C" TextWrapping="Wrap" 
+                               Visibility="Collapsed" Margin="0,0,0,15"/>
+
+                    <!-- Кнопка входа -->
+                    <Button x:Name="AuthButton" Style="{StaticResource MainButton}" 
+                            Content="Войти" Command="{x:Static local:AuthorizationPage.Login}"
+                            Background="#3498DB" Margin="0,0,0,15">
+                        <Button.Effect>
+                            <DropShadowEffect ShadowDepth="0" BlurRadius="10" 
+                                            Opacity="0.1" Color="#3498DB"/>
+                        </Button.Effect>
+                    </Button>
+                </StackPanel>
+
+                <!-- Футер -->
+                <StackPanel Grid.Row="2" VerticalAlignment="Bottom">
+                    <TextBlock Style="{StaticResource BodyText}" TextAlignment="Center" 
+                               Foreground="#BDC3C7" Text="© 2025 TrackSync. Все права защищены."/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Правая панель - изображение -->
+        <Border Grid.Column="1" Background="#34495E">
+            <Grid>
+                <!-- Заглушка для изображения -->
+                <Rectangle>
+                    <Rectangle.Fill>
+                        <ImageBrush ImageSource="../Images/background.jpg" Stretch="UniformToFill"/>
+                    </Rectangle.Fill>
+                </Rectangle>
+
+                <!-- Наложение с текстом -->
+                <Border Background="#80000000" Padding="30">
+                    <StackPanel VerticalAlignment="Top">
+                        <TextBlock Style="{StaticResource TitleText}" FontSize="24" 
+                                   Foreground="White" Text="Откройте мир приключений"
+                                   Margin="0,0,0,10"/>
+                        <TextBlock Style="{StaticResource BodyText}" FontSize="16" 
+                                   Foreground="#ECF0F1" TextWrapping="Wrap"
+                                   Text="Планируйте маршруты, распределяйте снаряжение и создавайте незабываемые походы вместе с TrackSync"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>
