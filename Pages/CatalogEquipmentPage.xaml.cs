@@ -262,24 +262,25 @@ namespace TrackSync.Pages
         /// </summary>
         private void DeleteEquipment(Equipment equipment)
         {
-
-            using (var ctx = new TrackSyncContext())
+            try
             {
-                // Проверяем, используется ли снаряжение в комнатах
-                var usedInRooms = ctx.HikeRoomsEquipments
-                    .Any(hre => hre.EquipmentId == equipment.EquipmentId);
-
-                // Удаляем снаряжение
-                var equipmentToRemove = ctx.Equipments.FirstOrDefault(e => e.EquipmentId == equipment.EquipmentId);
-
-                if (equipmentToRemove != null)
+                using (var ctx = new TrackSyncContext())
                 {
-                    ctx.Equipments.Remove(equipmentToRemove);
-                    ctx.SaveChanges();
+                    var equipmentToRemove = ctx.Equipments.FirstOrDefault(e => e.EquipmentId == equipment.EquipmentId);
 
-                    // Обновляем список
-                    LoadEquipment();
+                    if (equipmentToRemove != null)
+                    { 
+                        // Просто удаляем - каскадное удаление произойдет автоматически
+                        ctx.Equipments.Remove(equipmentToRemove);
+                        ctx.SaveChanges();
+                        LoadEquipment();
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при удалении:\n{ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
     }

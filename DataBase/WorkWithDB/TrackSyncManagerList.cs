@@ -406,7 +406,7 @@ namespace TrackSync.DataBase.WorkWithDB
 
                     return ctx.Participants
                         .Include(p => p.User) // Загружаем связанного пользователя
-                        .Where(p => p.HikeRoomId == roomId)
+                        .Where(p => p.HikeRoomId == roomId) // Сортируем по email
                         .ToList();
                 }
             }
@@ -471,6 +471,183 @@ namespace TrackSync.DataBase.WorkWithDB
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при получении участников комнаты:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+        /// <summary>
+        /// Получить ингредиент по ID
+        /// </summary>
+        public static Ingredient GetIngredientById(int id)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return null;
+                    }
+
+                    var ingredient = ctx.Ingredients.FirstOrDefault(i => i.IngredientId == id);
+
+                    if (ingredient == null)
+                    {
+                        MessageBox.Show($"Ингредиент с ID {id} не найден", "Ошибка");
+                        return null;
+                    }
+
+                    return ingredient;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении ингредиента:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+        /// <summary>
+        /// Получить все ингредиенты для конкретного пользователя (системные + свои)
+        /// </summary>
+        public static List<Ingredient> GetAllIngredientsForUser(int userId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных! Проверьте настройки подключения.", "Ошибка");
+                        return null;
+                    }
+
+                    return ctx.Ingredients
+                        .Where(i => i.CreatorUserId == null || i.CreatorUserId == userId)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при подключении к базе данных:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Получить только ингредиенты, созданные пользователем
+        /// </summary>
+        public static List<Ingredient> GetUserIngredients(int userId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных! Проверьте настройки подключения.", "Ошибка");
+                        return null;
+                    }
+
+                    return ctx.Ingredients
+                        .Where(i => i.CreatorUserId == userId)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при подключении к базе данных:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+        /// <summary>
+        /// Получить все рецепты для конкретного пользователя (системные + свои)
+        /// </summary>
+        public static List<Recipe> GetAllRecipesForUser(int userId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных! Проверьте настройки подключения.", "Ошибка");
+                        return null;
+                    }
+
+                    return ctx.Recipes
+                        .Include(r => r.IngredientsRecipes)
+                        .ThenInclude(ir => ir.Ingredient)
+                        .Where(r => r.CreatorUserId == null || r.CreatorUserId == userId)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при подключении к базе данных:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Получить только рецепты, созданные пользователем
+        /// </summary>
+        public static List<Recipe> GetUserRecipes(int userId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных! Проверьте настройки подключения.", "Ошибка");
+                        return null;
+                    }
+
+                    return ctx.Recipes
+                        .Include(r => r.IngredientsRecipes)
+                        .ThenInclude(ir => ir.Ingredient)
+                        .Where(r => r.CreatorUserId == userId)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при подключении к базе данных:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+        /// <summary>
+        /// Получить рецепт по ID с полной загрузкой ингредиентов
+        /// </summary>
+        public static Recipe GetRecipeByIdFull(int id)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return null;
+                    }
+
+                    var recipe = ctx.Recipes
+                        .Include(r => r.IngredientsRecipes)
+                        .ThenInclude(ir => ir.Ingredient)
+                        .FirstOrDefault(r => r.RecipeId == id);
+
+                    if (recipe == null)
+                    {
+                        MessageBox.Show($"Рецепт с ID {id} не найден", "Ошибка");
+                        return null;
+                    }
+
+                    return recipe;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении рецепта:\n{ex.Message}", "Ошибка");
                 return null;
             }
         }

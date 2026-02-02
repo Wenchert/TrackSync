@@ -143,7 +143,7 @@ namespace TrackSync.DataBase
                 entity.HasOne(d => d.Equipment)
                     .WithMany(p => p.HikeRoomsEquipments)
                     .HasForeignKey(d => d.EquipmentId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("hike_rooms_equipments_equipment_id_fkey");
 
                 entity.HasOne(d => d.HikeRoom)
@@ -185,7 +185,7 @@ namespace TrackSync.DataBase
                 entity.HasOne(d => d.Recipe)
                     .WithMany(p => p.HikeRoomsRecipes)
                     .HasForeignKey(d => d.RecipeId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("hike_rooms_recipes_recipe_id_fkey");
 
                 entity.HasOne(d => d.TypeMeal)
@@ -247,13 +247,13 @@ namespace TrackSync.DataBase
                 entity.HasOne(d => d.Ingredient)
                     .WithMany(p => p.IngredientsRecipes)
                     .HasForeignKey(d => d.IngredientId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("ingredients_recipes_ingredient_id_fkey");
 
                 entity.HasOne(d => d.Recipe)
                     .WithMany(p => p.IngredientsRecipes)
                     .HasForeignKey(d => d.RecipeId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("ingredients_recipes_recipe_id_fkey");
             });
 
@@ -391,7 +391,7 @@ namespace TrackSync.DataBase
                 entity.HasOne(d => d.Recipe)
                     .WithMany(p => p.RecipesParticipants)
                     .HasForeignKey(d => d.RecipeId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("recipes_participants_recipe_id_fkey");
             });
 

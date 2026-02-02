@@ -8,20 +8,38 @@
       Title="TrackSync - Каталог рецептов"
       Background="#F8F9FA">
 
+    <Page.Resources>
+        <Style x:Key="IconButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Width" Value="32"/>
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="ToolTipService.ShowDuration" Value="2000"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E9ECEF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Page.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
         <StackPanel>
-
             <StackPanel Margin="0,0,0,30">
                 <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
                            FontWeight="Bold" Text="Каталог рецептов"/>
                 <TextBlock Style="{StaticResource BodyText}" FontSize="16"
-                           Text="Выберите рецепт для добавления в продуктовую раскладку"
+                           Text="Выберите рецепты для добавления в поход"
                            Foreground="#7F8C8D" Margin="0,5,0,0"/>
             </StackPanel>
+
             <Border Style="{StaticResource WidgetStyle}" Margin="0,0,0,20">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
@@ -54,7 +72,27 @@
                                      TextChanged="SearchTextBox_TextChanged"/>
                         </Grid>
                     </Border>
-                    <Button Grid.Column="1" 
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="15,0,0,0">
+                        <Button x:Name="AllButton" 
+                            Style="{StaticResource TextButton}"
+                            Click="AllButton_Click"
+                            Padding="15,10"
+                            Background="#3498DB"
+                            Foreground="White"
+                            BorderBrush="#3498DB">
+                            <TextBlock Text="Все"/>
+                        </Button>
+                        <Button x:Name="MyButton" 
+                    Style="{StaticResource TextButton}"
+                    Click="MyButton_Click"
+                    Padding="15,10"
+                    Margin="5,0,0,0">
+                            <TextBlock Text="Мои"/>
+                        </Button>
+                    </StackPanel>
+
+                    <Button Grid.Column="2" 
                             Style="{StaticResource MainButton}"
                             Click="CreateRecipeButton_Click"
                             Margin="15,0,0,0"
@@ -65,16 +103,16 @@
                     </Button>
                 </Grid>
             </Border>
+
             <Border Style="{StaticResource WidgetStyle}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="450">
                     <StackPanel>
-                        <Grid Margin="0,0,0,15">
+                        <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
                                 <ColumnDefinition Width="100"/>
                                 <ColumnDefinition Width="100"/>
                             </Grid.ColumnDefinitions>
-
                             <TextBlock Grid.Column="0" 
                                        Style="{StaticResource BodyText}" 
                                        FontWeight="SemiBold"
@@ -84,54 +122,71 @@
                             <TextBlock Grid.Column="1" 
                                        Style="{StaticResource BodyText}" 
                                        FontWeight="SemiBold"
-                                       Text="Вес"
-                                       Margin="10,10,10,10"/>
+                                       Text="Время"
+                                       HorizontalAlignment="Right"
+                                       Margin="0,10,15,10"/>
 
                             <TextBlock Grid.Column="2" 
                                        Style="{StaticResource BodyText}" 
                                        FontWeight="SemiBold"
-                                       Text="Калории"
-                                       Margin="10,10,15,10"/>
+                                       Text="Действия"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,10,0,10"/>
                         </Grid>
-
                         <Border Height="2" 
                                 Background="#3498DB"
-                                Margin="0,5,0,15"/>
+                                Margin="0,5,0,10"/>
                         <ItemsControl x:Name="RecipesListBox">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Border x:Name="RecipeBorder"
-                                            Style="{StaticResource HikeItemStyle}" 
-                                            Margin="0,0,0,8"
-                                            Height="50"
-                                            MouseLeftButtonDown="RecipeItem_MouseLeftButtonDown"
-                                            Tag="{Binding}">
+                                        Style="{StaticResource NotificationItemStyle}" 
+                                        Margin="0,0,0,8"
+                                        Height="55"
+                                        MouseLeftButtonDown="RecipeItem_MouseLeftButtonDown"
+                                        Tag="{Binding}">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="100"/>
                                                 <ColumnDefinition Width="100"/>
                                             </Grid.ColumnDefinitions>
-
-                                            <TextBlock Grid.Column="0" 
-                                                       Style="{StaticResource BodyText}" 
-                                                       VerticalAlignment="Center"
-                                                       Text="{Binding Recipe.Title}"
-                                                       Margin="15,0,10,0"/>
-
+                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <TextBlock Style="{StaticResource BodyText}" 
+                                                           Text="{Binding Recipe.Title}"
+                                                           Margin="15,0,5,0"/>
+                                                <Image Source="/Images/Icons/user-item.png" 
+                                                       Width="16" Height="16" 
+                                                       Margin="5,0,0,0"
+                                                       Visibility="{Binding ActionButtonsVisibility}"
+                                                       ToolTip="Ваш рецепт"/>
+                                            </StackPanel>
                                             <TextBlock Grid.Column="1" 
                                                        Style="{StaticResource BodyText}" 
                                                        VerticalAlignment="Center"
-                                                       Text="{Binding Weight, StringFormat={}{0}г}"
+                                                       Text="{Binding Recipe.Time, StringFormat={}{0} мин}"
                                                        Foreground="#7F8C8D"
-                                                       Margin="10,0,10,0"/>
-
-                                            <TextBlock Grid.Column="2" 
-                                                       Style="{StaticResource BodyText}" 
-                                                       VerticalAlignment="Center"
-                                                       Text="{Binding Calories, StringFormat={}{0} ккал}"
-                                                       Foreground="#7F8C8D"
-                                                       Margin="10,0,15,0"/>
+                                                       HorizontalAlignment="Right"
+                                                       Margin="0,0,15,0"/>
+                                            <StackPanel Grid.Column="2" 
+                                                Orientation="Horizontal" 
+                                                HorizontalAlignment="Center"
+                                                Margin="5,0,5,0"
+                                                Visibility="{Binding ActionButtonsVisibility}">
+                                                <Button Style="{StaticResource IconButton}"
+                                                    Click="EditButton_Click"
+                                                    Tag="{Binding}"
+                                                    ToolTip="Редактировать"
+                                                    Margin="0,0,8,0">
+                                                    <Image Source="/Images/Icons/edit.png" Width="18" Height="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource IconButton}"
+                                                    Click="DeleteButton_Click"
+                                                    Tag="{Binding}"
+                                                    ToolTip="Удалить">
+                                                    <Image Source="/Images/Icons/trash.png" Width="18" Height="18"/>
+                                                </Button>
+                                            </StackPanel>
                                         </Grid>
                                     </Border>
                                     <DataTemplate.Triggers>
@@ -146,13 +201,18 @@
                 </ScrollViewer>
             </Border>
 
+            <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
+                       Foreground="#E74C3C" TextWrapping="Wrap" 
+                       Visibility="Collapsed" Margin="0,15,0,0"
+                       FontSize="14"/>
             <StackPanel Orientation="Horizontal" 
                         HorizontalAlignment="Right"
                         Margin="0,20,0,0">
                 <Button Style="{StaticResource TextButton}" 
                         x:Name="CancelButton"
                         Click="CancelButton_Click"
-                        Padding="24,12">
+                        Padding="24,12"
+                        Margin="0,0,15,0">
                     <TextBlock Text="Отмена"/>
                 </Button>
             </StackPanel>

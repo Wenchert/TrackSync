@@ -192,6 +192,9 @@ namespace TrackSync.Pages
 
                         ctx.Equipments.Add(newEquipment);
                         ctx.SaveChanges();
+
+                        MessageBox.Show($"Снаряжение \"{newEquipment.Title}\" успешно добавлено в каталог!",
+                            "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
 
                     // Возвращаемся в каталог

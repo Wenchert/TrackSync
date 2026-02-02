@@ -1,9 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-//using TrackSync.DataBase.Model;
+using TrackSync.DataBase;
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Interfaces;
 using TrackSync.Windows;
@@ -103,7 +105,6 @@ namespace TrackSync.Pages
             }
         }
 
-
         // Создание панели для отображения снаряжения
         private StackPanel CreateEquipmentPanel(EquipmentQuantityItem item)
         {
@@ -173,13 +174,21 @@ namespace TrackSync.Pages
                 ToolTip = "Удалить снаряжение"
             };
 
-            var image = new Image
+            try
             {
-                Source = new BitmapImage(new Uri("/Images/Icons/trash.png", UriKind.Relative)),
-                Width = 18,
-                Height = 18
-            };
-            removeButton.Content = image;
+                var image = new Image
+                {
+                    Source = new BitmapImage(new Uri("/Images/Icons/trash.png", UriKind.Relative)),
+                    Width = 18,
+                    Height = 18
+                };
+                removeButton.Content = image;
+            }
+            catch
+            {
+                // Резервный вариант, если иконка не найдена
+                removeButton.Content = "🗑";
+            }
 
             removeButton.Click += RemoveEquipmentButton_Click;
             panel.Children.Add(removeButton);
@@ -264,23 +273,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Поиск стек панели для снаряжения по ID участника в ItemsControl
-        private StackPanel FindEquipmentStackPanel(int participantId)
-        {
-            foreach (var item in ParticipantsItemsControl.Items)
-            {
-                var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(item);
-                if (container != null)
-                {
-                    var panel = FindVisualChild<StackPanel>(container,
-                        sp => sp.Tag?.ToString() == participantId.ToString());
-                    if (panel != null)
-                        return panel;
-                }
-            }
-            return null;
-        }
-
         // Обновление статистики снаряжения
         private void UpdateEquipmentStats(int participantId, List<EquipmentQuantityItem> equipmentList)
         {
@@ -310,6 +302,23 @@ namespace TrackSync.Pages
                         itemsText.Text = $"{totalItems} шт.";
                 }
             }
+        }
+
+        // Поиск стек панели для снаряжения по ID участника в ItemsControl
+        private StackPanel FindEquipmentStackPanel(int participantId)
+        {
+            foreach (var item in ParticipantsItemsControl.Items)
+            {
+                var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(item);
+                if (container != null)
+                {
+                    var panel = FindVisualChild<StackPanel>(container,
+                        sp => sp.Tag?.ToString() == participantId.ToString());
+                    if (panel != null)
+                        return panel;
+                }
+            }
+            return null;
         }
 
         // Вспомогательный метод для поиска дочернего элемента с предикатом
@@ -369,10 +378,86 @@ namespace TrackSync.Pages
                     return;
                 }
 
+                // Переходим в каталог снаряжения с передачей коллбэка
                 NavigationService.Navigate(new CatalogEquipmentsPage(this));
             }
         }
 
+        // Обработчик кнопки "Сохранить изменения"
+        private void SaveChangesButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    int addedCount = 0;
+                    int updatedCount = 0;
+
+                    // Проходим по всем участникам комнаты
+                    foreach (var item in ParticipantsItemsControl.Items)
+                    {
+                        if (item is Participant participant)
+                        {
+                            int participantId = participant.ParticipantId;
+
+                            // Получаем снаряжение для этого участника из временного хранилища
+                            if (_participantEquipment.TryGetValue(participantId, out var equipmentList))
+                            {
+                                foreach (var eqItem in equipmentList)
+                                {
+                                    // Пропускаем записи с количеством 0 (удалённые)
+                                    if (eqItem.Quantity <= 0)
+                                        continue;
+
+                                    // Проверяем, существует ли уже запись для этого снаряжения у участника
+                                    var existingRecord = ctx.HikeRoomsEquipments
+                                        .FirstOrDefault(hre =>
+                                            hre.HikeRoomId == _roomId &&
+                                            hre.ParticipantId == participantId &&
+                                            hre.EquipmentId == eqItem.Equipment.EquipmentId);
+
+                                    if (existingRecord != null)
+                                    {
+                                        // Обновляем существующую запись
+                                        existingRecord.Quantity = eqItem.Quantity;
+                                        updatedCount++;
+                                    }
+                                    else
+                                    {
+                                        // Создаём новую запись
+                                        var newRecord = new HikeRoomsEquipment
+                                        {
+                                            HikeRoomId = _roomId,
+                                            ParticipantId = participantId,
+                                            EquipmentId = eqItem.Equipment.EquipmentId,
+                                            Quantity = eqItem.Quantity
+                                        };
+                                        ctx.HikeRoomsEquipments.Add(newRecord);
+                                        addedCount++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Сохраняем изменения в базе данных
+                    ctx.SaveChanges();
+
+                    string message = $"Изменения успешно сохранены!\n" +
+                                    $"Добавлено записей: {addedCount}\n" +
+                                    $"Обновлено записей: {updatedCount}";
+
+                    MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при сохранении снаряжения:\n{ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        // Загрузка данных комнаты
         private void LoadRoomData()
         {
             // Загружаем название комнаты из БД (пока заглушка)
@@ -382,7 +467,6 @@ namespace TrackSync.Pages
             LoadParticipants();
         }
 
-        // Загрузка участников комнаты
         // Загрузка участников комнаты со снаряжением
         private void LoadParticipants()
         {
@@ -400,7 +484,6 @@ namespace TrackSync.Pages
                     // Загружаем снаряжение из таблицы HikeRoomsEquipment
                     foreach (var hre in participant.HikeRoomsEquipments)
                     {
-
                         if (hre.Equipment != null)
                         {
                             equipmentList.Add(new EquipmentQuantityItem
@@ -424,8 +507,8 @@ namespace TrackSync.Pages
             }
         }
 
-        // === Вкладка 1: Маршруты ===
-        private void CreateRouteButton_Click(object sender, RoutedEventArgs e)
+// === Вкладка 1: Маршруты ===
+private void CreateRouteButton_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("Функция создания маршрута будет реализована в будущих версиях",
                           "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
