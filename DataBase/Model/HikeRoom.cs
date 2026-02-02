@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TrackSync.DataBase.Model
+namespace TrackSync
 {
     public partial class HikeRoom
     {
@@ -14,7 +14,16 @@ namespace TrackSync.DataBase.Model
             Participants = new HashSet<Participant>();
             Tracks = new HashSet<Track>();
         }
-
+        public HikeRoom(int statusId, bool accessType, string title, DateOnly startDate, DateOnly endDate, string? password = null, string? description = null)
+        {
+            StatusId = statusId;
+            AccessType = accessType;
+            Title = title;
+            Password = password;
+            Description = description;
+            StartDate = startDate;
+            EndDate = endDate;
+        }
         public int HikeRoomId { get; set; }
         public int StatusId { get; set; }
         public bool AccessType { get; set; }

@@ -1,0 +1,102 @@
+﻿<Page x:Class="TrackSync.Pages.CreateEquipmentPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      mc:Ignorable="d" 
+      d:DesignHeight="700" d:DesignWidth="1200"
+      Title="TrackSync - Создание снаряжения"
+      Background="#F8F9FA">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
+        <StackPanel MaxWidth="700" HorizontalAlignment="Center">
+
+            <StackPanel Margin="0,0,0,30">
+                <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
+                           FontWeight="Bold" Text="Создание снаряжения"/>
+                <TextBlock Style="{StaticResource BodyText}" FontSize="16"
+                           Text="Добавьте новое снаряжение в ваш каталог для использования в походах"
+                           Foreground="#7F8C8D" Margin="0,5,0,0"/>
+            </StackPanel>
+
+            <Border Style="{StaticResource WidgetStyle}">
+                <StackPanel>
+
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Style="{StaticResource BodyText}" 
+                                   FontWeight="SemiBold" 
+                                   Text="Название снаряжения" 
+                                   Margin="0,0,0,8"/>
+                        <TextBox Style="{StaticResource InputField}" 
+                                 x:Name="NameTextBox"
+                                 MaxLength="256"
+                                 Height="40"/>
+                        <TextBlock Style="{StaticResource BodyText}" 
+                                   Foreground="#7F8C8D" 
+                                   FontSize="12"
+                                   Margin="0,5,0,0"
+                                   Text="Добавьте название"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,0,20">
+                        <TextBlock Style="{StaticResource BodyText}" 
+                                   FontWeight="SemiBold" 
+                                   Text="Вес (грамм)" 
+                                   Margin="0,0,0,8"/>
+                        <TextBox Style="{StaticResource InputField}" 
+                                 x:Name="WeightTextBox"
+                                 Height="40"
+                                 PreviewTextInput="WeightTextBox_PreviewTextInput"/>
+
+                        <TextBlock Style="{StaticResource BodyText}" 
+                                   Foreground="#7F8C8D" 
+                                   FontSize="12"
+                                   Margin="0,5,0,0"
+                                   Text="Укажите вес в граммах (только целое число)"/>
+                    </StackPanel>
+
+                    <StackPanel Margin="0,0,0,25">
+                        <TextBlock Style="{StaticResource BodyText}" 
+                                   FontWeight="SemiBold" 
+                                   Text="Описание" 
+                                   Margin="0,0,0,8"/>
+                        <TextBox Style="{StaticResource InputField}" 
+                                 x:Name="DescriptionTextBox"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 MinHeight="120"
+                                 MaxHeight="300"/>
+                        <TextBlock Style="{StaticResource BodyText}" 
+                                   Foreground="#7F8C8D" 
+                                   FontSize="12"
+                                   Margin="0,5,0,0"
+                                   Text="Добавьте описание"/>
+                    </StackPanel>
+
+                    <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
+                               Foreground="#E74C3C" TextWrapping="Wrap" 
+                               Visibility="Collapsed" Margin="0,0,0,15"
+                               FontSize="14"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource TextButton}" 
+                                x:Name="CancelButton"
+                                Click="CancelButton_Click"
+                                Margin="0,0,15,0">
+                            <TextBlock Text="Отмена"/>
+                        </Button>
+                        <Button Style="{StaticResource MainButton}" 
+                                x:Name="CreateButton"
+                                Click="CreateButton_Click"
+                                Padding="28,12">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Создать снаряжение"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

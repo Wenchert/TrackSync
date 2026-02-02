@@ -2,9 +2,8 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using TrackSync.DataBase.Model;
 
-namespace TrackSync.DataBase.WorkWithDB
+namespace TrackSync.DataBase
 {
     public partial class TrackSyncContext : DbContext
     {
@@ -25,6 +24,7 @@ namespace TrackSync.DataBase.WorkWithDB
         public virtual DbSet<Ingredient> Ingredients { get; set; } = null!;
         public virtual DbSet<IngredientsRecipe> IngredientsRecipes { get; set; } = null!;
         public virtual DbSet<Invitation> Invitations { get; set; } = null!;
+        public virtual DbSet<Loginattempt> Loginattempts { get; set; } = null!;
         public virtual DbSet<Participant> Participants { get; set; } = null!;
         public virtual DbSet<Recipe> Recipes { get; set; } = null!;
         public virtual DbSet<RecipesParticipant> RecipesParticipants { get; set; } = null!;
@@ -39,7 +39,6 @@ namespace TrackSync.DataBase.WorkWithDB
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
                 optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=TrackSync;Username=postgres;Password=popgg006");
             }
         }
@@ -73,7 +72,11 @@ namespace TrackSync.DataBase.WorkWithDB
             {
                 entity.ToTable("equipments");
 
+                entity.HasIndex(e => e.CreatorUserId, "idx_equipments_creator_user_id");
+
                 entity.Property(e => e.EquipmentId).HasColumnName("equipment_id");
+
+                entity.Property(e => e.CreatorUserId).HasColumnName("creator_user_id");
 
                 entity.Property(e => e.Description).HasColumnName("description");
 
@@ -82,6 +85,11 @@ namespace TrackSync.DataBase.WorkWithDB
                     .HasColumnName("title");
 
                 entity.Property(e => e.Weight).HasColumnName("weight");
+
+                entity.HasOne(d => d.CreatorUser)
+                    .WithMany(p => p.Equipment)
+                    .HasForeignKey(d => d.CreatorUserId)
+                    .HasConstraintName("equipments_creator_user_id_fkey");
             });
 
             modelBuilder.Entity<HikeRoom>(entity =>
@@ -191,11 +199,15 @@ namespace TrackSync.DataBase.WorkWithDB
             {
                 entity.ToTable("ingredients");
 
+                entity.HasIndex(e => e.CreatorUserId, "idx_ingredients_creator_user_id");
+
                 entity.Property(e => e.IngredientId).HasColumnName("ingredient_id");
 
                 entity.Property(e => e.Calories).HasColumnName("calories");
 
                 entity.Property(e => e.Carbs).HasColumnName("carbs");
+
+                entity.Property(e => e.CreatorUserId).HasColumnName("creator_user_id");
 
                 entity.Property(e => e.Fats).HasColumnName("fats");
 
@@ -210,6 +222,11 @@ namespace TrackSync.DataBase.WorkWithDB
                 entity.Property(e => e.Title)
                     .HasMaxLength(256)
                     .HasColumnName("title");
+
+                entity.HasOne(d => d.CreatorUser)
+                    .WithMany(p => p.Ingredients)
+                    .HasForeignKey(d => d.CreatorUserId)
+                    .HasConstraintName("ingredients_creator_user_id_fkey");
             });
 
             modelBuilder.Entity<IngredientsRecipe>(entity =>
@@ -263,6 +280,33 @@ namespace TrackSync.DataBase.WorkWithDB
                     .HasConstraintName("invitations_user_id_fkey");
             });
 
+            modelBuilder.Entity<Loginattempt>(entity =>
+            {
+                entity.HasKey(e => e.AttemptId)
+                    .HasName("loginattempts_pkey");
+
+                entity.ToTable("loginattempts");
+
+                entity.HasIndex(e => e.IpAddress, "idx_login_attempts_ip");
+
+                entity.Property(e => e.AttemptId).HasColumnName("attempt_id");
+
+                entity.Property(e => e.AttemptTime)
+                    .HasColumnType("timestamp without time zone")
+                    .HasColumnName("attempt_time")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(e => e.Email)
+                    .HasMaxLength(256)
+                    .HasColumnName("email");
+
+                entity.Property(e => e.IpAddress)
+                    .HasMaxLength(45)
+                    .HasColumnName("ip_address");
+
+                entity.Property(e => e.Success).HasColumnName("success");
+            });
+
             modelBuilder.Entity<Participant>(entity =>
             {
                 entity.ToTable("participants");
@@ -305,7 +349,11 @@ namespace TrackSync.DataBase.WorkWithDB
             {
                 entity.ToTable("recipes");
 
+                entity.HasIndex(e => e.CreatorUserId, "idx_recipes_creator_user_id");
+
                 entity.Property(e => e.RecipeId).HasColumnName("recipe_id");
+
+                entity.Property(e => e.CreatorUserId).HasColumnName("creator_user_id");
 
                 entity.Property(e => e.Description).HasColumnName("description");
 
@@ -314,6 +362,11 @@ namespace TrackSync.DataBase.WorkWithDB
                 entity.Property(e => e.Title)
                     .HasMaxLength(256)
                     .HasColumnName("title");
+
+                entity.HasOne(d => d.CreatorUser)
+                    .WithMany(p => p.Recipes)
+                    .HasForeignKey(d => d.CreatorUserId)
+                    .HasConstraintName("recipes_creator_user_id_fkey");
             });
 
             modelBuilder.Entity<RecipesParticipant>(entity =>

@@ -1,0 +1,130 @@
+﻿<Page x:Class="TrackSync.Pages.MainPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      mc:Ignorable="d" 
+      d:DesignHeight="700" d:DesignWidth="1200"
+      Title="TrackSync - Главная"
+      Background="#F8F9FA">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
+        <StackPanel>
+
+            <StackPanel Margin="0,0,0,30">
+                <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
+                           FontWeight="Bold" Text="Добро пожаловать, Владимир!"/>
+                <TextBlock Style="{StaticResource BodyText}" FontSize="16"
+                           Text="Здесь вы можете управлять своими походами" Foreground="#7F8C8D"/>
+            </StackPanel>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource WidgetStyle}" Margin="0,0,20,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <Image Source="/Images/Icons/bell.png" Width="24" Height="24" Margin="0,0,10,0"/>
+                            <TextBlock Style="{StaticResource TitleText}" FontSize="18" FontWeight="Bold" Text="Уведомления"/>
+                        </StackPanel>
+
+                        <StackPanel x:Name="NotificationsPanel">
+                            <Border Style="{StaticResource NotificationItemStyle}">
+                                <TextBlock Style="{StaticResource BodyText}" Text="Вас пригласили в поход 'Эльбрус'"/>
+                            </Border>
+                            <Border Style="{StaticResource NotificationItemStyle}" Margin="0,10,0,0">
+                                <TextBlock Style="{StaticResource BodyText}" Text="Новый участник присоединился к вашему походу"/>
+                            </Border>
+                            <Border Style="{StaticResource NotificationItemStyle}" Margin="0,10,0,0">
+                                <TextBlock Style="{StaticResource BodyText}" Text="Обновлен маршрут для похода 'Карелия'"/>
+                            </Border>
+                        </StackPanel>
+
+                        <Button Style="{StaticResource TextButton}" Click="ShowAllNotifications_Click"
+                                Margin="0,20,0,0" HorizontalAlignment="Right">
+                            <TextBlock Text="Показать все"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="1" Style="{StaticResource WidgetStyle}">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <Image Source="/Images/Icons/calendar.png" Width="24" Height="24" Margin="0,0,10,0"/>
+                            <TextBlock Style="{StaticResource TitleText}" FontSize="18" FontWeight="Bold" Text="Предстоящие походы"/>
+                        </StackPanel>
+
+                        <ListBox x:Name="RoomsListBox" 
+                                 BorderThickness="0" 
+                                 Background="Transparent"
+                                 ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                                 HorizontalContentAlignment="Stretch">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Style="{StaticResource HikeItemStyle}" 
+                                            Tag="{Binding HikeRoomId}" 
+                                            Cursor="Hand"
+                                            MouseLeftButtonDown="RoomItem_MouseLeftButtonDown"
+                                            Margin="0,0,0,12"
+                                            Padding="15">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Width="6" Grid.Column="0" Margin="0,0,15,0" CornerRadius="3,0,0,3">
+                                                <Border.Style>
+                                                    <Style TargetType="Border">
+                                                        <Setter Property="Background" Value="#95A5A6"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding Status.StatusId}" Value="1">
+                                                                <Setter Property="Background" Value="#3498DB"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status.StatusId}" Value="2">
+                                                                <Setter Property="Background" Value="#2ECC71"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status.StatusId}" Value="3">
+                                                                <Setter Property="Background" Value="#95A5A6"/>
+                                                            </DataTrigger>
+                                                            <DataTrigger Binding="{Binding Status.StatusId}" Value="4">
+                                                                <Setter Property="Background" Value="#E74C3C"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Border.Style>
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding Title}" 
+                                                           Style="{StaticResource BodyText}" 
+                                                           FontWeight="Bold"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <TextBlock Text="{Binding StartDate, StringFormat=dd MMM yyyy}" 
+                                                               Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
+                                                    <TextBlock Text=" – " Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
+                                                    <TextBlock Text="{Binding EndDate, StringFormat=dd MMM yyyy}" 
+                                                               Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
+                                                </StackPanel>
+                                                <TextBlock Text="{Binding Participants.Count, StringFormat={}{0} участников}" 
+                                                           Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13" Margin="0,4,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <Button Style="{StaticResource TextButton}" Click="ShowAllHikes_Click"
+                                Margin="0,20,0,0" HorizontalAlignment="Right">
+                            <TextBlock Text="Все походы"/>
+                        </Button>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

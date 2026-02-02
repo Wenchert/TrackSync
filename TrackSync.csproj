@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
@@ -7,13 +6,29 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
-
   <ItemGroup>
     <None Remove="Images\background.jpg" />
     <None Remove="Images\favicon.png" />
+    <None Remove="Images\Icons\add.png" />
+    <None Remove="Images\Icons\arrow-right.png" />
+    <None Remove="Images\Icons\backpack.png" />
+    <None Remove="Images\Icons\bell.png" />
+    <None Remove="Images\Icons\calendar.png" />
+    <None Remove="Images\Icons\edit.png" />
+    <None Remove="Images\Icons\filter.png" />
+    <None Remove="Images\Icons\food.png" />
+    <None Remove="Images\Icons\home.png" />
+    <None Remove="Images\Icons\menu.png" />
+    <None Remove="Images\Icons\search.png" />
+    <None Remove="Images\Icons\settings.png" />
+    <None Remove="Images\Icons\telegram.png" />
+    <None Remove="Images\Icons\trash.png" />
+    <None Remove="Images\Icons\user.png" />
+    <None Remove="Images\Icons\user_plus.png" />
+    <None Remove="Images\Icons\vk.png" />
   </ItemGroup>
-
   <ItemGroup>
+    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.8">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,11 +40,27 @@
     </PackageReference>
     <PackageReference Include="Npgsql" Version="6.0.13" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.8" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
-
   <ItemGroup>
     <Resource Include="Images\background.jpg" />
-    <Resource Include="Images\favicon.png" />
+    <Resource Include="Images\Icons\add.png" />
+    <Resource Include="Images\Icons\arrow-right.png" />
+    <Resource Include="Images\Icons\backpack.png" />
+    <Resource Include="Images\Icons\bell.png" />
+    <Resource Include="Images\Icons\calendar.png" />
+    <Resource Include="Images\Icons\edit.png" />
+    <Resource Include="Images\Icons\favicon.png" />
+    <Resource Include="Images\Icons\filter.png" />
+    <Resource Include="Images\Icons\food.png" />
+    <Resource Include="Images\Icons\home.png" />
+    <Resource Include="Images\Icons\menu.png" />
+    <Resource Include="Images\Icons\search.png" />
+    <Resource Include="Images\Icons\settings.png" />
+    <Resource Include="Images\Icons\telegram.png" />
+    <Resource Include="Images\Icons\trash.png" />
+    <Resource Include="Images\Icons\user.png" />
+    <Resource Include="Images\Icons\user_plus.png" />
+    <Resource Include="Images\Icons\vk.png" />
   </ItemGroup>
-
 </Project>

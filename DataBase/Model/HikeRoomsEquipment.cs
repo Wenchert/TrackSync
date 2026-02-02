@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TrackSync.DataBase.Model
+namespace TrackSync
 {
     public partial class HikeRoomsEquipment
     {

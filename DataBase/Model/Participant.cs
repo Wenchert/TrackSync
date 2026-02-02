@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TrackSync.DataBase.Model
+namespace TrackSync
 {
     public partial class Participant
     {
@@ -10,7 +10,14 @@ namespace TrackSync.DataBase.Model
             HikeRoomsEquipments = new HashSet<HikeRoomsEquipment>();
             RecipesParticipants = new HashSet<RecipesParticipant>();
         }
-
+        public Participant(int userId, int hikeRoomId, bool editMealPlan, bool editTrack, bool editEquipment)
+        {
+            UserId = userId;
+            HikeRoomId = hikeRoomId;
+            EditMealPlan = editMealPlan;
+            EditTrack = editTrack;
+            EditEquipment = editEquipment;
+        }
         public int ParticipantId { get; set; }
         public int UserId { get; set; }
         public int HikeRoomId { get; set; }
