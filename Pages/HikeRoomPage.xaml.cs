@@ -383,7 +383,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Обработчик кнопки "Сохранить изменения"
         private void SaveChangesButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -409,7 +408,7 @@ namespace TrackSync.Pages
                                     if (eqItem.Quantity <= 0)
                                         continue;
 
-                                    // Проверяем, существует ли уже запись для этого снаряжения у участника
+                                    // Проверяем, существует ли уже запись для этого снаряжения у участника В ЭТОЙ КОМНАТЕ
                                     var existingRecord = ctx.HikeRoomsEquipments
                                         .FirstOrDefault(hre =>
                                             hre.HikeRoomId == _roomId &&
@@ -443,11 +442,9 @@ namespace TrackSync.Pages
                     // Сохраняем изменения в базе данных
                     ctx.SaveChanges();
 
-                    string message = $"Изменения успешно сохранены!\n" +
-                                    $"Добавлено записей: {addedCount}\n" +
-                                    $"Обновлено записей: {updatedCount}";
-
-                    MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    // Очищаем словарь и перезагружаем данные для актуального отображения
+                    _participantEquipment.Clear();
+                    LoadParticipants();
                 }
             }
             catch (Exception ex)
@@ -460,14 +457,23 @@ namespace TrackSync.Pages
         // Загрузка данных комнаты
         private void LoadRoomData()
         {
-            // Загружаем название комнаты из БД (пока заглушка)
-            RoomTitleText.Text = "Поход на Эльбрус";
+            var room = TrackSyncManagerList.GetHikeRoomById(_roomId);
+            // Устанавливаем название комнаты
+            RoomTitleText.Text = room.Title;
+
+            // Форматируем даты проведения
+            string dateRange = $"{room.StartDate:dd MMMM yyyy} - {room.EndDate:dd MMMM yyyy}";
+            ((TextBlock)FindName("RoomDateText")).Text = dateRange;
+
+            // Получаем количество участников
+            int participantCount = room.Participants?.Count ?? 0;
+            ((TextBlock)FindName("ParticipantCountText")).Text = $"Количество участников: {participantCount}";
 
             // Загружаем участников комнаты со снаряжением
             LoadParticipants();
         }
 
-        // Загрузка участников комнаты со снаряжением
+        // Загрузка участников комнаты со снаряжением ИЗ БД
         private void LoadParticipants()
         {
             var participants = TrackSyncManagerList.GetParticipantsWithEquipment(_roomId);
@@ -476,20 +482,28 @@ namespace TrackSync.Pages
             {
                 ParticipantsItemsControl.ItemsSource = participants;
 
-                // Инициализируем словарь снаряжения для каждого участника и загружаем данные из БД
+                // Очищаем словарь перед загрузкой новых данных
+                _participantEquipment.Clear();
+
+                // Инициализируем словарь снаряжения для каждого участника
                 foreach (var participant in participants)
                 {
                     var equipmentList = new List<EquipmentQuantityItem>();
 
-                    // Загружаем снаряжение из таблицы HikeRoomsEquipment
-                    foreach (var hre in participant.HikeRoomsEquipments)
+                    // ЗАГРУЖАЕМ СНАРЯЖЕНИЕ ИЗ ТАБЛИЦЫ HikeRoomsEquipment ДЛЯ ТЕКУЩЕЙ КОМНАТЫ
+                    var roomEquipment = participant.HikeRoomsEquipments
+                        .Where(hre => hre.HikeRoomId == _roomId && hre.ParticipantId == participant.ParticipantId)
+                        .ToList();
+
+                    // Формируем список для отображения с данными из БД
+                    foreach (var hre in roomEquipment)
                     {
                         if (hre.Equipment != null)
                         {
                             equipmentList.Add(new EquipmentQuantityItem
                             {
                                 Equipment = hre.Equipment,
-                                Quantity = hre.Quantity
+                                Quantity = hre.Quantity  // Количество берём из БД!
                             });
                         }
                     }
@@ -507,8 +521,8 @@ namespace TrackSync.Pages
             }
         }
 
-// === Вкладка 1: Маршруты ===
-private void CreateRouteButton_Click(object sender, RoutedEventArgs e)
+        // === Вкладка 1: Маршруты ===
+        private void CreateRouteButton_Click(object sender, RoutedEventArgs e)
         {
             MessageBox.Show("Функция создания маршрута будет реализована в будущих версиях",
                           "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -617,8 +631,7 @@ private void CreateRouteButton_Click(object sender, RoutedEventArgs e)
         // === Дополнительные кнопки ===
         private void InviteUsersButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Откроется окно для приглашения пользователей в комнату",
-                          "Приглашение пользователей", MessageBoxButton.OK, MessageBoxImage.Information);
+            NavigationService.Navigate(new InviteUsersPage(_roomId));
         }
 
         private void RoomSettingsButton_Click(object sender, RoutedEventArgs e)

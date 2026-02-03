@@ -7,8 +7,10 @@
       d:DesignHeight="700" d:DesignWidth="1200"
       Title="TrackSync - Настройки профиля"
       Background="#F8F9FA">
+
     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
         <StackPanel MaxWidth="700" HorizontalAlignment="Center">
+            <!-- Заголовок страницы -->
             <StackPanel Margin="0,0,0,30">
                 <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
                            FontWeight="Bold" Text="Настройки профиля"/>
@@ -16,160 +18,227 @@
                            Text="Управляйте вашими персональными данными и настройками безопасности"
                            Foreground="#7F8C8D" Margin="0,5,0,0"/>
             </StackPanel>
+
+            <!-- ВКЛАДКИ НАСТРОЕК -->
             <Border Style="{StaticResource WidgetStyle}">
-                <StackPanel>
-                    <StackPanel Margin="0,0,0,30">
-                        <TextBlock Style="{StaticResource TitleText}" FontSize="20" 
-                                   FontWeight="SemiBold" Text="Безопасность "
-                                   Margin="0,0,0,15"/>
-                        <TextBlock Style="{StaticResource BodyText}" 
-                                   Text="Для изменения пароля мы отправим инструкции на вашу электронную почту"
-                                   Foreground="#7F8C8D" 
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,15"/>
-                        <Button Style="{StaticResource MainButton}" 
-                                x:Name="ChangePasswordButton"
-                                Click="ChangePasswordButton_Click"
-                                Background="#3498DB"
-                                Height="45"
-                                Padding="20,0">
-                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <TextBlock Text="Изменить пароль через почту" 
-                                          VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-                        <TextBlock x:Name="PasswordChangeMessage" Style="{StaticResource BodyText}" 
-                                   Foreground="#28A745" TextWrapping="Wrap" 
-                                   Visibility="Collapsed" Margin="0,10,0,0"
-                                   FontSize="13">
-                            <Run Text="✓ "/>
-                            <Run Text="Инструкции для смены пароля отправлены на вашу почту. Проверьте папку 'Входящие' или 'Спам'."/>
-                        </TextBlock>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,0,30">
-                        <TextBlock Style="{StaticResource TitleText}" FontSize="20" 
-                                   FontWeight="SemiBold" Text="Физические параметры"
-                                   Margin="0,0,0,15"/>
-                        <TextBlock Style="{StaticResource BodyText}" 
-                                   Text="Укажите ваши текущие параметры для корректного распределения снаряжения"
-                                   Foreground="#7F8C8D" 
-                                   TextWrapping="Wrap"
-                                   Margin="0,0,0,15"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="20"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Grid.Column="0">
+                <TabControl Padding="20">
+                    <!-- Вкладка 1: Профиль -->
+                    <TabItem Header="Профиль">
+                        <StackPanel Margin="0,10,0,0">
+                            <!-- Email (только для чтения) -->
+                            <StackPanel Margin="0,0,0,25">
                                 <TextBlock Style="{StaticResource BodyText}" 
                                            FontWeight="SemiBold" 
-                                           Text="Рост (см)" 
+                                           Text="Электронная почта" 
                                            Margin="0,0,0,8"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Button x:Name="HeightDecreaseBtn" Grid.Column="0" 
-                                            Content="-" Width="36" Height="36" 
-                                            Click="HeightDecreaseBtn_Click"
-                                            Style="{StaticResource NumberButton}"/>
-                                    <TextBox Grid.Column="1" x:Name="HeightText" 
-                                             Style="{StaticResource InputField}" 
-                                             TextAlignment="Center" 
-                                             PreviewTextInput="NumberPreviewTextInput"
-                                             MaxLength="3"
-                                             Height="36"/>
-                                    <Button x:Name="HeightIncreaseBtn" Grid.Column="2" 
-                                            Content="+" Width="36" Height="36"
-                                            Click="HeightIncreaseBtn_Click"
-                                            Style="{StaticResource NumberButton}"/>
-                                </Grid>
+                                <TextBox x:Name="EmailTextBox" 
+                                         Style="{StaticResource InputField}" 
+                                         IsReadOnly="True"
+                                         Height="40"
+                                         Background="#F0F0F0"
+                                         Foreground="#555"/>
                                 <TextBlock Style="{StaticResource BodyText}" 
                                            Foreground="#7F8C8D" 
                                            FontSize="12"
                                            Margin="0,5,0,0"
-                                           Text="Минимум: 40 см"/>
+                                           Text="Ваша почта используется для входа в систему"/>
                             </StackPanel>
-                            <StackPanel Grid.Column="2">
+
+                            <!-- Контакты -->
+                            <StackPanel Margin="0,0,0,25">
                                 <TextBlock Style="{StaticResource BodyText}" 
                                            FontWeight="SemiBold" 
-                                           Text="Вес (кг)" 
+                                           Text="Контактная информация" 
                                            Margin="0,0,0,8"/>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
-                                    <Button x:Name="WeightDecreaseBtn" Grid.Column="0" 
-                                            Content="-" Width="36" Height="36"
-                                            Click="WeightDecreaseBtn_Click"
-                                            Style="{StaticResource NumberButton}"/>
-                                    <TextBox Grid.Column="1" x:Name="WeightText" 
-                                             Style="{StaticResource InputField}" 
-                                             TextAlignment="Center" 
-                                             PreviewTextInput="NumberPreviewTextInput"
-                                             MaxLength="3"
-                                             Height="36"/>
-                                    <Button x:Name="WeightIncreaseBtn" Grid.Column="2" 
-                                            Content="+" Width="36" Height="36"
-                                            Click="WeightIncreaseBtn_Click"
-                                            Style="{StaticResource NumberButton}"/>
-                                </Grid>
+                                <TextBox x:Name="ContactsTextBox" 
+                                         Style="{StaticResource InputField}" 
+                                         AcceptsReturn="True"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         MinHeight="80"
+                                         MaxHeight="150"/>
                                 <TextBlock Style="{StaticResource BodyText}" 
                                            Foreground="#7F8C8D" 
                                            FontSize="12"
                                            Margin="0,5,0,0"
-                                           Text="Минимум: 20 кг"/>
+                                           Text="Телефон, соцсети или другие способы связи"/>
                             </StackPanel>
-                        </Grid>
-                    </StackPanel>
-                    <StackPanel Margin="0,0,0,25">
-                        <TextBlock Style="{StaticResource TitleText}" FontSize="20" 
-                                   FontWeight="SemiBold" Text="Описание профиля"
-                                   Margin="0,0,0,15"/>
-                        <TextBlock Style="{StaticResource BodyText}" 
-                                   FontWeight="SemiBold" 
-                                   Text="О себе" 
-                                   Margin="0,0,0,8"/>
-                        <TextBox Style="{StaticResource InputField}" 
-                                 x:Name="ProfileDescriptionTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 MinHeight="120"
-                                 MaxHeight="300"
-                                 TextChanged="ProfileDescriptionTextBox_TextChanged"/>
-                        <TextBlock Style="{StaticResource BodyText}" 
-                                   Foreground="#7F8C8D" 
-                                   FontSize="12"
-                                   Margin="0,5,0,0"
-                                   Text="Расскажите о себе, своих предпочтениях в походах и опыте"/>
-                    </StackPanel>
-                    <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
-                               Foreground="#E74C3C" TextWrapping="Wrap" 
-                               Visibility="Collapsed" Margin="0,0,0,15"
-                               FontSize="14"/>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button Style="{StaticResource TextButton}" 
-                                x:Name="CancelButton"
-                                Click="CancelButton_Click"
-                                Margin="0,0,15,0">
-                            <TextBlock Text="Отмена"/>
-                        </Button>
-                        <Button Style="{StaticResource MainButton}" 
-                                x:Name="SaveButton"
-                                Click="SaveButton_Click"
-                                Padding="28,12">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="Сохранить изменения"/>
+
+                            <!-- Физические параметры -->
+                            <StackPanel Margin="0,0,0,25">
+                                <TextBlock Style="{StaticResource TitleText}" FontSize="18" 
+                                           FontWeight="SemiBold" Text="Физические параметры"
+                                           Margin="0,0,0,15"/>
+                                <TextBlock Style="{StaticResource BodyText}" 
+                                           Text="Укажите ваши текущие параметры для корректного распределения снаряжения"
+                                           Foreground="#7F8C8D" 
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,15"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="20"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Рост -->
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Style="{StaticResource BodyText}" 
+                                                   FontWeight="SemiBold" 
+                                                   Text="Рост (см)" 
+                                                   Margin="0,0,0,8"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Grid.Column="1" x:Name="HeightText" 
+                                                     Style="{StaticResource InputField}" 
+                                                     TextAlignment="Center" 
+                                                     PreviewTextInput="NumberPreviewTextInput"
+                                                     MaxLength="3"
+                                                     Height="36"/>
+                                        </Grid>
+                                        <TextBlock Style="{StaticResource BodyText}" 
+                                                   Foreground="#7F8C8D" 
+                                                   FontSize="12"
+                                                   Margin="0,5,0,0"
+                                                   Text="Минимум: 40 см"/>
+                                    </StackPanel>
+
+                                    <!-- Вес -->
+                                    <StackPanel Grid.Column="2">
+                                        <TextBlock Style="{StaticResource BodyText}" 
+                                                   FontWeight="SemiBold" 
+                                                   Text="Вес (кг)" 
+                                                   Margin="0,0,0,8"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBox Grid.Column="1" x:Name="WeightText" 
+                                                     Style="{StaticResource InputField}" 
+                                                     TextAlignment="Center" 
+                                                     PreviewTextInput="NumberPreviewTextInput"
+                                                     MaxLength="3"
+                                                     Height="36"/>
+                                        </Grid>
+                                        <TextBlock Style="{StaticResource BodyText}" 
+                                                   Foreground="#7F8C8D" 
+                                                   FontSize="12"
+                                                   Margin="0,5,0,0"
+                                                   Text="Минимум: 20 кг"/>
+                                    </StackPanel>
+                                </Grid>
                             </StackPanel>
-                        </Button>
-                    </StackPanel>
-                </StackPanel>
+
+                            <!-- Сообщение об ошибке -->
+                            <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
+                                       Foreground="#E74C3C" TextWrapping="Wrap" 
+                                       Visibility="Collapsed" Margin="0,0,0,15"
+                                       FontSize="14"/>
+
+                            <!-- Кнопки действий -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Style="{StaticResource TextButton}" 
+                                        x:Name="CancelButton"
+                                        Click="CancelButton_Click"
+                                        Margin="0,0,15,0">
+                                    <TextBlock Text="Отмена"/>
+                                </Button>
+                                <Button Style="{StaticResource MainButton}" 
+                                        x:Name="SaveProfileButton"
+                                        Click="SaveProfileButton_Click"
+                                        Padding="28,12">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Сохранить изменения"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </TabItem>
+
+                    <!-- Вкладка 2: Безопасность -->
+                    <TabItem Header="Безопасность">
+                        <StackPanel Margin="0,10,0,0">
+                            <TextBlock Style="{StaticResource TitleText}" FontSize="18" 
+                                       FontWeight="SemiBold" Text="Изменение пароля"
+                                       Margin="0,0,0,15"/>
+
+                            <TextBlock Style="{StaticResource BodyText}" 
+                                       Text="Для защиты вашего аккаунта, пожалуйста, введите новый пароль"
+                                       Foreground="#7F8C8D" 
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,25"/>
+
+                            <!-- Текущий пароль -->
+                            <StackPanel Margin="0,0,0,20">
+                                <TextBlock Style="{StaticResource BodyText}" 
+                                           FontWeight="SemiBold" 
+                                           Text="Текущий пароль" 
+                                           Margin="0,0,0,8"/>
+                                <PasswordBox x:Name="CurrentPasswordBox" 
+                                             Style="{StaticResource PasswordField}" 
+                                             Height="40"/>
+                            </StackPanel>
+
+                            <!-- Новый пароль -->
+                            <StackPanel Margin="0,0,0,20">
+                                <TextBlock Style="{StaticResource BodyText}" 
+                                           FontWeight="SemiBold" 
+                                           Text="Новый пароль" 
+                                           Margin="0,0,0,8"/>
+                                <PasswordBox x:Name="NewPasswordBox" 
+                                             Style="{StaticResource PasswordField}" 
+                                             Height="40"/>
+                                <TextBlock Style="{StaticResource BodyText}" 
+                                           Foreground="#7F8C8D" 
+                                           FontSize="12"
+                                           Margin="0,5,0,0"
+                                           Text="Минимум 8 символов"/>
+                            </StackPanel>
+
+                            <!-- Подтверждение пароля -->
+                            <StackPanel Margin="0,0,0,25">
+                                <TextBlock Style="{StaticResource BodyText}" 
+                                           FontWeight="SemiBold" 
+                                           Text="Подтверждение пароля" 
+                                           Margin="0,0,0,8"/>
+                                <PasswordBox x:Name="ConfirmPasswordBox" 
+                                             Style="{StaticResource PasswordField}" 
+                                             Height="40"/>
+                            </StackPanel>
+
+                            <!-- Сообщение об успехе/ошибке -->
+                            <TextBlock x:Name="PasswordMessage" Style="{StaticResource BodyText}" 
+                                       Foreground="#E74C3C" TextWrapping="Wrap" 
+                                       Visibility="Collapsed" Margin="0,0,0,20"
+                                       FontSize="14"/>
+
+                            <!-- Кнопки действий -->
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Style="{StaticResource TextButton}" 
+                                        x:Name="CancelPasswordButton"
+                                        Click="CancelButton_Click"
+                                        Margin="0,0,15,0">
+                                    <TextBlock Text="Отмена"/>
+                                </Button>
+                                <Button Style="{StaticResource MainButton}" 
+                                        x:Name="ChangePasswordButton"
+                                        Click="ChangePasswordButton_Click"
+                                        Padding="28,12">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="Изменить пароль"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
             </Border>
         </StackPanel>
     </ScrollViewer>

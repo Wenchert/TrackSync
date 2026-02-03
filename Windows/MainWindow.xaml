@@ -221,7 +221,7 @@
                 BorderBrush="#E9ECEF" BorderThickness="0,1,0,0">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" 
                        VerticalAlignment="Center">
-                <TextBlock Style="{StaticResource BodyText}" Text="© 2025 TrackSync" 
+                <TextBlock Style="{StaticResource BodyText}" Text="© 2026 TrackSync" 
                           Foreground="#7F8C8D" Margin="0,0,20,0"/>
 
                 <StackPanel Orientation="Horizontal">

@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using TrackSync.DataBase;
-//using TrackSync.DataBase.Model;
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Windows;
 
@@ -25,16 +24,19 @@ namespace TrackSync.Pages
             try
             {
                 using var ctx = new TrackSyncContext();
-                int currentUserId = GetCurrentUserId();
+                int currentUserId = SessionManager.CurrentUserId;
 
                 _currentUser = ctx.Users.Find(currentUserId);
 
                 if (_currentUser != null)
                 {
-                    // Загружаем описание профиля
+                    // Загружаем почту (только для чтения)
+                    EmailTextBox.Text = _currentUser.Name;
+
+                    // Загружаем контакты
                     if (!string.IsNullOrWhiteSpace(_currentUser.Contacts))
                     {
-                        ProfileDescriptionTextBox.Text = _currentUser.Contacts;
+                        ContactsTextBox.Text = _currentUser.Contacts;
                     }
 
                     // Загружаем рост и вес
@@ -43,50 +45,12 @@ namespace TrackSync.Pages
                 }
                 else
                 {
-                    ErrorMessageVisible("*Не удалось загрузить данные профиля");
+                    ShowMessage(ErrorMessage, "*Не удалось загрузить данные профиля", false);
                 }
             }
             catch (Exception ex)
             {
-                ErrorMessageVisible($"*Ошибка при загрузке профиля: {ex.Message}");
-            }
-        }
-
-        // Обработчики для кнопок роста
-        private void HeightIncreaseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(HeightText.Text, out int height))
-            {
-                HeightText.Text = (height + 1).ToString();
-                ErrorMessageHide();
-            }
-        }
-
-        private void HeightDecreaseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(HeightText.Text, out int height) && height > 40)
-            {
-                HeightText.Text = (height - 1).ToString();
-                ErrorMessageHide();
-            }
-        }
-
-        // Обработчики для кнопок веса
-        private void WeightIncreaseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(WeightText.Text, out int weight))
-            {
-                WeightText.Text = (weight + 1).ToString();
-                ErrorMessageHide();
-            }
-        }
-
-        private void WeightDecreaseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(WeightText.Text, out int weight) && weight > 20)
-            {
-                WeightText.Text = (weight - 1).ToString();
-                ErrorMessageHide();
+                ShowMessage(ErrorMessage, $"*Ошибка при загрузке профиля: {ex.Message}", false);
             }
         }
 
@@ -101,86 +65,48 @@ namespace TrackSync.Pages
                     break;
                 }
             }
-            ErrorMessageHide();
+            HideMessage(ErrorMessage);
         }
 
-        // Обработчик для скрытия ошибок при вводе описания
-        private void ProfileDescriptionTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        // Сохранение изменений профиля (вкладка "Профиль")
+        private void SaveProfileButton_Click(object sender, RoutedEventArgs e)
         {
-            ErrorMessageHide();
-        }
-
-        // Обработчик кнопки "Изменить пароль через почту"
-        private void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
-        {
-            ErrorMessageHide();
-
-            if (_currentUser == null || string.IsNullOrWhiteSpace(_currentUser.Name))
-            {
-                ErrorMessageVisible("*Не удалось определить ваш email для отправки письма");
-                return;
-            }
-
-            try
-            {
-                // Здесь будет логика отправки письма (временно заглушка)
-                System.Threading.Thread.Sleep(800); // Имитация задержки
-
-                // Показываем сообщение об успешной отправке
-                PasswordChangeMessage.Visibility = Visibility.Visible;
-                ErrorMessageVisible($"✓ Инструкции отправлены на {MaskEmail(_currentUser.Name)}");
-
-                // Скрываем сообщение через 5 секунд
-                var timer = new System.Windows.Threading.DispatcherTimer();
-                timer.Interval = TimeSpan.FromSeconds(5);
-                timer.Tick += (s, args) =>
-                {
-                    PasswordChangeMessage.Visibility = Visibility.Collapsed;
-                    timer.Stop();
-                };
-                timer.Start();
-            }
-            catch (Exception ex)
-            {
-                ErrorMessageVisible($"*Ошибка при отправке письма: {ex.Message}");
-            }
-        }
-
-        // Маскирование email для отображения
-        private string MaskEmail(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
-                return email;
-
-            var parts = email.Split('@');
-            if (parts.Length != 2)
-                return email;
-
-            var localPart = parts[0];
-            if (localPart.Length <= 2)
-                return email;
-
-            var maskedLocal = localPart.Substring(0, 2) + new string('*', localPart.Length - 2);
-            return $"{maskedLocal}@{parts[1]}";
-        }
-
-        // Сохранение изменений
-        private void SaveButton_Click(object sender, RoutedEventArgs e)
-        {
-            ErrorMessageHide();
+            HideMessage(ErrorMessage);
 
             // Валидация роста и веса
             if (!ValidateHeightWeight())
                 return;
 
             // Сохраняем изменения
-            SaveProfileChanges();
+            if (SaveProfileChanges())
+            {
+                ShowMessage(ErrorMessage, "*Настройки успешно сохранены!", true);
+            }
+        }
 
-            MessageBox.Show("Настройки успешно сохранены!",
-                          "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+        // Изменение пароля (вкладка "Безопасность")
+        private void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideMessage(PasswordMessage);
 
-            // Возвращаемся на главную страницу
-            FrameContext.MainWindowFrame.Navigate(new MainPage());
+            // Валидация полей пароля
+            if (!ValidatePasswordChange())
+                return;
+
+            // Проверка текущего пароля
+            if (!VerifyCurrentPassword())
+                return;
+
+            // Сохраняем новый пароль
+            if (ChangeUserPassword(NewPasswordBox.Password))
+            {
+                ShowMessage(PasswordMessage, "*Пароль успешно изменён!", true);
+
+                // Очищаем поля
+                CurrentPasswordBox.Clear();
+                NewPasswordBox.Clear();
+                ConfirmPasswordBox.Clear();
+            }
         }
 
         // Валидация роста и веса
@@ -189,58 +115,140 @@ namespace TrackSync.Pages
             // Проверка роста
             if (string.IsNullOrWhiteSpace(HeightText.Text))
             {
-                ErrorMessageVisible("*Пожалуйста, укажите ваш рост");
+                ShowMessage(ErrorMessage, "*Пожалуйста, укажите ваш рост", false);
                 return false;
             }
 
             if (!int.TryParse(HeightText.Text, out int height) || height < 40)
             {
-                ErrorMessageVisible("*Рост должен быть не менее 40 см");
+                ShowMessage(ErrorMessage, "*Рост должен быть не менее 40 см", false);
                 return false;
             }
 
             // Проверка веса
             if (string.IsNullOrWhiteSpace(WeightText.Text))
             {
-                ErrorMessageVisible("*Пожалуйста, укажите ваш вес");
+                ShowMessage(ErrorMessage, "*Пожалуйста, укажите ваш вес", false);
                 return false;
             }
 
             if (!int.TryParse(WeightText.Text, out int weight) || weight < 20)
             {
-                ErrorMessageVisible("*Вес должен быть не менее 20 кг");
+                ShowMessage(ErrorMessage, "*Вес должен быть не менее 20 кг", false);
                 return false;
             }
 
             return true;
         }
 
-        // Сохранение изменений профиля
-        private void SaveProfileChanges()
+        // Валидация полей пароля
+        private bool ValidatePasswordChange()
+        {
+            if (string.IsNullOrWhiteSpace(CurrentPasswordBox.Password))
+            {
+                ShowMessage(PasswordMessage, "*Введите текущий пароль", false);
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(NewPasswordBox.Password))
+            {
+                ShowMessage(PasswordMessage, "*Введите новый пароль", false);
+                return false;
+            }
+
+            if (NewPasswordBox.Password.Length < 8)
+            {
+                ShowMessage(PasswordMessage, "*Новый пароль должен содержать не менее 8 символов", false);
+                return false;
+            }
+
+            if (NewPasswordBox.Password != ConfirmPasswordBox.Password)
+            {
+                ShowMessage(PasswordMessage, "*Пароли не совпадают", false);
+                return false;
+            }
+
+            return true;
+        }
+
+        // Проверка текущего пароля
+        private bool VerifyCurrentPassword()
         {
             try
             {
                 using var ctx = new TrackSyncContext();
                 var user = ctx.Users.Find(_currentUser.UserId);
 
-                if (user != null)
+                if (user == null || !BCrypt.Net.BCrypt.Verify(CurrentPasswordBox.Password, user.Password))
                 {
-                    // Сохраняем описание
-                    string description = ProfileDescriptionTextBox.Text.Trim();
-                    user.Contacts = string.IsNullOrWhiteSpace(description) ? null : description;
-
-                    // Сохраняем рост и вес
-                    user.Height = int.Parse(HeightText.Text);
-                    user.Weight = int.Parse(WeightText.Text);
-
-                    ctx.SaveChanges();
+                    ShowMessage(PasswordMessage, "*Неверный текущий пароль", false);
+                    return false;
                 }
+                return true;
             }
             catch (Exception ex)
             {
-                // Не критичная ошибка - просто покажем сообщение
-                MessageBox.Show($"Не удалось сохранить изменения: {ex.Message}",
-                              "Предупреждение", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ShowMessage(PasswordMessage, $"*Ошибка проверки пароля: {ex.Message}", false);
+                return false;
+            }
+        }
+
+        // Сохранение изменений профиля
+        private bool SaveProfileChanges()
+        {
+            try
+            {
+                using var ctx = new TrackSyncContext();
+                var user = ctx.Users.Find(_currentUser.UserId);
+
+                if (user == null)
+                    throw new Exception("Пользователь не найден");
+
+                // Сохраняем контакты
+                string contacts = ContactsTextBox.Text.Trim();
+                user.Contacts = string.IsNullOrWhiteSpace(contacts) ? null : contacts;
+
+                // Сохраняем рост и вес
+                user.Height = int.Parse(HeightText.Text);
+                user.Weight = int.Parse(WeightText.Text);
+
+                ctx.SaveChanges();
+
+                // Обновляем локальную копию
+                _currentUser = user;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ShowMessage(ErrorMessage, $"*Ошибка сохранения: {ex.Message}", false);
+                return false;
+            }
+        }
+
+        // Изменение пароля пользователя
+        private bool ChangeUserPassword(string newPassword)
+        {
+            try
+            {
+                using var ctx = new TrackSyncContext();
+                var user = ctx.Users.Find(_currentUser.UserId);
+
+                if (user == null)
+                    throw new Exception("Пользователь не найден");
+
+                // Хешируем новый пароль
+                user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
+
+                ctx.SaveChanges();
+
+                // Обновляем локальную копию
+                _currentUser = user;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ShowMessage(PasswordMessage, $"*Ошибка изменения пароля: {ex.Message}", false);
+                return false;
             }
         }
 
@@ -250,24 +258,19 @@ namespace TrackSync.Pages
             FrameContext.MainWindowFrame.Navigate(new MainPage());
         }
 
-        // Методы для работы с сообщением об ошибке
-        private void ErrorMessageVisible(string message)
+        // Универсальные методы для работы с сообщениями
+        private void ShowMessage(TextBlock messageBlock, string message, bool isSuccess)
         {
-            ErrorMessage.Visibility = Visibility.Visible;
-            ErrorMessage.Text = message;
+            messageBlock.Visibility = Visibility.Visible;
+            messageBlock.Text = message;
+            messageBlock.Foreground = isSuccess ?
+                (System.Windows.Media.Brushes.Green) :
+                (System.Windows.Media.Brushes.Red);
         }
 
-        private void ErrorMessageHide()
+        private void HideMessage(TextBlock messageBlock)
         {
-            ErrorMessage.Visibility = Visibility.Collapsed;
-        }
-
-        // Метод для получения текущего пользователя
-        private int GetCurrentUserId()
-        {
-            // Здесь нужно получить ID текущего авторизованного пользователя
-            // Пока возвращаем заглушку
-            return 1;
+            messageBlock.Visibility = Visibility.Collapsed;
         }
     }
 }

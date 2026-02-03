@@ -651,5 +651,368 @@ namespace TrackSync.DataBase.WorkWithDB
                 return null;
             }
         }
+
+        /// <summary>
+        /// Получить комнату похода по её ID с загрузкой связанных сущностей
+        /// </summary>
+        public static HikeRoom GetHikeRoomById(int roomId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return null;
+                    }
+
+                    return ctx.HikeRooms
+                        .Include(hr => hr.Status)
+                        .Include(hr => hr.Participants)
+                            .ThenInclude(p => p.User)
+                        .FirstOrDefault(hr => hr.HikeRoomId == roomId);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении данных комнаты:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Получить все приглашения пользователя
+        /// </summary>
+        public static List<Invitation> GetUserInvitations(int userId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return null;
+                    }
+
+                    return ctx.Invitations
+                        .Include(i => i.HikeRoom)
+                            .ThenInclude(hr => hr.Status)
+                        .Where(i => i.UserId == userId)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении приглашений:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Принять приглашение - добавить пользователя в комнату как участника
+        /// </summary>
+        public static bool AcceptInvitation(int invitationId, int userId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return false;
+                    }
+
+                    // Находим приглашение
+                    var invitation = ctx.Invitations
+                        .Include(i => i.HikeRoom)
+                        .FirstOrDefault(i => i.InvitationId == invitationId && i.UserId == userId);
+
+                    if (invitation == null)
+                    {
+                        MessageBox.Show("Приглашение не найдено!", "Ошибка");
+                        return false;
+                    }
+
+                    // Проверяем, не является ли пользователь уже участником комнаты
+                    var existingParticipant = ctx.Participants
+                        .FirstOrDefault(p => p.UserId == userId && p.HikeRoomId == invitation.HikeRoomId);
+
+                    if (existingParticipant != null)
+                    {
+                        MessageBox.Show("Вы уже являетесь участником этой комнаты!", "Ошибка");
+                        // Удаляем приглашение, так как оно больше не нужно
+                        ctx.Invitations.Remove(invitation);
+                        ctx.SaveChanges();
+                        return false;
+                    }
+
+                    // Создаем нового участника с базовыми правами (без прав на редактирование)
+                    var participant = new Participant(
+                        userId: userId,
+                        hikeRoomId: invitation.HikeRoomId,
+                        editMealPlan: false,
+                        editTrack: false,
+                        editEquipment: false
+                    );
+
+                    ctx.Participants.Add(participant);
+
+                    // Удаляем приглашение
+                    ctx.Invitations.Remove(invitation);
+
+                    ctx.SaveChanges();
+
+                    MessageBox.Show($"Вы присоединились к походу \"{invitation.HikeRoom.Title}\"!",
+                                  "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при принятии приглашения:\n{ex.Message}", "Ошибка");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Отклонить приглашение - удалить из базы данных
+        /// </summary>
+        public static bool RejectInvitation(int invitationId, int userId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return false;
+                    }
+
+                    var invitation = ctx.Invitations
+                        .FirstOrDefault(i => i.InvitationId == invitationId && i.UserId == userId);
+
+                    if (invitation == null)
+                    {
+                        MessageBox.Show("Приглашение не найдено!", "Ошибка");
+                        return false;
+                    }
+
+                    ctx.Invitations.Remove(invitation);
+                    ctx.SaveChanges();
+
+                    MessageBox.Show("Приглашение отклонено", "Информация",
+                                  MessageBoxButton.OK, MessageBoxImage.Information);
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при отклонении приглашения:\n{ex.Message}", "Ошибка");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Получить количество непрочитанных приглашений пользователя
+        /// </summary>
+        public static int GetInvitationsCount(int userId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        return 0;
+                    }
+
+                    return ctx.Invitations
+                        .Count(i => i.UserId == userId);
+                }
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        /// <summary>
+        /// Получить всех пользователей для приглашения в комнату (исключая текущего пользователя, участников, приглашенных и отправивших заявки)
+        /// </summary>
+        public static List<User> GetUsersForInvitation(int currentRoomId, int currentUserId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return null;
+                    }
+
+                    // Получаем все ID пользователей, которых нужно исключить:
+
+                    // 1. Участники текущей комнаты
+                    var participantUserIds = ctx.Participants
+                        .Where(p => p.HikeRoomId == currentRoomId)
+                        .Select(p => p.UserId)
+                        .ToList();
+
+                    // 2. Пользователи с приглашениями в эту комнату
+                    var invitedUserIds = ctx.Invitations
+                        .Where(i => i.HikeRoomId == currentRoomId)
+                        .Select(i => i.UserId)
+                        .ToList();
+
+                    // 3. Пользователи с заявками (bids) в эту комнату
+                    var bidUserIds = ctx.Bids
+                        .Where(b => b.HikeRoomId == currentRoomId)
+                        .Select(b => b.UserId)
+                        .ToList();
+
+                    // 4. Текущий пользователь
+                    var currentUserIds = new List<int> { currentUserId };
+
+                    // Объединяем все ID для исключения
+                    var excludedUserIds = participantUserIds
+                        .Concat(invitedUserIds)
+                        .Concat(bidUserIds)
+                        .Concat(currentUserIds)
+                        .Distinct()
+                        .ToList();
+
+                    // Получаем всех пользователей, кроме исключенных
+                    var usersList = ctx.Users
+                        .Where(u => !excludedUserIds.Contains(u.UserId))
+                        .ToList();
+
+                    return usersList;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при получении списка пользователей для приглашения:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Поиск пользователей для приглашения по email
+        /// </summary>
+        public static List<User> SearchUsersForInvitation(string searchText, int currentRoomId, int currentUserId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return null;
+                    }
+
+                    // Получаем исключенные ID (так же как в методе выше)
+                    var participantUserIds = ctx.Participants
+                        .Where(p => p.HikeRoomId == currentRoomId)
+                        .Select(p => p.UserId)
+                        .ToList();
+
+                    var invitedUserIds = ctx.Invitations
+                        .Where(i => i.HikeRoomId == currentRoomId)
+                        .Select(i => i.UserId)
+                        .ToList();
+
+                    var bidUserIds = ctx.Bids
+                        .Where(b => b.HikeRoomId == currentRoomId)
+                        .Select(b => b.UserId)
+                        .ToList();
+
+                    var currentUserIds = new List<int> { currentUserId };
+
+                    var excludedUserIds = participantUserIds
+                        .Concat(invitedUserIds)
+                        .Concat(bidUserIds)
+                        .Concat(currentUserIds)
+                        .Distinct()
+                        .ToList();
+
+                    // Поиск по имени или email
+                    var searchLower = searchText.ToLower();
+                    var usersList = ctx.Users
+                        .Where(u => !excludedUserIds.Contains(u.UserId) &&
+                                   (u.Name.ToLower().Contains(searchLower) ||
+                                    (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
+                                    (u.Contacts != null && u.Contacts.ToLower().Contains(searchLower))))
+                        .ToList();
+
+                    return usersList;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при поиске пользователей для приглашения:\n{ex.Message}", "Ошибка");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Отправить приглашения выбранным пользователям в комнату
+        /// </summary>
+        public static bool SendInvitations(List<int> userIds, int roomId, out int invitationsCreated, out int invitationsSkipped)
+        {
+            invitationsCreated = 0;
+            invitationsSkipped = 0;
+
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return false;
+                    }
+
+                    foreach (var userId in userIds)
+                    {
+                        // Проверяем, можно ли отправить приглашение
+                        bool canInvite = !ctx.Participants.Any(p => p.HikeRoomId == roomId && p.UserId == userId) &&
+                                        !ctx.Invitations.Any(i => i.HikeRoomId == roomId && i.UserId == userId) &&
+                                        !ctx.Bids.Any(b => b.HikeRoomId == roomId && b.UserId == userId);
+
+                        if (canInvite)
+                        {
+                            var invitation = new Invitation
+                            {
+                                UserId = userId,
+                                HikeRoomId = roomId
+                            };
+                            ctx.Invitations.Add(invitation);
+                            invitationsCreated++;
+                        }
+                        else
+                        {
+                            invitationsSkipped++;
+                        }
+                    }
+
+                    if (invitationsCreated > 0)
+                    {
+                        ctx.SaveChanges();
+                    }
+
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при отправке приглашений:\n{ex.Message}", "Ошибка");
+                return false;
+            }
+        }
     }
 }

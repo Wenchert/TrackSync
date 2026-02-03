@@ -11,14 +11,28 @@ namespace TrackSync.Pages
         public MainPage()
         {
             InitializeComponent();
-            LoadUserRooms();
         }
 
-        private void LoadUserRooms()
-        {
-            var rooms = TrackSyncManagerList.GetUserRooms(SessionManager.CurrentUserId);
-            RoomsListBox.ItemsSource = rooms;
-        }
+        //private void LoadUserRooms()
+        //{
+        //    try
+        //    {
+        //        var rooms = TrackSyncManagerList.GetUserRooms(SessionManager.CurrentUserId);
+
+        //        if (rooms != null)
+        //        {
+        //            RoomsListBox.ItemsSource = rooms;
+        //        }
+        //        else
+        //        {
+        //            RoomsListBox.ItemsSource = new List<HikeRoom>();
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        MessageBox.Show($"Ошибка загрузки походов: {ex.Message}", "Ошибка");
+        //    }
+        //}
 
         private void RoomItem_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -43,14 +57,13 @@ namespace TrackSync.Pages
                 FrameContext.MainWindowFrame.Navigate(new HikeRoomPage(roomId));
         }
 
-        private void ShowAllNotifications_Click(object sender, RoutedEventArgs e)
+        /// <summary>
+        /// Обработчик выбора комнаты
+        /// </summary>
+        private void UpcomingHikesControl_RoomSelected(object sender, HikeRoomEventArgs e)
         {
-            MessageBox.Show("Все уведомления", "TrackSync", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
-        private void ShowAllHikes_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Все походы", "TrackSync", MessageBoxButton.OK, MessageBoxImage.Information);
+            // Переход на страницу деталей похода
+            NavigationService?.Navigate(new HikeRoomPage(e.RoomId));
         }
     }
 }

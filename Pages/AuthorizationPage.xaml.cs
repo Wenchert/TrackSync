@@ -104,40 +104,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Обработчики для кнопок роста
-        private void HeightIncreaseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(HeightText.Text, out int height))
-            {
-                HeightText.Text = (height + 1).ToString();
-            }
-        }
-
-        private void HeightDecreaseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(HeightText.Text, out int height) && height > 1)
-            {
-                HeightText.Text = (height - 1).ToString();
-            }
-        }
-
-        // Обработчики для кнопок веса
-        private void WeightIncreaseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(WeightText.Text, out int weight))
-            {
-                WeightText.Text = (weight + 1).ToString();
-            }
-        }
-
-        private void WeightDecreaseBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (int.TryParse(WeightText.Text, out int weight) && weight > 1)
-            {
-                WeightText.Text = (weight - 1).ToString();
-            }
-        }
-
         // Ввод - только цифры
         private void NumberPreviewTextInput(object sender, TextCompositionEventArgs e)
         {

@@ -80,22 +80,11 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-
-                                    <Button x:Name="HeightDecreaseBtn" Grid.Column="0" 
-                                            Content="-" Width="30" Height="30" 
-                                            Click="HeightDecreaseBtn_Click"
-                                            Style="{StaticResource NumberButton}"/>
-
                                     <TextBox Grid.Column="1" x:Name="HeightText" 
                                              Style="{StaticResource InputField}" 
                                              TextAlignment="Center" Text="170"
                                              PreviewTextInput="NumberPreviewTextInput"
                                              MaxLength="3"/>
-
-                                    <Button x:Name="HeightIncreaseBtn" Grid.Column="2" 
-                                            Content="+" Width="30" Height="30"
-                                            Click="HeightIncreaseBtn_Click"
-                                            Style="{StaticResource NumberButton}"/>
                                 </Grid>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
@@ -108,21 +97,12 @@
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
 
-                                    <Button x:Name="WeightDecreaseBtn" Grid.Column="0" 
-                                            Content="-" Width="30" Height="30"
-                                            Click="WeightDecreaseBtn_Click"
-                                            Style="{StaticResource NumberButton}"/>
-
                                     <TextBox Grid.Column="1" x:Name="WeightText" 
                                              Style="{StaticResource InputField}" 
                                              TextAlignment="Center" Text="70"
                                              PreviewTextInput="NumberPreviewTextInput"
                                              MaxLength="3"/>
 
-                                    <Button x:Name="WeightIncreaseBtn" Grid.Column="2" 
-                                            Content="+" Width="30" Height="30"
-                                            Click="WeightIncreaseBtn_Click"
-                                            Style="{StaticResource NumberButton}"/>
                                 </Grid>
                             </StackPanel>
                         </Grid>
@@ -141,7 +121,7 @@
                 </StackPanel>
                 <StackPanel Grid.Row="3" VerticalAlignment="Bottom" Margin="0,20,0,0">
                     <TextBlock Style="{StaticResource BodyText}" TextAlignment="Center" 
-                               Foreground="#BDC3C7" Text="© 2025 TrackSync. Все права защищены."/>
+                               Foreground="#BDC3C7" Text="© 2026 TrackSync. Все права защищены."/>
                 </StackPanel>
             </Grid>
         </Border>
