@@ -4,138 +4,147 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="400">
+             d:DesignHeight="400" d:DesignWidth="600"
+             MaxHeight="400">
 
-    <Border Style="{StaticResource WidgetStyle}" Padding="0">
+    <Border Style="{StaticResource WidgetStyle}" Padding="15">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Заголовок -->
-            <Border Background="#2C3E50" CornerRadius="12,12,0,0" Padding="20,15">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+            <!-- Пустое состояние -->
+            <StackPanel x:Name="EmptyState" 
+                        HorizontalAlignment="Center" 
+                        VerticalAlignment="Center"
+                        Grid.Row="1"
+                        Visibility="Visible">
+                <TextBlock Style="{StaticResource TitleText}" 
+                           FontSize="16" 
+                           Foreground="#7F8C8D"
+                           Text="Нет уведомлений"/>
+                <TextBlock Style="{StaticResource BodyText}"
+                           Foreground="#95A5A6"
+                           TextWrapping="Wrap"
+                           HorizontalAlignment="Center"
+                           Margin="10,5,10,0"
+                           Text="Приглашения в походы и заявки от пользователей будут отображаться здесь"/>
+            </StackPanel>
 
-                    <TextBlock Grid.Column="0" 
-                               Style="{StaticResource TitleText}" 
-                               FontSize="18" 
-                               FontWeight="Bold"
-                               Foreground="White"
-                               Text="Уведомления"/>
+            <!-- Список уведомлений -->
+            <ScrollViewer Grid.Row="1" 
+                          VerticalScrollBarVisibility="Auto"
+                          Visibility="Collapsed"
+                          x:Name="NotificationsScroll">
+                <ItemsControl x:Name="NotificationsList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Style="{StaticResource HikeItemStyle}" 
+                                    Margin="0,0,0,12"
+                                    Padding="15">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="180"/>
+                                    </Grid.ColumnDefinitions>
 
-                    <Border Grid.Column="1" 
-                            Style="{StaticResource NotificationBadgeStyle}"
-                            x:Name="CountBadge"
-                            Visibility="Collapsed"
-                            Margin="15,0,0,0"
-                            VerticalAlignment="Center">
-                        <TextBlock x:Name="CountBadgeText" 
-                                   Foreground="White" 
-                                   FontSize="12" 
-                                   FontWeight="Bold"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   Text="0"/>
-                    </Border>
-                </Grid>
-            </Border>
+                                    <!-- Цветная полоса: синяя для приглашений, оранжевая для заявок -->
+                                    <Border Width="6" 
+                                            Grid.Column="0" 
+                                            Margin="0,0,15,0" 
+                                            CornerRadius="3,0,0,3">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Setter Property="Background" Value="#3498DB"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding NotificationType}" Value="Bid">
+                                                        <Setter Property="Background" Value="#F39C12"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                    </Border>
 
-            <!-- Список приглашений -->
-            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                <StackPanel Margin="20">
+                                    <!-- Контент уведомления -->
+                                    <StackPanel Grid.Column="1">
+                                        <!-- Заголовок уведомления -->
+                                        <TextBlock FontWeight="Bold"
+                                            Foreground="#2C3E50"
+                                            TextTrimming="CharacterEllipsis">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+                                                    <Setter Property="Text" Value="Приглашение в поход"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding NotificationType}" Value="Bid">
+                                                            <Setter Property="Text" Value="Заявка в поход"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
 
-                    <!-- Пустое состояние -->
-                    <StackPanel x:Name="EmptyState" 
-                                HorizontalAlignment="Center" 
-                                Margin="0,40,0,0"
-                                Visibility="Visible">
-                        <TextBlock Style="{StaticResource TitleText}" 
-                                   FontSize="16" 
-                                   FontWeight="SemiBold"
-                                   Foreground="#7F8C8D"
-                                   Text="Нет новых приглашений"/>
-                        <TextBlock Style="{StaticResource BodyText}"
-                                   Foreground="#95A5A6"
-                                   TextWrapping="Wrap"
-                                   HorizontalAlignment="Center"
-                                   Margin="0,10,0,0"
-                                   MaxWidth="250"
-                                   Text="Когда вы получите приглашение в поход, оно появится здесь"/>
-                    </StackPanel>
-
-                    <!-- Список приглашений -->
-                    <ItemsControl x:Name="InvitationsList" Visibility="Collapsed">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Style="{StaticResource NotificationItemStyle}" 
-                                        Margin="0,0,0,15">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="180"/>
-                                        </Grid.ColumnDefinitions>
-
-                                        <!-- Информация о походе -->
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Style="{StaticResource TitleText}" 
-                                                       FontSize="16"
-                                                       FontWeight="SemiBold"
+                                        <!-- Основной контент -->
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Title}" 
+                                                       Style="{StaticResource BodyText}"
                                                        Foreground="#2C3E50"
-                                                       Text="Приглашение в поход"/>
+                                                       Margin="0,4,0,0"
+                                                       TextTrimming="CharacterEllipsis"/>
 
-                                            <TextBlock Style="{StaticResource BodyText}"
-                                                       FontSize="14"
-                                                       Foreground="#2C3E50"
-                                                       Margin="0,5,0,0"
-                                                       Text="{Binding Title}"/>
-
-                                            <TextBlock Style="{StaticResource BodyText}"
-                                                       FontSize="12"
+                                            <TextBlock Text="{Binding DateRange}" 
+                                                       Style="{StaticResource BodyText}"
                                                        Foreground="#7F8C8D"
-                                                       Margin="0,3,0,0"
-                                                       Text="{Binding DateRange}"/>
+                                                       FontSize="13"
+                                                       Margin="0,2,0,0"/>
 
-                                            <!-- Описание показывается только если не пустое -->
-                                            <TextBlock Style="{StaticResource BodyText}"
-                                                       FontSize="12"
+                                            <!-- Для заявок: отображаем email пользователя -->
+                                            <TextBlock Text="{Binding Email}" 
+                                                       Style="{StaticResource BodyText}"
+                                                       Foreground="#E74C3C"
+                                                       FontSize="13"
+                                                       FontWeight="Medium"
+                                                       Margin="0,4,0,0"
+                                                       Visibility="{Binding EmailVisibility}"/>
+
+                                            <!-- Описание похода (только для приглашений) -->
+                                            <TextBlock Text="{Binding Description}"
+                                                       Style="{StaticResource BodyText}"
                                                        Foreground="#95A5A6"
-                                                       Margin="0,8,0,0"
+                                                       FontSize="12"
+                                                       Margin="0,6,0,0"
                                                        TextWrapping="Wrap"
                                                        MaxHeight="40"
-                                                       Text="{Binding Description}"
-                                                       Visibility="{Binding HasDescription, Mode=OneWay}"/>
+                                                       Visibility="{Binding DescriptionVisibility}"/>
                                         </StackPanel>
+                                    </StackPanel>
 
-                                        <!-- Кнопки действий -->
-                                        <StackPanel Grid.Column="1" 
-                                                    Orientation="Horizontal"
-                                                    HorizontalAlignment="Right">
-                                            <Button Content="Принять"
-                                                    Style="{StaticResource TextButton}"
-                                                    MaxWidth="75"
-                                                    MaxHeight="32"
-                                                    Margin="0,0,8,0"
-                                                    Tag="{Binding InvitationId}"
-                                                    Click="AcceptButton_Click"/>
+                                    <!-- Кнопки действий -->
+                                    <StackPanel Grid.Column="2" 
+                                                Orientation="Horizontal"
+                                                HorizontalAlignment="Right"
+                                                VerticalAlignment="Center">
+                                        <Button Content="Принять"
+                                                Style="{StaticResource TextButton}"
+                                                MaxWidth="75"
+                                                Padding="8,4"
+                                                Margin="0,0,8,0"
+                                                Tag="{Binding Id}"
+                                                Click="AcceptButton_Click"/>
 
-                                            <Button Content="Отклонить"
-                                                    Style="{StaticResource TextButton}"
-                                                    MaxWidth="75"
-                                                    MaxHeight="32"
-                                                    Tag="{Binding InvitationId}"
-                                                    Click="RejectButton_Click"/>
-                                        </StackPanel>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </StackPanel>
+                                        <Button Content="Отклонить"
+                                                Style="{StaticResource TextButton}"
+                                                MaxWidth="75"
+                                                Padding="8,4"
+                                                Tag="{Binding Id}"
+                                                Click="RejectButton_Click"/>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
             </ScrollViewer>
         </Grid>
     </Border>

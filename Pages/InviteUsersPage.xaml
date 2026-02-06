@@ -99,7 +99,7 @@
                                             <TextBlock Grid.Column="1" 
                                                        Style="{StaticResource BodyText}" 
                                                        VerticalAlignment="Center"
-                                                       Text="{Binding User.Name}"/>
+                                                       Text="{Binding User.Email}"/>
                                         </Grid>
                                     </Border>
                                     <DataTemplate.Triggers>

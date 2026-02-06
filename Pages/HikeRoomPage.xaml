@@ -7,6 +7,56 @@
       d:DesignHeight="700" d:DesignWidth="1200"
       Title="TrackSync - Комната похода"
       Background="#F8F9FA">
+
+    <Page.Resources>
+        <DataTemplate x:Key="RecipeTemplate">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <TextBlock Style="{StaticResource BodyText}" Text="{Binding Recipe.Title}"/>
+                </StackPanel>
+                <Grid Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                               Foreground="#7F8C8D" Text="Вес на человека"/>
+                        <TextBlock Style="{StaticResource BodyText}" Text="{Binding WeightPerPersonText}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                               Foreground="#7F8C8D" Text="Время готовки"/>
+                        <TextBlock Style="{StaticResource BodyText}" Text="{Binding CookTimeText}" Margin="0,3,0,0"/>
+                    </StackPanel>
+                </Grid>
+                <StackPanel Margin="0,0,0,5">
+                    <TextBlock Style="{StaticResource BodyText}" FontSize="13" Text="Ингредиенты:"/>
+                    <ItemsControl ItemsSource="{Binding Ingredients}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
+                                       Text="{Binding Text}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                <StackPanel Margin="0,10,0,0">
+                    <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                        Foreground="#7F8C8D" Text="Ответственные:"/>
+                    <ItemsControl ItemsSource="{Binding ResponsibleUsers}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Style="{StaticResource BodyText}" Margin="15,2,0,0"
+                    Text="{Binding}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </DataTemplate>
+    </Page.Resources>
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
@@ -14,9 +64,9 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" 
-                     Margin="40,30,40,30" HorizontalScrollBarVisibility="Disabled">
-            <StackPanel  HorizontalAlignment="Stretch">
+        <!--<ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" 
+                     Margin="40,30,40,30" HorizontalScrollBarVisibility="Disabled">-->
+        <StackPanel  HorizontalAlignment="Stretch" Grid.Column="1" Margin="40,30,40,30">
                 <Grid Margin="0,0,0,20">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -30,6 +80,17 @@
                        Text="Загрузка дат..." Foreground="#7F8C8D"/>
                             <TextBlock x:Name="ParticipantCountText" Style="{StaticResource BodyText}" FontSize="14"
                        Text="Загрузка участников..." Foreground="#7F8C8D" Margin="0,3,0,0"/>
+                            <Button Style="{StaticResource TextButton}" 
+                                x:Name="LogoutButton"
+                                Click="LogoutButton_Click"
+                                HorizontalAlignment="Left"
+                                Margin="0,3,0,0"
+                                Foreground="#E74C3C"
+                                Padding="0, 5, 5, 5">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Выйти из комнаты"/>
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </StackPanel>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
@@ -49,7 +110,7 @@
                     </StackPanel>
                 </Grid>
 
-                <TabControl x:Name="RoomTabControl" Style="{StaticResource {x:Type TabControl}}">
+                <TabControl x:Name="RoomTabControl" Style="{StaticResource {x:Type TabControl}}" MaxHeight="500" MinHeight="200">
                     <TabItem Header="Маршруты">
                         <Grid Margin="10">
                             <Grid.RowDefinitions>
@@ -128,612 +189,323 @@
                         </Grid>
                     </TabItem>
 
-                    <TabItem Header="Снаряжение">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource BodyText}" FontSize="14"
-                       Foreground="#7F8C8D" TextWrapping="Wrap"
-                       Margin="0,0,0,15">
-                Распределите снаряжение между участниками похода. Каждый участник может добавить своё снаряжение и управлять им.
-                                </TextBlock>
-                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="500">
-                                    <ItemsControl x:Name="ParticipantsItemsControl">
-                                        <ItemsControl.ItemTemplate>
-                                            <DataTemplate>
-                                                <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
+                <TabItem Header="Снаряжение">
+                    <Grid Margin="10">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <!-- Сообщение -->
+                            <RowDefinition Height="*"/>
+                            <!-- Список участников с прокруткой -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Кнопка сохранения -->
+                        </Grid.RowDefinitions>
+
+                        <!-- Сообщение об успехе -->
+                        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                            <TextBlock x:Name="SaveSuccessMessage" 
+                       Text="Снаряжение сохранено" 
+                       Foreground="Green" 
+                       HorizontalAlignment="Center"
+                       Visibility="Collapsed"
+                       FontWeight="Bold"
+                       FontSize="14"/>
+                        </StackPanel>
+
+                        <!-- Список участников с внутренней прокруткой -->
+                        <ScrollViewer Grid.Row="1" 
+                          VerticalScrollBarVisibility="Auto" 
+                          HorizontalScrollBarVisibility="Disabled"
+                          Margin="0,0,0,15">
+                            <ItemsControl x:Name="ParticipantsItemsControl" MaxHeight="250" MinHeight="200">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                </Grid.ColumnDefinitions>
+                                                <StackPanel Grid.Row="0" Grid.Column="0">
+                                                    <TextBlock Style="{StaticResource TitleText}" FontSize="16"
+                                               Text="{Binding User.Name}"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="13"
+                                                   Text="Рост:" Foreground="#7F8C8D"/>
+                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="13"
+                                                   Text="{Binding User.Height, StringFormat={}{0} см}" Margin="4,0,0,0"/>
+                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="13"
+                                                   Text="• Вес:" Foreground="#7F8C8D" Margin="8,0,0,0"/>
+                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="13"
+                                                   Text="{Binding User.Weight, StringFormat={}{0} кг}" Margin="4,0,0,0"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
+                                                    <Button Tag="{Binding ParticipantId}"
+                                            Click="AddEquipmentButton_Click"
+                                            ToolTip="Добавить снаряжение"
+                                            Style="{StaticResource MainButton}"
+                                            Padding="15,8">
+                                                        <TextBlock Text="+ Добавить снаряжение"/>
+                                                    </Button>
+                                                </StackPanel>
+                                                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,0,0">
+                                                    <TextBlock Style="{StaticResource BodyText}"
+                                               Text="Снаряжение:" Margin="0,0,0,8"/>
+                                                    <StackPanel x:Name="EquipmentStackPanel" 
+                                                Tag="{Binding ParticipantId}"
+                                                Margin="0,0,0,5">
+                                                        <TextBlock Style="{StaticResource BodyText}"
+                                                   Foreground="#7F8C8D" 
+                                                   Text="Нет добавленного снаряжения"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                        Background="#F8F9FA" BorderBrush="#E9ECEF"
+                                        BorderThickness="1" CornerRadius="6"
+                                        Padding="10" Margin="0,10,0,0">
                                                     <Grid>
-                                                        <Grid.RowDefinitions>
-                                                            <RowDefinition Height="Auto"/>
-                                                            <RowDefinition Height="Auto"/>
-                                                            <RowDefinition Height="Auto"/>
-                                                        </Grid.RowDefinitions>
                                                         <Grid.ColumnDefinitions>
                                                             <ColumnDefinition Width="*"/>
-                                                            <ColumnDefinition Width="Auto"/>
+                                                            <ColumnDefinition Width="*"/>
                                                         </Grid.ColumnDefinitions>
-                                                        <StackPanel Grid.Row="0" Grid.Column="0">
-                                                            <TextBlock Style="{StaticResource TitleText}" FontSize="16"
-                                       Text="{Binding User.Name}"/>
-                                                            <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
-                                                                <TextBlock Style="{StaticResource BodyText}" FontSize="13"
-                                           Text="Рост:" Foreground="#7F8C8D"/>
-                                                                <TextBlock Style="{StaticResource BodyText}" FontSize="13"
-                                           Text="{Binding User.Height, StringFormat={}{0} см}" Margin="4,0,0,0"/>
-                                                                <TextBlock Style="{StaticResource BodyText}" FontSize="13"
-                                           Text="• Вес:" Foreground="#7F8C8D" Margin="8,0,0,0"/>
-                                                                <TextBlock Style="{StaticResource BodyText}" FontSize="13"
-                                           Text="{Binding User.Weight, StringFormat={}{0} кг}" Margin="4,0,0,0"/>
-                                                            </StackPanel>
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                       Foreground="#7F8C8D" Text="Общий вес"/>
+                                                            <TextBlock x:Name="TotalWeightText" 
+                                                       Style="{StaticResource BodyText}"
+                                                       Text="0 кг" Margin="0,3,0,0"/>
                                                         </StackPanel>
-                                                        <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal">
-                                                            <Button Tag="{Binding ParticipantId}"
-                                    Click="AddEquipmentButton_Click"
-                                    ToolTip="Добавить снаряжение"
-                                    Style="{StaticResource MainButton}"
-                                    Padding="15,8">
-                                                                <TextBlock Text="+ Добавить снаряжение"/>
-                                                            </Button>
+                                                        <StackPanel Grid.Column="1">
+                                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                       Foreground="#7F8C8D" Text="Количество предметов"/>
+                                                            <TextBlock x:Name="TotalItemsText" 
+                                                       Style="{StaticResource BodyText}"
+                                                       Text="0 шт." Margin="0,3,0,0"/>
                                                         </StackPanel>
-                                                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,10,0,0">
-                                                            <TextBlock Style="{StaticResource BodyText}"
-                                       Text="Снаряжение:" Margin="0,0,0,8"/>
-                                                            <StackPanel x:Name="EquipmentStackPanel" 
-                                        Tag="{Binding ParticipantId}"
-                                        Margin="0,0,0,5">
-                                                                <TextBlock Style="{StaticResource BodyText}"
-                                           Foreground="#7F8C8D" 
-                                           Text="Нет добавленного снаряжения"/>
-                                                            </StackPanel>
-                                                        </StackPanel>
-                                                        <Border Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
-                                Background="#F8F9FA" BorderBrush="#E9ECEF"
-                                BorderThickness="1" CornerRadius="6"
-                                Padding="10" Margin="0,10,0,0">
-                                                            <Grid>
-                                                                <Grid.ColumnDefinitions>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                    <ColumnDefinition Width="*"/>
-                                                                </Grid.ColumnDefinitions>
-                                                                <StackPanel Grid.Column="0">
-                                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                               Foreground="#7F8C8D" Text="Общий вес"/>
-                                                                    <TextBlock x:Name="TotalWeightText" 
-                                               Style="{StaticResource BodyText}"
-                                               Text="0 кг" Margin="0,3,0,0"/>
-                                                                </StackPanel>
-                                                                <StackPanel Grid.Column="1">
-                                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                               Foreground="#7F8C8D" Text="Количество предметов"/>
-                                                                    <TextBlock x:Name="TotalItemsText" 
-                                               Style="{StaticResource BodyText}"
-                                               Text="0 шт." Margin="0,3,0,0"/>
-                                                                </StackPanel>
-                                                            </Grid>
-                                                        </Border>
                                                     </Grid>
                                                 </Border>
-                                            </DataTemplate>
-                                        </ItemsControl.ItemTemplate>
-                                    </ItemsControl>
-                                </ScrollViewer>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-                                    <Button Style="{StaticResource MainButton}"
-                                        x:Name="SaveChangesButton"
-                                        Click="SaveChangesButton_Click"
-                                        Padding="28,12">
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="Сохранить изменения"/>
-                                        </StackPanel>
-                                    </Button>
-                                </StackPanel>
-                            </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </ScrollViewer>
-                    </TabItem>
-                    <TabItem Header="Раскладка" Height="22" Margin="-2,-2,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="71">
-                        <Grid Margin="10">
+
+                        <!-- Кнопка сохранения (ВНЕ прокрутки, всегда видна) -->
+                        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right">
+                            <Button Style="{StaticResource MainButton}"
+                    x:Name="SaveChangesButton"
+                    Click="SaveChangesButton_Click"
+                    Padding="28,12">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="Сохранить изменения"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </TabItem>
+
+                <TabItem Header="Раскладка">
+                    <Grid Margin="10">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
-                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,20">
-                                <TextBlock Style="{StaticResource BodyText}"  
-                                           Text="День похода:" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                            <TextBlock x:Name="CurrentDayTitle" 
+                               Style="{StaticResource TitleText}" 
+                               FontSize="20" 
+                               Margin="0,0,0,10" 
+                               Grid.Row="0"/>
+                            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,15">
+                                <ItemsControl x:Name="DaysButtonsControl">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal"/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                        <Button Style="{StaticResource SidebarButton}"
+                                Content="{Binding DayNumber}"
+                                Tag="{Binding DayNumber}"
+                                Padding="15,8"
+                                Margin="0,0,10,0"
+                                Click="DayButton_Click"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
 
-                                <Button Style="{StaticResource SidebarButton}" 
-                                        x:Name="Day1Button"
-                                        Click="DayButton_Click"
-                                        Background="#3498DB" Foreground="White"
-                                        Padding="15,8" Margin="0,0,10,0"
-                                        Tag="1">
-                                    <TextBlock Text="1"/>
-                                </Button>
+        <!-- Прокручиваемый контент дней -->
+        <ScrollViewer Grid.Row="2" 
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="DaysContentControl">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,0,0,25">
+                             <!-- Приёмы пищи -->
+                            <ItemsControl ItemsSource="{Binding Meals}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
+                                            <StackPanel>
+                                                <!-- Заголовок приёма пищи -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                    <TextBlock Style="{StaticResource TitleText}" FontSize="16"
+                                                        Text="{Binding MealName}"/>
+                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                        Foreground="#7F8C8D"
+                                                        Text="{Binding CaloriesText}"
+                                                        Margin="8,2,0,0"/>
+                                                </StackPanel>
 
-                                <Button Style="{StaticResource SidebarButton}" 
-                                        x:Name="Day2Button"
-                                        Click="DayButton_Click"
-                                        Padding="15,8" Margin="0,0,10,0"
-                                        Tag="2">
-                                    <TextBlock Text="2"/>
-                                </Button>
+                                                                    <!-- Рецепт (если есть) -->
+                                                <StackPanel Margin="0,0,0,15">
+                                                    <StackPanel.Style>
+                                                        <Style TargetType="StackPanel">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Recipe}" Value="{x:Null}">
+                                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </StackPanel.Style>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                        <TextBlock Style="{StaticResource BodyText}"
+                                                                   Text="{Binding Recipe.Title}"/>
+                                                    </StackPanel>
+                                                    <Grid Margin="0,0,0,8">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                                       Foreground="#7F8C8D" Text="Вес на человека"/>
+                                                            <TextBlock Style="{StaticResource BodyText}"
+                                                                       Text="{Binding WeightPerPersonText}" 
+                                                                       Margin="0,3,0,0"/>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="1">
+                                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                                       Foreground="#7F8C8D" Text="Время готовки"/>
+                                                            <TextBlock Style="{StaticResource BodyText}"
+                                                                       Text="{Binding CookTimeText}" 
+                                                                       Margin="0,3,0,0"/>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <!-- Ингредиенты -->
+                                                    <StackPanel Margin="0,0,0,5">
+                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="13" Text="Ингредиенты:"/>
+                                                        <ItemsControl ItemsSource="{Binding Recipe.IngredientsRecipes}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0">
+                                                                        <TextBlock.Text>
+                                                                            <MultiBinding StringFormat="{}{0} {1}г">
+                                                                                <Binding Path="Ingredient.Title"/>
+                                                                                <Binding Path="Weight"/>
+                                                                            </MultiBinding>
+                                                                        </TextBlock.Text>
+                                                                    </TextBlock>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
 
-                                <Button Style="{StaticResource SidebarButton}" 
-                                        x:Name="Day3Button"
-                                        Click="DayButton_Click"
-                                        Padding="15,8" Margin="0,0,10,0"
-                                        Tag="3">
-                                    <TextBlock Text="3"/>
-                                </Button>
-                            </StackPanel>
-                            <Grid Grid.Row="1" x:Name="DayContentGrid">
-                                <StackPanel x:Name="Day1Content" Visibility="Visible">
-                                    <TextBlock Style="{StaticResource TitleText}" FontSize="20" 
-                                                Text="День 1: 15 июля 2025"
-                                               Margin="0,0,0,20"/>
-                                    <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                            Text="Завтрак"/>
-                                                <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#7F8C8D" Text=" (0 ккал)" 
-                                                           Margin="8,2,0,0" />
+                                                    <!-- Ответственные -->
+                                                <StackPanel Margin="0,10,0,0">
+                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                        Foreground="#7F8C8D" Text="Ответственные:"/>
+                                                    <ItemsControl ItemsSource="{Binding ResponsibleUserNames}">
+                                                        <ItemsControl.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Style="{StaticResource BodyText}" Margin="15,2,0,0"
+                                                                Text="{Binding}"/>
+                                                            </DataTemplate>
+                                                        </ItemsControl.ItemTemplate>
+                                                    </ItemsControl>
+                                                </StackPanel>
                                             </StackPanel>
 
-                                            <StackPanel x:Name="BreakfastContent" Margin="0,0,0,15">
-                                                <TextBlock Style="{StaticResource BodyText}"  
-                                                           Foreground="#7F8C8D" Text="Нет добавленных рецептов"/>
-                                            </StackPanel>
+                                                <!-- Сообщение "Нет рецептов" (если нет) -->
+                                                <TextBlock Text="Нет добавленных рецептов"
+                                                           Foreground="#7F8C8D"
+                                                           Margin="0,0,0,15">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding Recipe}" Value="{x:Null}">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
 
-                                            <Button Style="{StaticResource MainButton}" 
-                                                    Background="#3498DB"
-                                                    Height="40"
-                                                    Click="AddRecipeButton_Click"
-                                                    Tag="breakfast">
-                                                <TextBlock Text="Добавить рецепт"/>
-                                            </Button>
+                                                <!-- Кнопка добавления -->
+                                                <Button Style="{StaticResource MainButton}"
+                                                        Background="#3498DB"
+                                                        Height="40"
+                                                        Tag="{Binding Tag}"
+                                                        Click="AddRecipeButton_Click">
+                                                    <TextBlock Text="Добавить рецепт" 
+                                                               HorizontalAlignment="Center"/>
+                                                </Button>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <!-- Статистика дня -->
+                            <Border Style="{StaticResource WidgetStyle}" Margin="0,20,0,0">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource TitleText}" FontSize="16"
+                                        Text="Итоговая статистика дня" 
+                                        Margin="0,0,0,15"/>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                Foreground="#7F8C8D" 
+                                                Text="Общая калорийность"/>
+                                            <TextBlock Style="{StaticResource BodyText}" 
+                                                Text="{Binding TotalDayCaloriesText}" 
+                                                Margin="0,3,0,0"/>
                                         </StackPanel>
-                                    </Border>
-                                    <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                            Text="Обед"/>
-                                                <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#7F8C8D" Text=" (416.98 ккал)" 
-                                                           Margin="8,2,0,0" />
-                                            </StackPanel>
-
-                                            <StackPanel x:Name="LunchContent" Margin="0,0,0,15">
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="Макароны с тушенкой"/>
-                                                </StackPanel>
-
-                                                <Grid Margin="0,0,0,8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel Grid.Column="0">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Вес на человека"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="587 г" Margin="0,3,0,0"/>
-                                                    </StackPanel>
-
-                                                    <StackPanel Grid.Column="1">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Время готовки"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="~30 мин." Margin="0,3,0,0"/>
-                                                    </StackPanel>
-                                                </Grid>
-
-                                                <StackPanel Margin="0,0,0,5">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="13" 
-                                                                Text="Ингредиенты:"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Макароны 120 г"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Тушенка 200 г"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Хлеб 3 ломтика"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Соль по вкусу"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Магги 1 кубик"/>
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <Button Style="{StaticResource MainButton}" 
-                                                    Background="#3498DB"
-                                                    Height="40"
-                                                    Click="AddRecipeButton_Click"
-                                                    Tag="lunch">
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-
-                                                    <TextBlock Text="Добавить рецепт"/>
-                                                </StackPanel>
-                                            </Button>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                Foreground="#7F8C8D" 
+                                                Text="Общий вес еды"/>
+                                            <TextBlock Style="{StaticResource BodyText}" 
+                                                Text="{Binding TotalDayWeightText}" 
+                                                Margin="0,3,0,0"/>
                                         </StackPanel>
-                                    </Border>
-                                    <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                            Text="Перекус"/>
-                                                <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#7F8C8D" Text=" (707.01 ккал)" 
-                                                           Margin="8,2,0,0"/>
-                                            </StackPanel>
-
-                                            <StackPanel x:Name="SnackContent" Margin="0,0,0,15">
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="Печенье овсяное + Вафли"/>
-                                                </StackPanel>
-
-                                                <Grid Margin="0,0,0,8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel Grid.Column="0">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Вес на человека"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="210 г" Margin="0,3,0,0"/>
-                                                    </StackPanel>
-
-                                                    <StackPanel Grid.Column="1">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Время готовки"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="-" Margin="0,3,0,0"/>
-                                                    </StackPanel>
-                                                </Grid>
-
-                                                <StackPanel Margin="0,0,0,5">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="13" 
-                                                                Text="Ингредиенты:"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Печенье овсяное 9 шт."/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Вафли 6 шт."/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Чай/кофе по желанию"/>
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <Button Style="{StaticResource MainButton}" 
-                                                    Background="#3498DB"
-                                                    Height="40"
-                                                    Click="AddRecipeButton_Click"
-                                                    Tag="snack">
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-
-                                                    <TextBlock Text="Добавить рецепт"/>
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                            Text="Ужин"/>
-                                                <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#7F8C8D" Text=" (707.01 ккал)" 
-                                                           Margin="8,2,0,0" />
-                                            </StackPanel>
-
-                                            <StackPanel x:Name="DinnerContent" Margin="0,0,0,15">
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="Гречка по-купечески"/>
-                                                </StackPanel>
-
-                                                <Grid Margin="0,0,0,8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel Grid.Column="0">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Вес на человека"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="450 г" Margin="0,3,0,0"/>
-                                                    </StackPanel>
-
-                                                    <StackPanel Grid.Column="1">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Время готовки"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="~40 мин." Margin="0,3,0,0"/>
-                                                    </StackPanel>
-                                                </Grid>
-
-                                                <StackPanel Margin="0,0,0,5">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="13" 
-                                                                Text="Ингредиенты:"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Гречка 100 г"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Тушенка 200 г"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Морковь 50 г"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Лук 1 шт."/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Приправы для 'Гречки по-купечески'"/>
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <Button Style="{StaticResource MainButton}" 
-                                                    Background="#3498DB"
-                                                    Height="40"
-                                                    Click="AddRecipeButton_Click"
-                                                    Tag="dinner">
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                    <TextBlock Margin="0,0,8,0" FontSize="16"/>
-                                                    <TextBlock Text="Добавить рецепт"/>
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Style="{StaticResource WidgetStyle}" Margin="0,20,0,0">
-                                        <StackPanel>
-                                            <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                       Text="Итоговая статистика дня"
-                                                       Margin="0,0,0,15"/>
-
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                               Foreground="#7F8C8D" Text="Общая калорийность"/>
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="2157.5 ккал" Margin="0,3,0,0"/>
-                                                </StackPanel>
-
-                                                <StackPanel Grid.Column="1">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                               Foreground="#7F8C8D" Text="Общий вес еды"/>
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="1761 г" Margin="0,3,0,0"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </StackPanel>
-                                    </Border>
+                                    </Grid>
                                 </StackPanel>
-                                <StackPanel x:Name="Day2Content" Visibility="Collapsed">
-                                    <TextBlock Style="{StaticResource TitleText}" FontSize="20" 
-                                                Text="День 2: 16 июля 2025"
-                                               Margin="0,0,0,20"/>
-                                    <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                            Text="Завтрак"/>
-                                                <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#7F8C8D" Text=" (1032.83 ккал)" 
-                                                           Margin="8,2,0,0" />
-                                            </StackPanel>
-
-                                            <StackPanel x:Name="Day2BreakfastContent" Margin="0,0,0,15">
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="Овсяная каша с сгущёнкой и изюмом"/>
-                                                </StackPanel>
-
-                                                <Grid Margin="0,0,0,8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel Grid.Column="0">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Вес на человека"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="430 г" Margin="0,3,0,0"/>
-                                                    </StackPanel>
-
-                                                    <StackPanel Grid.Column="1">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Время готовки"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="~20 мин." Margin="0,3,0,0"/>
-                                                    </StackPanel>
-                                                </Grid>
-
-                                                <StackPanel Margin="0,0,0,5">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="13" 
-                                                                Text="Ингредиенты:"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Овсяная крупа 80 г"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Сгущёнка 1 банка"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Изюм 30 г"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Вода 600 мл"/>
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <Button Style="{StaticResource MainButton}" 
-                                                    Background="#3498DB"
-                                                    Height="40"
-                                                    Click="AddRecipeButton_Click"
-                                                    Tag="day2_breakfast">
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-
-                                                    <TextBlock Text="Добавить рецепт"/>
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                            Text="Обед"/>
-                                                <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#7F8C8D" Text=" (669 ккал)" 
-                                                           Margin="8,2,0,0" />
-                                            </StackPanel>
-
-                                            <StackPanel x:Name="Day2LunchContent" Margin="0,0,0,15">
-                                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="Гречка и сосиски"/>
-                                                </StackPanel>
-
-                                                <Grid Margin="0,0,0,8">
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-
-                                                    <StackPanel Grid.Column="0">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Вес на человека"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="450 г" Margin="0,3,0,0"/>
-                                                    </StackPanel>
-
-                                                    <StackPanel Grid.Column="1">
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                                   Foreground="#7F8C8D" Text="Время готовки"/>
-                                                        <TextBlock Style="{StaticResource BodyText}"  
-                                                                   Text="~30 мин." Margin="0,3,0,0"/>
-                                                    </StackPanel>
-                                                </Grid>
-
-                                                <StackPanel Margin="0,0,0,5">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="13" 
-                                                                Text="Ингредиенты:"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Гречка 100 г"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Сосиски 100 г (2 шт.)"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Хлеб 2 ломтика"/>
-                                                    <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0"
-                                                               Text="• Сыр 40 г"/>
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <Button Style="{StaticResource MainButton}" 
-                                                    Background="#3498DB"
-                                                    Height="40"
-                                                    Click="AddRecipeButton_Click"
-                                                    Tag="day2_lunch">
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                    <TextBlock Text="Добавить рецепт"/>
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                            Text="Перекус"/>
-                                                <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#7F8C8D" Text=" (~ ккал)" 
-                                                           Margin="8,2,0,0"/>
-                                            </StackPanel>
-
-                                            <StackPanel x:Name="Day2SnackContent" Margin="0,0,0,15">
-                                                <TextBlock Style="{StaticResource BodyText}" 
-                                                           Foreground="#7F8C8D" Text="Нет добавленных рецептов"/>
-                                            </StackPanel>
-
-                                            <Button Style="{StaticResource MainButton}" 
-                                                    Background="#3498DB"
-                                                    Height="40"
-                                                    Click="AddRecipeButton_Click"
-                                                    Tag="day2_snack">
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-
-                                                    <TextBlock Text="Добавить рецепт"/>
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Style="{StaticResource RoomItemStyle}" Margin="0,0,0,15">
-                                        <StackPanel>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                            Text="Ужин"/>
-                                                <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#7F8C8D" Text=" (Отсутствует)" 
-                                                           Margin="8,2,0,0" />
-                                            </StackPanel>
-
-                                            <StackPanel x:Name="Day2DinnerContent" Margin="0,0,0,15">
-                                                <TextBlock Style="{StaticResource BodyText}"  
-                                                           Foreground="#7F8C8D" Text="Нет добавленных рецептов"/>
-                                            </StackPanel>
-
-                                            <Button Style="{StaticResource MainButton}" 
-                                                    Background="#3498DB"
-                                                    Height="40"
-                                                    Click="AddRecipeButton_Click"
-                                                    Tag="day2_dinner">
-                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                    <TextBlock Text="Добавить рецепт"/>
-                                                </StackPanel>
-                                            </Button>
-                                        </StackPanel>
-                                    </Border>
-                                    <Border Style="{StaticResource WidgetStyle}" Margin="0,20,0,0">
-                                        <StackPanel>
-                                            <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                        Text="Итоговая статистика дня"
-                                                       Margin="0,0,0,15"/>
-
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                </Grid.ColumnDefinitions>
-
-                                                <StackPanel Grid.Column="0">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                               Foreground="#7F8C8D" Text="Общая калорийность"/>
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="1701.83 ккал" Margin="0,3,0,0"/>
-                                                </StackPanel>
-
-                                                <StackPanel Grid.Column="1">
-                                                    <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                               Foreground="#7F8C8D" Text="Общий вес еды"/>
-                                                    <TextBlock Style="{StaticResource BodyText}"  
-                                                               Text="2480 г" Margin="0,3,0,0"/>
-                                                </StackPanel>
-                                            </Grid>
-                                        </StackPanel>
-                                    </Border>
-                                </StackPanel>
-                            </Grid>
-                        </Grid>
-                    </TabItem>
+                            </Border>
+                        </StackPanel>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</TabItem>
                 </TabControl>
             </StackPanel>
-        </ScrollViewer>
+        <!--</ScrollViewer>-->
     </Grid>
 </Page>

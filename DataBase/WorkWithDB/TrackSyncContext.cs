@@ -104,6 +104,8 @@ namespace TrackSync.DataBase
 
                 entity.Property(e => e.EndDate).HasColumnName("end_date");
 
+                entity.Property(e => e.LeaderId).HasColumnName("leader_id");
+
                 entity.Property(e => e.Password)
                     .HasMaxLength(256)
                     .HasColumnName("password");
@@ -115,6 +117,11 @@ namespace TrackSync.DataBase
                 entity.Property(e => e.Title)
                     .HasMaxLength(256)
                     .HasColumnName("title");
+
+                entity.HasOne(d => d.Leader)
+                    .WithMany(p => p.HikeRooms)
+                    .HasForeignKey(d => d.LeaderId)
+                    .HasConstraintName("hike_rooms_leader_id_fkey");
 
                 entity.HasOne(d => d.Status)
                     .WithMany(p => p.HikeRooms)
@@ -143,7 +150,6 @@ namespace TrackSync.DataBase
                 entity.HasOne(d => d.Equipment)
                     .WithMany(p => p.HikeRoomsEquipments)
                     .HasForeignKey(d => d.EquipmentId)
-                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("hike_rooms_equipments_equipment_id_fkey");
 
                 entity.HasOne(d => d.HikeRoom)
@@ -185,7 +191,6 @@ namespace TrackSync.DataBase
                 entity.HasOne(d => d.Recipe)
                     .WithMany(p => p.HikeRoomsRecipes)
                     .HasForeignKey(d => d.RecipeId)
-                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("hike_rooms_recipes_recipe_id_fkey");
 
                 entity.HasOne(d => d.TypeMeal)
@@ -247,13 +252,11 @@ namespace TrackSync.DataBase
                 entity.HasOne(d => d.Ingredient)
                     .WithMany(p => p.IngredientsRecipes)
                     .HasForeignKey(d => d.IngredientId)
-                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("ingredients_recipes_ingredient_id_fkey");
 
                 entity.HasOne(d => d.Recipe)
                     .WithMany(p => p.IngredientsRecipes)
                     .HasForeignKey(d => d.RecipeId)
-                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("ingredients_recipes_recipe_id_fkey");
             });
 
@@ -391,7 +394,6 @@ namespace TrackSync.DataBase
                 entity.HasOne(d => d.Recipe)
                     .WithMany(p => p.RecipesParticipants)
                     .HasForeignKey(d => d.RecipeId)
-                    .OnDelete(DeleteBehavior.Cascade)
                     .HasConstraintName("recipes_participants_recipe_id_fkey");
             });
 
@@ -445,6 +447,11 @@ namespace TrackSync.DataBase
 
                 entity.Property(e => e.TrackId).HasColumnName("track_id");
 
+                entity.Property(e => e.Color)
+                    .HasMaxLength(30)
+                    .HasColumnName("color")
+                    .HasDefaultValueSql("'default_color'::character varying");
+
                 entity.Property(e => e.HikeRoomId).HasColumnName("hike_room_id");
 
                 entity.Property(e => e.Title)
@@ -479,11 +486,16 @@ namespace TrackSync.DataBase
                     .HasMaxLength(256)
                     .HasColumnName("contacts");
 
+                entity.Property(e => e.Email)
+                    .HasMaxLength(256)
+                    .HasColumnName("email");
+
                 entity.Property(e => e.Height).HasColumnName("height");
 
                 entity.Property(e => e.Name)
                     .HasMaxLength(256)
-                    .HasColumnName("name");
+                    .HasColumnName("name")
+                    .HasDefaultValueSql("'User'::character varying");
 
                 entity.Property(e => e.Password)
                     .HasMaxLength(256)
@@ -511,6 +523,13 @@ namespace TrackSync.DataBase
                 entity.Property(e => e.Title)
                     .HasMaxLength(256)
                     .HasColumnName("title");
+
+                entity.Property(e => e.UserId).HasColumnName("user_id");
+
+                entity.HasOne(d => d.User)
+                    .WithMany(p => p.Waypoints)
+                    .HasForeignKey(d => d.UserId)
+                    .HasConstraintName("waypoints_user_id_fkey");
             });
 
             OnModelCreatingPartial(modelBuilder);

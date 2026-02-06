@@ -14,7 +14,7 @@ namespace TrackSync
             Participants = new HashSet<Participant>();
             Tracks = new HashSet<Track>();
         }
-        public HikeRoom(int statusId, bool accessType, string title, DateOnly startDate, DateOnly endDate, string? password = null, string? description = null)
+        public HikeRoom(int statusId, bool accessType, string title, DateOnly startDate, DateOnly endDate, int leaderId, string? password = null, string? description = null)
         {
             StatusId = statusId;
             AccessType = accessType;
@@ -23,6 +23,7 @@ namespace TrackSync
             Description = description;
             StartDate = startDate;
             EndDate = endDate;
+            LeaderId = leaderId;
         }
         public int HikeRoomId { get; set; }
         public int StatusId { get; set; }
@@ -32,7 +33,9 @@ namespace TrackSync
         public string? Description { get; set; }
         public DateOnly StartDate { get; set; }
         public DateOnly EndDate { get; set; }
+        public int? LeaderId { get; set; }
 
+        public virtual User? Leader { get; set; }
         public virtual Status Status { get; set; } = null!;
         public virtual ICollection<Bid> Bids { get; set; }
         public virtual ICollection<HikeRoomsEquipment> HikeRoomsEquipments { get; set; }

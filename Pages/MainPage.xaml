@@ -7,16 +7,22 @@
       mc:Ignorable="d" 
       d:DesignHeight="700" d:DesignWidth="1200"
       Title="TrackSync - Главная"
-      Background="#F8F9FA">
+      Background="#F8F9FA"
+      Loaded="Page_Loaded">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
         <StackPanel>
 
             <StackPanel Margin="0,0,0,30">
-                <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
-                           FontWeight="Bold" Text="Добро пожаловать, Владимир!"/>
-                <TextBlock Style="{StaticResource BodyText}" FontSize="16"
-                           Text="Здесь вы можете управлять своими походами" Foreground="#7F8C8D"/>
+                <TextBlock x:Name="WelcomeTextBlock" 
+                           Style="{StaticResource TitleText}" 
+                           FontSize="28" 
+                           FontWeight="Bold" 
+                           Text="Добро пожаловать!"/>
+                <TextBlock Style="{StaticResource BodyText}" 
+                           FontSize="16"
+                           Text="Здесь вы можете управлять своими походами" 
+                           Foreground="#7F8C8D"/>
             </StackPanel>
 
             <Grid>
@@ -44,10 +50,10 @@
                             <Image Source="/Images/Icons/calendar.png" Width="24" Height="24" Margin="0,0,10,0"/>
                             <TextBlock Style="{StaticResource TitleText}" FontSize="18" FontWeight="Bold" Text="Предстоящие походы"/>
                         </StackPanel>
-                        
+
                         <pages:UpcomingHikesPanel x:Name="UpcomingHikesControl"
                                                   RoomSelected="UpcomingHikesControl_RoomSelected"/>
-                        
+
                     </StackPanel>
                 </Border>
             </Grid>

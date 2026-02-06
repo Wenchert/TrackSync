@@ -2,7 +2,6 @@
 using System.Windows.Controls;
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Windows;
-using static TrackSync.DataBase.WorkWithDB.TrackSyncManagerList;
 
 namespace TrackSync.Pages
 {
@@ -13,37 +12,54 @@ namespace TrackSync.Pages
             InitializeComponent();
         }
 
-        //private void LoadUserRooms()
-        //{
-        //    try
-        //    {
-        //        var rooms = TrackSyncManagerList.GetUserRooms(SessionManager.CurrentUserId);
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            // Загружаем имя пользователя из сессии
+            LoadUserName();
+        }
 
-        //        if (rooms != null)
-        //        {
-        //            RoomsListBox.ItemsSource = rooms;
-        //        }
-        //        else
-        //        {
-        //            RoomsListBox.ItemsSource = new List<HikeRoom>();
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        MessageBox.Show($"Ошибка загрузки походов: {ex.Message}", "Ошибка");
-        //    }
-        //}
+        /// <summary>
+        /// Загружает имя пользователя из сессии и обновляет приветствие
+        /// </summary>
+        private void LoadUserName()
+        {
+            try
+            {
+                // Получаем текущего пользователя из сессии
+                var currentUser = SessionManager.CurrentUser;
 
+                if (currentUser != null && !string.IsNullOrWhiteSpace(currentUser.Name))
+                {
+                    // Формируем приветствие с именем пользователя
+                    WelcomeTextBlock.Text = $"Добро пожаловать, {currentUser.Name}";
+                }
+            }
+            catch (System.Exception ex)
+            {
+                // В случае ошибки показываем стандартное приветствие
+                WelcomeTextBlock.Text = "Добро пожаловать!";
+            }
+        }
+
+        /// <summary>
+        /// Обработчик клика по элементу комнаты
+        /// </summary>
         private void RoomItem_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             OpenRoomFromSender(sender);
         }
 
+        /// <summary>
+        /// Обработчик клика по кнопке открытия комнаты
+        /// </summary>
         private void OpenRoomButton_Click(object sender, RoutedEventArgs e)
         {
             OpenRoomFromSender(sender);
         }
 
+        /// <summary>
+        /// Общий метод для открытия комнаты
+        /// </summary>
         private void OpenRoomFromSender(object sender)
         {
             int roomId = 0;

@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-//using TrackSync.DataBase.Model;
+
 
 namespace TrackSync.DataBase.WorkWithDB
 {
@@ -350,42 +350,27 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить все доступные комнаты (публичные + приглашённые)
-        /// </summary>
         public static List<HikeRoom> GetAvailableRooms(int userId)
         {
             try
             {
-                using var ctx = new TrackSyncContext();
+                using (var ctx = new TrackSyncContext())
+                {
+                    var availableRooms = ctx.HikeRooms
+                        .AsNoTracking() // Отключаем трекинг, так как данные только для чтения
+                        .Include(r => r.Status) // Загружаем статус (если нужен для отображения)
+                        .Include(r => r.Participants) // Не загружаем .Include(r => r.Participants), если не нужны данные участников
+                        .Where(r => r.StatusId == 1) // Активные комнаты
+                        .Where(r => !ctx.Participants.Any(p => p.UserId == userId && p.HikeRoomId == r.HikeRoomId)) // Пользователь не участник
+                        .ToList();
 
-                // Получаем ID публичных комнат
-                var publicRoomIds = ctx.HikeRooms
-                    .Where(r => r.AccessType)
-                    .Select(r => r.HikeRoomId)
-                    .ToList();
-
-                // Получаем ID приватных комнат, в которые приглашён пользователь
-                var invitedRoomIds = ctx.Invitations
-                    .Where(i => i.UserId == userId)
-                    .Select(i => i.HikeRoomId)
-                    .ToList();
-
-                // Объединяем списки ID
-                var allRoomIds = publicRoomIds.Union(invitedRoomIds).ToList();
-
-                // Загружаем комнаты с включением связанных сущностей
-                return ctx.HikeRooms
-                    .Where(r => allRoomIds.Contains(r.HikeRoomId))
-                    .Include(r => r.Status)
-                    .Include(r => r.Participants)
-                    .OrderByDescending(r => r.StartDate)
-                    .ToList();
+                    return availableRooms;
+                }
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при получении доступных комнат:\n{ex.Message}", "Ошибка");
-                return null;
+                return new List<HikeRoom>(); // Возвращаем пустой список вместо null для безопасности
             }
         }
 
@@ -448,6 +433,9 @@ namespace TrackSync.DataBase.WorkWithDB
         /// <summary>
         /// Получить всех участников комнаты с их снаряжением
         /// </summary>
+        /// <summary>
+        /// Получить всех участников комнаты с их снаряжением
+        /// </summary>
         public static List<Participant> GetParticipantsWithEquipment(int roomId)
         {
             try
@@ -460,10 +448,11 @@ namespace TrackSync.DataBase.WorkWithDB
                         return null;
                     }
 
+                    // Загружаем участников комнаты ВМЕСТЕ со всем их снаряжением из таблицы HikeRoomsEquipments
                     return ctx.Participants
                         .Include(p => p.User)
-                        .Include(p => p.HikeRoomsEquipments)
-                            .ThenInclude(hre => hre.Equipment)
+                        .Include(p => p.HikeRoomsEquipments)          
+                            .ThenInclude(hre => hre.Equipment)        
                         .Where(p => p.HikeRoomId == roomId)
                         .ToList();
                 }
@@ -1012,6 +1001,240 @@ namespace TrackSync.DataBase.WorkWithDB
             {
                 MessageBox.Show($"Ошибка при отправке приглашений:\n{ex.Message}", "Ошибка");
                 return false;
+            }
+        }
+
+        /// <summary>
+        /// Получение заявок в комнаты, где текущий пользователь является лидером
+        /// </summary>
+        public static List<Bid> GetUserBids(int userId)
+        {
+            using (var context = new TrackSyncContext())
+            {
+                // Находим комнаты, где пользователь является лидером
+                var leaderRoomIds = context.HikeRooms
+                    .Where(r => r.LeaderId == userId)
+                    .Select(r => r.HikeRoomId)
+                    .ToList();
+
+                // Загружаем заявки в эти комнаты с навигационными свойствами
+                return context.Bids
+                    .Include(b => b.HikeRoom)
+                    .Include(b => b.User)
+                    .Where(b => leaderRoomIds.Contains(b.HikeRoomId))
+                    .ToList();
+            }
+        }
+
+        /// <summary>
+        /// Принять заявку пользователя — добавить его в участники похода
+        /// </summary>
+        public static bool AcceptBid(int bidId, int currentUserId)
+        {
+            using (var context = new TrackSyncContext())
+            {
+                var bid = context.Bids
+                    .Include(b => b.HikeRoom)
+                    .FirstOrDefault(b => b.BidId == bidId);
+
+                if (bid == null || bid.HikeRoom.LeaderId != currentUserId)
+                    return false;
+
+                // Добавляем пользователя в участники
+                var participant = new Participant
+                {
+                    HikeRoomId = bid.HikeRoomId,
+                    UserId = bid.UserId,
+                };
+
+                context.Participants.Add(participant);
+
+                // Удаляем заявку
+                context.Bids.Remove(bid);
+
+                try
+                {
+                    context.SaveChanges();
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Отклонить заявку — просто удаляем её
+        /// </summary>
+        public static bool RejectBid(int bidId)
+        {
+            using (var context = new TrackSyncContext())
+            {
+                var bid = context.Bids.Find(bidId);
+                if (bid == null)
+                    return false;
+
+                context.Bids.Remove(bid);
+
+                try
+                {
+                    context.SaveChanges();
+                    return true;
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Класс для хранения данных о дне раскладки
+        /// </summary>
+        public class MealPlanDay
+        {
+            public int DayNumber { get; set; }
+            public DateOnly Date { get; set; }
+            public List<MealPlanMeal> Meals { get; set; } = new List<MealPlanMeal>();
+        }
+
+        /// <summary>
+        /// Класс для хранения данных о приёме пищи
+        /// </summary>
+        public class MealPlanMeal
+        {
+            public int TypeMealId { get; set; }
+            public Recipe Recipe { get; set; }
+            public List<RecipesParticipant> ResponsibleParticipants { get; set; } = new List<RecipesParticipant>();
+        }
+
+        /// <summary>
+        /// Получить раскладку питания для комнаты
+        /// </summary>
+        public static List<MealPlanDay> GetMealPlanForRoom(int roomId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    if (!ctx.Database.CanConnect())
+                    {
+                        MessageBox.Show("Ошибка: Не удалось подключиться к базе данных!", "Ошибка");
+                        return null;
+                    }
+
+                    // Получаем комнату
+                    var room = ctx.HikeRooms.Find(roomId);
+                    if (room == null)
+                        return new List<MealPlanDay>();
+
+                    // Вычисляем количество дней
+                    int totalDays = (room.EndDate.ToDateTime(TimeOnly.MinValue) -
+                                    room.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1;
+
+                    var result = new List<MealPlanDay>();
+
+                    // Получаем всех участников комнаты
+                    var participantIdsInRoom = ctx.Participants
+                        .Where(p => p.HikeRoomId == roomId)
+                        .Select(p => p.ParticipantId)
+                        .ToList();
+
+                    // Получаем все рецепты для комнаты с группировкой по дате и типу приёма пищи
+                    var allRecipeEntries = ctx.HikeRoomsRecipes
+                        .Where(hrr => hrr.HikeRoomId == roomId)
+                        .Include(hrr => hrr.Recipe)
+                            .ThenInclude(r => r.IngredientsRecipes)
+                                .ThenInclude(ir => ir.Ingredient)
+                        .ToList()
+                        .GroupBy(hrr => new { hrr.MealDate, hrr.TypeMealId })
+                        .ToDictionary(
+                            g => g.Key,
+                            g => g.FirstOrDefault()
+                        );
+
+                    // Получаем всех ответственных для рецептов в этой комнате
+                    var allResponsibleParticipants = new Dictionary<int, List<RecipesParticipant>>();
+
+                    foreach (var recipeEntry in allRecipeEntries.Values)
+                    {
+                        if (recipeEntry?.RecipeId != null)
+                        {
+                            var responsible = ctx.RecipesParticipants
+                                .Where(rp => rp.RecipeId == recipeEntry.RecipeId &&
+                                           participantIdsInRoom.Contains(rp.ParticipantId))
+                                .Include(rp => rp.Participant)
+                                    .ThenInclude(p => p.User)
+                                .ToList();
+
+                            allResponsibleParticipants[recipeEntry.RecipeId] = responsible;
+                        }
+                    }
+
+                    // Создаём дни
+                    for (int i = 0; i < totalDays; i++)
+                    {
+                        var date = room.StartDate.AddDays(i);
+                        var day = new MealPlanDay
+                        {
+                            DayNumber = i + 1,
+                            Date = date
+                        };
+
+                        // Создаём приёмы пищи
+                        var mealTypes = new[]
+                                {
+                            new { TypeMealId = 1, MealName = "Завтрак", Tag = $"breakfast_day{i + 1}" },
+                            new { TypeMealId = 2, MealName = "Обед", Tag = $"lunch_day{i + 1}" },
+                            new { TypeMealId = 4, MealName = "Перекус", Tag = $"snack_day{i + 1}" },
+                            new { TypeMealId = 3, MealName = "Ужин", Tag = $"dinner_day{i + 1}" }
+                        };
+
+                        foreach (var mealType in mealTypes)
+                        {
+                            var meal = new MealPlanMeal
+                            {
+                                TypeMealId = mealType.TypeMealId
+                            };
+
+                            // Ищем рецепт для этого приёма пищи в этот день
+                            var key = new { MealDate = date, TypeMealId = mealType.TypeMealId };
+                            if (allRecipeEntries.TryGetValue(key, out var recipeEntry) && recipeEntry != null)
+                            {
+                                meal.Recipe = recipeEntry.Recipe;
+
+                                // Получаем ответственных для этого рецепта
+                                if (allResponsibleParticipants.TryGetValue(recipeEntry.RecipeId, out var responsible))
+                                {
+                                    meal.ResponsibleParticipants = responsible;
+                                }
+                            }
+
+                            day.Meals.Add(meal);
+                        }
+
+                        result.Add(day);
+
+                        System.Diagnostics.Debug.WriteLine($"=== GetMealPlanForRoom (Room: {roomId}) ===");
+                        foreach (var day1 in result)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Day {day1.DayNumber} ({day1.Date}):");
+                            foreach (var meal in day1.Meals)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"  Meal Type: {meal.TypeMealId}, Recipe: {meal.Recipe?.Title ?? "нет"}, Responsible: {meal.ResponsibleParticipants?.Count ?? 0}");
+                            }
+                        }
+
+                        return result;
+                    }
+                }
+                return null;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при загрузке раскладки питания:\n{ex.Message}", "Ошибка");
+                return null;
             }
         }
     }

@@ -1,24 +1,104 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using TrackSync.DataBase;
-//using TrackSync.DataBase.Model;
-using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Windows;
 
 namespace TrackSync.Pages
 {
     public partial class RoomSettingsPage : Page
     {
-        private int _roomId;
+        private readonly int _roomId;
         private HikeRoom _currentRoom;
+        private readonly int _currentUserId;
+        private bool _isLeader;
+
+        // Вспомогательный класс для отображения участника с правами
+        private class ParticipantViewModel : INotifyPropertyChanged
+        {
+            private bool _editMealPlan;
+            private bool _editTrack;
+            private bool _editEquipment;
+            private bool _isEditable;
+
+            public int ParticipantId { get; set; }
+            public int UserId { get; set; }
+            public string UserName { get; set; }
+            public string Email { get; set; }
+            public string Role { get; set; }
+            public bool IsLeader { get; set; }
+
+            public bool EditMealPlan
+            {
+                get => _editMealPlan;
+                set
+                {
+                    if (_editMealPlan != value)
+                    {
+                        _editMealPlan = value;
+                        OnPropertyChanged(nameof(EditMealPlan));
+                    }
+                }
+            }
+
+            public bool EditTrack
+            {
+                get => _editTrack;
+                set
+                {
+                    if (_editTrack != value)
+                    {
+                        _editTrack = value;
+                        OnPropertyChanged(nameof(EditTrack));
+                    }
+                }
+            }
+
+            public bool EditEquipment
+            {
+                get => _editEquipment;
+                set
+                {
+                    if (_editEquipment != value)
+                    {
+                        _editEquipment = value;
+                        OnPropertyChanged(nameof(EditEquipment));
+                    }
+                }
+            }
+
+            public bool IsEditable
+            {
+                get => _isEditable;
+                set
+                {
+                    if (_isEditable != value)
+                    {
+                        _isEditable = value;
+                        OnPropertyChanged(nameof(IsEditable));
+                    }
+                }
+            }
+
+            public event PropertyChangedEventHandler PropertyChanged;
+            protected void OnPropertyChanged(string propertyName) =>
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public RoomSettingsPage(int roomId)
         {
             InitializeComponent();
             _roomId = roomId;
+            _currentUserId = SessionManager.CurrentUserId;
+
             LoadRoomData();
             LoadStatuses();
+            LoadParticipants();
+            ApplyEditPermissions();
         }
 
         // Загрузка данных комнаты
@@ -27,36 +107,37 @@ namespace TrackSync.Pages
             try
             {
                 using var ctx = new TrackSyncContext();
-                _currentRoom = ctx.HikeRooms.Find(_roomId);
+                _currentRoom = ctx.HikeRooms
+                    .Include(r => r.Leader) // Загружаем лидера для проверки прав
+                    .FirstOrDefault(r => r.HikeRoomId == _roomId);
 
-                if (_currentRoom != null)
+                if (_currentRoom == null)
                 {
-                    // Заполняем поля данными из БД
-                    TitleTextBox.Text = _currentRoom.Title;
-                    DescriptionTextBox.Text = _currentRoom.Description ?? string.Empty;
+                    ErrorMessageVisible("*Комната не найдена");
+                    CancelButton_Click(null, null);
+                    return;
+                }
 
-                    // Устанавливаем тип комнаты
-                    if (_currentRoom.AccessType)
-                    {
-                        PublicRoomRadio.IsChecked = true;
-                        PasswordPanel.Visibility = Visibility.Collapsed;
-                    }
-                    else
-                    {
-                        PrivateRoomRadio.IsChecked = true;
-                        PasswordPanel.Visibility = Visibility.Visible;
-                    }
+                // Проверяем лидерство через поле LeaderId
+                _isLeader = _currentRoom.LeaderId == _currentUserId;
 
-                    // Устанавливаем даты
-                    //StartDatePicker.SelectedDate = _currentRoom.StartDate;
-                    //EndDatePicker.SelectedDate = _currentRoom.EndDate;
+                // Заполняем поля формы
+                TitleTextBox.Text = _currentRoom.Title;
+                DescriptionTextBox.Text = _currentRoom.Description ?? string.Empty;
+                StartDatePicker.SelectedDate = _currentRoom.StartDate.ToDateTime(TimeOnly.MinValue);
+                EndDatePicker.SelectedDate = _currentRoom.EndDate.ToDateTime(TimeOnly.MinValue);
 
-                    // Устанавливаем статус (будет загружен в LoadStatuses)
+                if (_currentRoom.AccessType)
+                {
+                    PublicRoomRadio.IsChecked = true;
                 }
                 else
                 {
-                    ErrorMessageVisible("*Не удалось загрузить данные комнаты");
+                    PrivateRoomRadio.IsChecked = true;
                 }
+
+                // Обновляем видимость панели пароля
+                PasswordPanel.Visibility = !_currentRoom.AccessType ? Visibility.Visible : Visibility.Collapsed;
             }
             catch (Exception ex)
             {
@@ -70,28 +151,24 @@ namespace TrackSync.Pages
             try
             {
                 using var ctx = new TrackSyncContext();
-
-                // Очищаем комбобокс
                 StatusComboBox.Items.Clear();
 
-                // Загружаем статусы из БД
-                var statuses = ctx.Statuses;
+                var statuses = ctx.Statuses.ToList();
                 foreach (var status in statuses)
                 {
-                    StatusComboBox.Items.Add(new ComboBoxItem
+                    var item = new ComboBoxItem
                     {
                         Content = status.Title,
                         Tag = status.StatusId
-                    });
+                    };
+                    StatusComboBox.Items.Add(item);
 
-                    // Устанавливаем текущий статус комнаты
                     if (_currentRoom != null && status.StatusId == _currentRoom.StatusId)
                     {
-                        StatusComboBox.SelectedIndex = StatusComboBox.Items.Count - 1;
+                        StatusComboBox.SelectedItem = item;
                     }
                 }
 
-                // Если статус не установлен, выбираем первый
                 if (StatusComboBox.SelectedIndex == -1 && StatusComboBox.Items.Count > 0)
                 {
                     StatusComboBox.SelectedIndex = 0;
@@ -103,67 +180,113 @@ namespace TrackSync.Pages
             }
         }
 
+        // Загрузка участников с правами
+        // Загрузка участников с правами
+        private void LoadParticipants()
+        {
+            try
+            {
+                using var ctx = new TrackSyncContext();
+                var participants = ctx.Participants
+                    .Include(p => p.User)
+                    .Where(p => p.HikeRoomId == _roomId)
+                    .ToList();
+
+                if (!participants.Any())
+                {
+                    NoParticipantsMessage.Visibility = Visibility.Visible;
+                    ParticipantsItemsControl.Visibility = Visibility.Collapsed;
+                    return;
+                }
+
+                NoParticipantsMessage.Visibility = Visibility.Collapsed;
+                ParticipantsItemsControl.Visibility = Visibility.Visible;
+
+                var participantViewModels = new List<ParticipantViewModel>();
+
+                foreach (var participant in participants)
+                {
+                    bool isLeader = _currentRoom.LeaderId == participant.UserId;
+
+                    participantViewModels.Add(new ParticipantViewModel
+                    {
+                        ParticipantId = participant.ParticipantId,
+                        UserId = participant.UserId,
+                        UserName = participant.User.Name,      
+                        Email = participant.User.Email,        
+                        Role = isLeader ? "Лидер" : "Участник",
+                        IsLeader = isLeader,
+                        EditMealPlan = participant.EditMealPlan ?? false,
+                        EditTrack = participant.EditTrack ?? false,
+                        EditEquipment = participant.EditEquipment ?? false,
+                        IsEditable = _isLeader && !isLeader
+                    });
+                }
+
+                ParticipantsItemsControl.ItemsSource = participantViewModels;
+            }
+            catch (Exception ex)
+            {
+                ErrorMessageVisible($"*Ошибка при загрузке участников: {ex.Message}");
+            }
+        }
+
+        // Применение прав редактирования в зависимости от роли
+        private void ApplyEditPermissions()
+        {
+            bool isEditable = _isLeader;
+
+            // Поля комнаты
+            TitleTextBox.IsReadOnly = !isEditable;
+            DescriptionTextBox.IsReadOnly = !isEditable;
+            PublicRoomRadio.IsEnabled = isEditable;
+            PrivateRoomRadio.IsEnabled = isEditable;
+            StartDatePicker.IsEnabled = isEditable;
+            EndDatePicker.IsEnabled = isEditable;
+            StatusComboBox.IsEnabled = isEditable;
+
+            // Пароль: видим только для приватной комнаты
+            bool isPrivateRoom = PrivateRoomRadio.IsChecked == true;
+            PasswordPanel.Visibility = isPrivateRoom ? Visibility.Visible : Visibility.Collapsed;
+            PasswordBox.IsEnabled = isEditable && isPrivateRoom;
+
+            // Кнопки
+            SaveButton.Visibility = isEditable ? Visibility.Visible : Visibility.Collapsed;
+            CancelButton.Content = isEditable ? "Отмена" : "Назад";
+
+            // Права участников уже установлены в LoadParticipants
+        }
+
         // Обработчик изменения типа комнаты
         private void RoomTypeRadio_Checked(object sender, RoutedEventArgs e)
         {
-            PasswordPanel.Visibility = PrivateRoomRadio.IsChecked == true
-                ? Visibility.Visible
-                : Visibility.Collapsed;
-            ErrorMessageHide();
-        }
+            bool isPrivate = PrivateRoomRadio.IsChecked == true;
+            PasswordPanel.Visibility = isPrivate ? Visibility.Visible : Visibility.Collapsed;
 
-        // Обработчики для скрытия ошибок при вводе
-        private void TitleTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            ErrorMessageHide();
-        }
-
-        private void DescriptionTextBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            ErrorMessageHide();
-        }
-
-        // Валидация даты начала
-        private void StartDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
-        {
-            ErrorMessageHide();
-
-            if (StartDatePicker.SelectedDate.HasValue && EndDatePicker.SelectedDate.HasValue)
+            // Очищаем пароль при переключении на публичную комнату
+            if (!isPrivate)
             {
-                if (StartDatePicker.SelectedDate.Value > EndDatePicker.SelectedDate.Value)
-                {
-                    ErrorMessageVisible("*Дата начала не может быть позже даты окончания!");
-                }
+                PasswordBox.Password = string.Empty;
             }
-        }
 
-        // Валидация даты окончания
-        private void EndDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
-        {
             ErrorMessageHide();
-
-            if (StartDatePicker.SelectedDate.HasValue && EndDatePicker.SelectedDate.HasValue)
-            {
-                if (EndDatePicker.SelectedDate.Value < StartDatePicker.SelectedDate.Value)
-                {
-                    ErrorMessageVisible("*Дата окончания не может быть раньше даты начала!");
-                }
-            }
         }
 
-        // Сохранение изменений
+        // Валидация и сохранение
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             ErrorMessageHide();
 
-            // Валидация полей
             if (!ValidateForm())
                 return;
 
             try
             {
                 using var ctx = new TrackSyncContext();
-                var room = ctx.HikeRooms.Find(_roomId);
+                var room = ctx.HikeRooms
+                    .Include(r => r.Participants)
+                    .ThenInclude(p => p.User)
+                    .FirstOrDefault(r => r.HikeRoomId == _roomId);
 
                 if (room == null)
                 {
@@ -171,43 +294,56 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                //// Обновляем данные комнаты
-                //room.Title = TitleTextBox.Text.Trim();
-                //room.Description = string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
-                //    ? null
-                //    : DescriptionTextBox.Text;
-                //room.AccessType = PublicRoomRadio.IsChecked.Value;
-                //room.StartDate = StartDatePicker.SelectedDate.Value;
-                //room.EndDate = EndDatePicker.SelectedDate.Value;
+                // Обновляем данные комнаты
+                room.Title = TitleTextBox.Text.Trim();
+                room.Description = string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
+                    ? null
+                    : DescriptionTextBox.Text.Trim();
+                room.AccessType = PublicRoomRadio.IsChecked.Value;
 
-                //// Обновляем статус
-                //if (StatusComboBox.SelectedItem is ComboBoxItem selectedItem &&
-                //    selectedItem.Tag is int statusId)
-                //{
-                //    room.StatusId = statusId;
-                //}
+                if (StartDatePicker.SelectedDate.HasValue)
+                    room.StartDate = DateOnly.FromDateTime(StartDatePicker.SelectedDate.Value.Date);
+                if (EndDatePicker.SelectedDate.HasValue)
+                    room.EndDate = DateOnly.FromDateTime(EndDatePicker.SelectedDate.Value.Date);
 
-                // Обновляем пароль, если комната приватная
-                if (!room.AccessType && !string.IsNullOrWhiteSpace(PasswordBox.Password))
+                // Обновляем статус
+                if (StatusComboBox.SelectedItem is ComboBoxItem selectedItem &&
+                    selectedItem.Tag is int statusId)
                 {
-                    if (PasswordBox.Password.Length < 8)
-                    {
-                        ErrorMessageVisible("*Пароль должен содержать минимум 8 символов");
-                        return;
-                    }
-                    room.Password = BCrypt.Net.BCrypt.HashPassword(PasswordBox.Password);
+                    room.StatusId = statusId;
                 }
 
-                // Сохраняем изменения в БД
+                // Обновляем пароль ТОЛЬКО если он был изменён и комната приватная
+                if (!room.AccessType)
+                {
+                    if (!string.IsNullOrWhiteSpace(PasswordBox.Password))
+                    {
+                        if (PasswordBox.Password.Length < 8)
+                        {
+                            ErrorMessageVisible("*Пароль должен содержать минимум 8 символов");
+                            return;
+                        }
+                        room.Password = BCrypt.Net.BCrypt.EnhancedHashPassword(PasswordBox.Password);
+                    }
+                }
+                else
+                {
+                    // Для публичной комнаты очищаем пароль
+                    room.Password = null;
+                }
+
+                // Сохраняем изменения комнаты
                 ctx.SaveChanges();
 
-                // Обновляем права участников (заглушка - в реальном приложении нужно обновлять права)
-                UpdateParticipantsPermissions();
+                // Обновляем права участников (только если лидер)
+                if (_isLeader && ParticipantsItemsControl.ItemsSource is List<ParticipantViewModel> participants)
+                {
+                    UpdateParticipantsPermissions(ctx, participants);
+                }
 
                 MessageBox.Show("Настройки комнаты успешно сохранены!",
                               "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Возвращаемся на страницу комнаты
                 FrameContext.MainWindowFrame.Navigate(new HikeRoomPage(_roomId));
             }
             catch (Exception ex)
@@ -216,19 +352,28 @@ namespace TrackSync.Pages
             }
         }
 
-        // Обновление прав участников (заглушка)
-        private void UpdateParticipantsPermissions()
+        // Обновление прав участников в БД
+        private void UpdateParticipantsPermissions(TrackSyncContext ctx, List<ParticipantViewModel> participants)
         {
-            // В реальном приложении здесь нужно обновить права участников в БД
-            // Для примера просто выводим сообщение
-            // Пример: 
-            // var participant = ctx.Participants.Find(participantId);
-            // participant.EditMealPlan = EditMealPlanCheck1.IsChecked.Value;
-            // participant.EditTrack = EditTrackCheck1.IsChecked.Value;
-            // participant.EditEquipment = EditEquipmentCheck1.IsChecked.Value;
+            foreach (var vm in participants)
+            {
+                // Пропускаем лидера — его права не должны изменяться
+                if (vm.IsLeader)
+                    continue;
+
+                var participant = ctx.Participants.Find(vm.ParticipantId);
+                if (participant != null)
+                {
+                    participant.EditMealPlan = vm.EditMealPlan;
+                    participant.EditTrack = vm.EditTrack;
+                    participant.EditEquipment = vm.EditEquipment;
+                }
+            }
+
+            ctx.SaveChanges();
         }
 
-        // Отмена изменений
+        // Отмена/назад
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             FrameContext.MainWindowFrame.Navigate(new HikeRoomPage(_roomId));
@@ -237,7 +382,6 @@ namespace TrackSync.Pages
         // Валидация формы
         private bool ValidateForm()
         {
-            // Проверка названия
             if (string.IsNullOrWhiteSpace(TitleTextBox.Text))
             {
                 ErrorMessageVisible("*Пожалуйста, введите название комнаты");
@@ -250,7 +394,6 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка дат
             if (!StartDatePicker.SelectedDate.HasValue)
             {
                 ErrorMessageVisible("*Пожалуйста, выберите дату начала похода");
@@ -263,30 +406,22 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка, что дата начала не в прошлом
-            if (StartDatePicker.SelectedDate.Value < DateTime.Today)
+            if (StartDatePicker.SelectedDate.Value.Date < DateTime.Today.Date)
             {
                 ErrorMessageVisible("*Дата начала не может быть в прошлом!");
                 return false;
             }
 
-            // Проверка, что дата окончания не раньше начала
-            if (EndDatePicker.SelectedDate.Value < StartDatePicker.SelectedDate.Value)
+            if (EndDatePicker.SelectedDate.Value.Date < StartDatePicker.SelectedDate.Value.Date)
             {
                 ErrorMessageVisible("*Дата окончания не может быть раньше даты начала!");
                 return false;
             }
 
-            // Проверка пароля для приватной комнаты
-            if (PrivateRoomRadio.IsChecked.Value)
+            if (PrivateRoomRadio.IsChecked == true)
             {
-                if (string.IsNullOrWhiteSpace(PasswordBox.Password))
-                {
-                    ErrorMessageVisible("*Для приватной комнаты необходимо указать пароль");
-                    return false;
-                }
-
-                if (PasswordBox.Password.Length < 8)
+                // Проверяем пароль только если поле не пустое (новый пароль)
+                if (!string.IsNullOrWhiteSpace(PasswordBox.Password) && PasswordBox.Password.Length < 8)
                 {
                     ErrorMessageVisible("*Пароль должен содержать минимум 8 символов");
                     return false;
@@ -296,7 +431,7 @@ namespace TrackSync.Pages
             return true;
         }
 
-        // Методы для работы с сообщением об ошибке
+        // Вспомогательные методы для ошибок
         private void ErrorMessageVisible(string message)
         {
             ErrorMessage.Visibility = Visibility.Visible;
@@ -307,5 +442,11 @@ namespace TrackSync.Pages
         {
             ErrorMessage.Visibility = Visibility.Collapsed;
         }
+
+        // Обработчики для скрытия ошибок при вводе
+        private void TitleTextBox_TextChanged(object sender, TextChangedEventArgs e) => ErrorMessageHide();
+        private void DescriptionTextBox_TextChanged(object sender, TextChangedEventArgs e) => ErrorMessageHide();
+        private void StartDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e) => ErrorMessageHide();
+        private void EndDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e) => ErrorMessageHide();
     }
 }

@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using Microsoft.EntityFrameworkCore;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
 using TrackSync.DataBase;
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Interfaces;
@@ -12,11 +11,13 @@ using TrackSync.Windows;
 
 namespace TrackSync.Pages
 {
-    public partial class HikeRoomPage : Page, IEquipmentCallback
+    public partial class HikeRoomPage : Page, IEquipmentCallback, IRecipeCallback
     {
+        private List<DayViewModel> _allDays = new List<DayViewModel>();
         private int _roomId;
         private int _currentDay = 1;
         private int _currentParticipantId = 1;
+        private string _currentMealTypeTag = "";
         private readonly Dictionary<int, List<EquipmentQuantityItem>> _participantEquipment = new();
 
         // Вспомогательный класс для хранения снаряжения с количеством
@@ -26,11 +27,99 @@ namespace TrackSync.Pages
             public int Quantity { get; set; }
         }
 
+        private class DayViewModel
+        {
+            public int DayNumber { get; set; }
+            public DateOnly Date { get; set; }
+            public List<MealViewModel> Meals { get; set; } = new();
+
+            public int TotalDayCalories => Meals.Sum(m => m.TotalCalories);
+            public int TotalDayWeight => Meals.Sum(m => m.TotalWeight);
+
+            public string TotalDayCaloriesText => $"{TotalDayCalories} ккал";
+            public string TotalDayWeightText => $"{TotalDayWeight} г";
+        }
+
+        private class MealViewModel
+        {
+            public int TypeMealId { get; set; }
+            public string MealName { get; set; }
+            public string Tag { get; set; }
+            public Recipe Recipe { get; set; }
+            public int RoomId { get; set; }
+
+            // Список ответственных участников
+            public List<RecipesParticipant> ResponsibleParticipants { get; set; } = new List<RecipesParticipant>();
+
+            // Свойство для отображения имен
+            public List<string> ResponsibleUserNames =>
+                ResponsibleParticipants?
+                    .Where(rp => rp.Participant?.User != null)
+                    .Select(rp => rp.Participant.User.Name)
+                    .ToList() ?? new List<string>();
+
+            // Вычисляемые свойства
+            public int TotalCalories => Recipe != null ? CalculateTotalCalories() : 0;
+            public int TotalWeight => Recipe != null ? CalculateTotalWeight() : 0;
+            public int WeightPerPerson => Recipe != null ? CalculateWeightPerPerson() : 0;
+
+            public string WeightPerPersonText => Recipe != null ?
+                $"{TotalWeight}г ({WeightPerPerson}г/чел)" : string.Empty;
+
+            public string CookTimeText => Recipe?.Time.HasValue == true ?
+                $"~{Recipe.Time} мин." : "-";
+
+            public string CaloriesText => Recipe != null ?
+                $"{TotalCalories} ккал" : "0 ккал";
+
+            private int CalculateTotalCalories()
+            {
+                if (Recipe == null || Recipe.IngredientsRecipes == null)
+                    return 0;
+
+                int totalCalories = 0;
+                foreach (var ir in Recipe.IngredientsRecipes)
+                {
+                    if (ir.Ingredient != null)
+                    {
+                        totalCalories += (ir.Ingredient.Calories * ir.Weight) / 100;
+                    }
+                }
+                return totalCalories;
+            }
+
+            private int CalculateTotalWeight()
+            {
+                if (Recipe == null || Recipe.IngredientsRecipes == null)
+                    return 0;
+
+                int totalWeightPerPerson = Recipe.IngredientsRecipes.Sum(ir => ir.Weight);
+                int participantCount = GetParticipantCount(RoomId);
+                return totalWeightPerPerson * participantCount;
+            }
+
+            private int CalculateWeightPerPerson()
+            {
+                if (Recipe == null || Recipe.IngredientsRecipes == null)
+                    return 0;
+
+                return Recipe.IngredientsRecipes.Sum(ir => ir.Weight);
+            }
+
+            private static int GetParticipantCount(int roomId)
+            {
+                using var ctx = new TrackSyncContext();
+                return ctx.Participants.Count(p => p.HikeRoomId == roomId);
+            }
+        }
+
         public HikeRoomPage(int roomId = 1)
         {
             InitializeComponent();
             _roomId = roomId;
+
             LoadRoomData();
+            LoadMealPlan();
             ActivateDayButton(1);
         }
 
@@ -67,30 +156,25 @@ namespace TrackSync.Pages
         // Обновление интерфейса снаряжения для участника
         private void UpdateEquipmentUI(int participantId)
         {
-            // Находим стек панель для снаряжения по ID участника
             var equipmentStackPanel = FindEquipmentStackPanel(participantId);
             if (equipmentStackPanel == null)
                 return;
 
-            // Очищаем текущий список
             equipmentStackPanel.Children.Clear();
 
-            // Получаем список снаряжения для участника
             if (_participantEquipment.TryGetValue(participantId, out var equipmentList) && equipmentList.Any())
             {
-                // Добавляем каждое снаряжение в интерфейс
                 foreach (var item in equipmentList)
                 {
-                    var equipmentPanel = CreateEquipmentPanel(item);
+                    // Передаём participantId в метод создания панели
+                    var equipmentPanel = CreateEquipmentPanel(item, participantId);
                     equipmentStackPanel.Children.Add(equipmentPanel);
                 }
 
-                // Обновляем статистику
                 UpdateEquipmentStats(participantId, equipmentList);
             }
             else
             {
-                // Показываем сообщение "Нет снаряжения"
                 var emptyText = new TextBlock
                 {
                     Style = (Style)FindResource("BodyText"),
@@ -99,14 +183,12 @@ namespace TrackSync.Pages
                     Margin = new Thickness(0, 5, 0, 0)
                 };
                 equipmentStackPanel.Children.Add(emptyText);
-
-                // Сбрасываем статистику
                 UpdateEquipmentStats(participantId, new List<EquipmentQuantityItem>());
             }
         }
 
         // Создание панели для отображения снаряжения
-        private StackPanel CreateEquipmentPanel(EquipmentQuantityItem item)
+        private StackPanel CreateEquipmentPanel(EquipmentQuantityItem item, int participantId)
         {
             var panel = new StackPanel
             {
@@ -170,25 +252,18 @@ namespace TrackSync.Pages
                 Height = 36,
                 Style = (Style)FindResource("IconButton"),
                 Margin = new Thickness(10, 0, 0, 0),
-                Tag = panel,
+                Tag = new { Item = item, ParticipantId = participantId },
                 ToolTip = "Удалить снаряжение"
             };
 
-            try
+            var image = new Image
             {
-                var image = new Image
-                {
-                    Source = new BitmapImage(new Uri("/Images/Icons/trash.png", UriKind.Relative)),
-                    Width = 18,
-                    Height = 18
-                };
-                removeButton.Content = image;
-            }
-            catch
-            {
-                // Резервный вариант, если иконка не найдена
-                removeButton.Content = "🗑";
-            }
+                Source = new BitmapImage(new Uri("/Images/Icons/trash.png", UriKind.Relative)),
+                Width = 18,
+                Height = 18
+            };
+            removeButton.Content = image;
+            
 
             removeButton.Click += RemoveEquipmentButton_Click;
             panel.Children.Add(removeButton);
@@ -263,12 +338,17 @@ namespace TrackSync.Pages
         // Удаление снаряжения
         private void RemoveEquipmentButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is StackPanel panel && panel.Tag is EquipmentQuantityItem item)
+            // Получаем данные из тега кнопки
+            if (sender is Button button &&
+                button.Tag is object tagObj &&
+                tagObj.GetType().GetProperty("Item")?.GetValue(tagObj) is EquipmentQuantityItem item &&
+                tagObj.GetType().GetProperty("ParticipantId")?.GetValue(tagObj) is int participantId)
             {
-                if (_participantEquipment.TryGetValue(_currentParticipantId, out var equipmentList))
+                // Получаем список снаряжения именно для этого участника
+                if (_participantEquipment.TryGetValue(participantId, out var equipmentList))
                 {
                     equipmentList.Remove(item);
-                    UpdateEquipmentUI(_currentParticipantId);
+                    UpdateEquipmentUI(participantId); // Обновляем интерфейс для этого участника
                 }
             }
         }
@@ -276,7 +356,7 @@ namespace TrackSync.Pages
         // Обновление статистики снаряжения
         private void UpdateEquipmentStats(int participantId, List<EquipmentQuantityItem> equipmentList)
         {
-            // Вычисляем общий вес и количество предметов
+            // Вычисляем общий вес и количество предметов для данного участника
             int totalWeight = 0;
             int totalItems = 0;
 
@@ -286,39 +366,62 @@ namespace TrackSync.Pages
                 totalItems += item.Quantity;
             }
 
-            // Ищем элементы статистики для данного участника
-            foreach (var item in ParticipantsItemsControl.Items)
+            // Ищем элементы статистики ТОЛЬКО для данного участника
+            var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(
+                ParticipantsItemsControl.Items.OfType<Participant>().FirstOrDefault(p => p.ParticipantId == participantId));
+
+            if (container != null)
             {
-                var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(item);
-                if (container != null)
-                {
-                    var weightText = FindVisualChild<TextBlock>(container, tb => tb.Name == "TotalWeightText");
-                    var itemsText = FindVisualChild<TextBlock>(container, tb => tb.Name == "TotalItemsText");
+                var weightText = FindVisualChild<TextBlock>(container, tb => tb.Name == "TotalWeightText");
+                var itemsText = FindVisualChild<TextBlock>(container, tb => tb.Name == "TotalItemsText");
 
-                    if (weightText != null)
-                        weightText.Text = $"{totalWeight / 1000.0:F1} кг";
+                if (weightText != null)
+                    weightText.Text = $"{totalWeight / 1000.0:F1} кг";
 
-                    if (itemsText != null)
-                        itemsText.Text = $"{totalItems} шт.";
-                }
+                if (itemsText != null)
+                    itemsText.Text = $"{totalItems} шт.";
             }
         }
 
-        // Поиск стек панели для снаряжения по ID участника в ItemsControl
+        // Поиск стек панели для снаряжения по ID участника (ищем по тегу)
         private StackPanel FindEquipmentStackPanel(int participantId)
         {
             foreach (var item in ParticipantsItemsControl.Items)
             {
                 var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(item);
-                if (container != null)
+                if (container == null) continue;
+
+                // Ищем ТОЛЬКО панели с тегом = participantId
+                var panels = FindAllVisualChildren<StackPanel>(container);
+                foreach (var panel in panels)
                 {
-                    var panel = FindVisualChild<StackPanel>(container,
-                        sp => sp.Tag?.ToString() == participantId.ToString());
-                    if (panel != null)
+                    if (panel.Tag?.ToString() == participantId.ToString())
+                    {
                         return panel;
+                    }
                 }
             }
             return null;
+        }
+
+        // Вспомогательный метод для поиска ВСЕХ дочерних элементов заданного типа
+        private List<T> FindAllVisualChildren<T>(DependencyObject parent) where T : DependencyObject
+        {
+            var children = new List<T>();
+            if (parent == null) return children;
+
+            int childrenCount = VisualTreeHelper.GetChildrenCount(parent);
+            for (int i = 0; i < childrenCount; i++)
+            {
+                var child = VisualTreeHelper.GetChild(parent, i);
+
+                if (child is T typedChild)
+                    children.Add(typedChild);
+
+                children.AddRange(FindAllVisualChildren<T>(child));
+            }
+
+            return children;
         }
 
         // Вспомогательный метод для поиска дочернего элемента с предикатом
@@ -391,27 +494,31 @@ namespace TrackSync.Pages
                 {
                     int addedCount = 0;
                     int updatedCount = 0;
+                    int deletedCount = 0;
 
-                    // Проходим по всем участникам комнаты
+                    // Получаем ВСЕ существующие записи снаряжения для этой комнаты из БД
+                    var existingRecords = ctx.HikeRoomsEquipments
+                        .Where(hre => hre.HikeRoomId == _roomId)
+                        .ToList();
+
+                    // Обрабатываем каждого участника
                     foreach (var item in ParticipantsItemsControl.Items)
                     {
                         if (item is Participant participant)
                         {
                             int participantId = participant.ParticipantId;
 
-                            // Получаем снаряжение для этого участника из временного хранилища
                             if (_participantEquipment.TryGetValue(participantId, out var equipmentList))
                             {
+                                // 1. Добавляем/обновляем снаряжение из интерфейса
                                 foreach (var eqItem in equipmentList)
                                 {
-                                    // Пропускаем записи с количеством 0 (удалённые)
                                     if (eqItem.Quantity <= 0)
-                                        continue;
+                                        continue; // Пропускаем записи с количеством 0 или меньше
 
-                                    // Проверяем, существует ли уже запись для этого снаряжения у участника В ЭТОЙ КОМНАТЕ
-                                    var existingRecord = ctx.HikeRoomsEquipments
+                                    // Ищем существующую запись для этого снаряжения у участника
+                                    var existingRecord = existingRecords
                                         .FirstOrDefault(hre =>
-                                            hre.HikeRoomId == _roomId &&
                                             hre.ParticipantId == participantId &&
                                             hre.EquipmentId == eqItem.Equipment.EquipmentId);
 
@@ -435,16 +542,31 @@ namespace TrackSync.Pages
                                         addedCount++;
                                     }
                                 }
+
+                                // 2. Удаляем записи, которых НЕТ в интерфейсе (удалённые пользователем)
+                                var recordsToDelete = existingRecords
+                                    .Where(hre => hre.ParticipantId == participantId &&
+                                                 !equipmentList.Any(eq =>
+                                                     eq.Equipment.EquipmentId == hre.EquipmentId &&
+                                                     eq.Quantity > 0)) // Учитываем только записи с количеством > 0
+                                    .ToList();
+
+                                foreach (var record in recordsToDelete)
+                                {
+                                    ctx.HikeRoomsEquipments.Remove(record);
+                                    deletedCount++;
+                                }
                             }
                         }
                     }
 
-                    // Сохраняем изменения в базе данных
+                    SaveSuccessMessage.Visibility = Visibility.Visible;
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        SaveSuccessMessage.Visibility = Visibility.Collapsed;
+                    }), System.Windows.Threading.DispatcherPriority.Background, TimeSpan.FromSeconds(2));
+                    // Сохраняем все изменения в БД
                     ctx.SaveChanges();
-
-                    // Очищаем словарь и перезагружаем данные для актуального отображения
-                    _participantEquipment.Clear();
-                    LoadParticipants();
                 }
             }
             catch (Exception ex)
@@ -458,16 +580,32 @@ namespace TrackSync.Pages
         private void LoadRoomData()
         {
             var room = TrackSyncManagerList.GetHikeRoomById(_roomId);
+
+            // Проверка на ошибку загрузки
+            if (room == null)
+            {
+                MessageBox.Show("Комната не найдена!", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+
+                if (NavigationService?.CanGoBack == true)
+                    NavigationService.GoBack();
+                return;
+            }
+
             // Устанавливаем название комнаты
             RoomTitleText.Text = room.Title;
 
             // Форматируем даты проведения
             string dateRange = $"{room.StartDate:dd MMMM yyyy} - {room.EndDate:dd MMMM yyyy}";
-            ((TextBlock)FindName("RoomDateText")).Text = dateRange;
+            var dateText = FindName("RoomDateText") as TextBlock;
+            if (dateText != null)
+                dateText.Text = dateRange;
 
             // Получаем количество участников
             int participantCount = room.Participants?.Count ?? 0;
-            ((TextBlock)FindName("ParticipantCountText")).Text = $"Количество участников: {participantCount}";
+            var countText = FindName("ParticipantCountText") as TextBlock;
+            if (countText != null)
+                countText.Text = $"Количество участников: {participantCount}";
 
             // Загружаем участников комнаты со снаряжением
             LoadParticipants();
@@ -480,44 +618,76 @@ namespace TrackSync.Pages
 
             if (participants != null && participants.Any())
             {
-                ParticipantsItemsControl.ItemsSource = participants;
-
                 // Очищаем словарь перед загрузкой новых данных
                 _participantEquipment.Clear();
 
-                // Инициализируем словарь снаряжения для каждого участника
+                // Загружаем снаряжение для каждого участника из БД
                 foreach (var participant in participants)
                 {
                     var equipmentList = new List<EquipmentQuantityItem>();
-
-                    // ЗАГРУЖАЕМ СНАРЯЖЕНИЕ ИЗ ТАБЛИЦЫ HikeRoomsEquipment ДЛЯ ТЕКУЩЕЙ КОМНАТЫ
-                    var roomEquipment = participant.HikeRoomsEquipments
-                        .Where(hre => hre.HikeRoomId == _roomId && hre.ParticipantId == participant.ParticipantId)
-                        .ToList();
-
-                    // Формируем список для отображения с данными из БД
-                    foreach (var hre in roomEquipment)
+                    foreach (var hre in participant.HikeRoomsEquipments)
                     {
                         if (hre.Equipment != null)
                         {
                             equipmentList.Add(new EquipmentQuantityItem
                             {
                                 Equipment = hre.Equipment,
-                                Quantity = hre.Quantity  // Количество берём из БД!
+                                Quantity = hre.Quantity
                             });
                         }
                     }
 
+                    // Сохраняем список снаряжения для участника в словарь
                     _participantEquipment[participant.ParticipantId] = equipmentList;
-
-                    // Обновляем интерфейс для этого участника
-                    UpdateEquipmentUI(participant.ParticipantId);
                 }
-            }
-            else
-            {
-                MessageBox.Show("В комнате нет участников. Пригласите пользователей!", "Информация",
-                    MessageBoxButton.OK, MessageBoxImage.Information);
+
+                // Устанавливаем источник данных для отображения участников
+                ParticipantsItemsControl.ItemsSource = participants;
+
+                // Подписываемся на событие загрузки контейнера для отложенного обновления интерфейса
+                ParticipantsItemsControl.Loaded += (s, e) =>
+                {
+                    Dispatcher.BeginInvoke(new Action(() =>
+                    {
+                        // Дожидаемся полной загрузки ВСЕХ визуальных контейнеров
+                        int attempts = 0;
+                        var timer = new System.Windows.Threading.DispatcherTimer
+                        {
+                            Interval = TimeSpan.FromMilliseconds(50)
+                        };
+
+                        timer.Tick += (sender, args) =>
+                        {
+                            attempts++;
+
+                            // Проверяем, созданы ли контейнеры для всех участников
+                            bool allContainersReady = true;
+                            foreach (var item in participants)
+                            {
+                                var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(item);
+                                if (container == null || VisualTreeHelper.GetChildrenCount(container) == 0)
+                                {
+                                    allContainersReady = false;
+                                    break;
+                                }
+                            }
+
+                            // Если все контейнеры готовы или превышено время ожидания (1 секунда)
+                            if (allContainersReady || attempts > 20)
+                            {
+                                timer.Stop();
+
+                                // Обновляем интерфейс снаряжения для КАЖДОГО участника
+                                foreach (var participant in participants)
+                                {
+                                    UpdateEquipmentUI(participant.ParticipantId);
+                                }
+                            }
+                        };
+
+                        timer.Start();
+                    }), System.Windows.Threading.DispatcherPriority.Background);
+                };
             }
         }
 
@@ -535,100 +705,341 @@ namespace TrackSync.Pages
         }
 
         // === Вкладка 3: Продуктовая раскладка ===
+
+        // Загрузка раскладки из базы данных
+        private void LoadMealPlan()
+        {
+            var mealPlanData = TrackSyncManagerList.GetMealPlanForRoom(_roomId);
+
+            if (mealPlanData == null)
+            {
+                MessageBox.Show("Не удалось загрузить раскладку питания", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return;
+            }
+
+            // Преобразуем данные в DayViewModel
+            _allDays = new List<DayViewModel>();
+
+            foreach (var dayData in mealPlanData)
+            {
+                var day = new DayViewModel
+                {
+                    DayNumber = dayData.DayNumber,
+                    Date = dayData.Date,
+                    Meals = new List<MealViewModel>()
+                };
+
+                foreach (var mealData in dayData.Meals)
+                {
+                    string mealName = mealData.TypeMealId switch
+                    {
+                        1 => "Завтрак",
+                        2 => "Обед",
+                        3 => "Ужин",
+                        4 => "Перекус",
+                        _ => "Неизвестно"
+                    };
+
+                    // ВАЖНО: Используем английские названия для тега, как в старом коде
+                    string englishMealName = mealData.TypeMealId switch
+                    {
+                        1 => "breakfast",
+                        2 => "lunch",
+                        3 => "dinner",
+                        4 => "snack",
+                        _ => "unknown"
+                    };
+
+                    string tag = $"{englishMealName}_day{dayData.DayNumber}";
+
+                    var meal = new MealViewModel
+                    {
+                        TypeMealId = mealData.TypeMealId,
+                        MealName = mealName,
+                        Tag = tag, // Устанавливаем Tag!
+                        Recipe = mealData.Recipe,
+                        RoomId = _roomId,
+                        ResponsibleParticipants = mealData.ResponsibleParticipants ?? new List<RecipesParticipant>()
+                    };
+                    day.Meals.Add(meal);
+                }
+
+                _allDays.Add(day);
+            }
+
+            // Если нет дней (пустая раскладка), создаём базовую структуру
+            if (_allDays.Count == 0)
+            {
+                using var ctx = new TrackSyncContext();
+                var room = ctx.HikeRooms.Find(_roomId);
+                if (room != null)
+                {
+                    int totalDays = (room.EndDate.ToDateTime(TimeOnly.MinValue) -
+                                   room.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1;
+
+                    for (int i = 0; i < totalDays; i++)
+                    {
+                        var date = room.StartDate.AddDays(i);
+                        var day = new DayViewModel
+                        {
+                            DayNumber = i + 1,
+                            Date = date,
+                            Meals = new List<MealViewModel>
+                {
+                    new MealViewModel {
+                        TypeMealId = 1,
+                        MealName = "Завтрак",
+                        Tag = $"breakfast_day{i + 1}",
+                        RoomId = _roomId
+                    },
+                    new MealViewModel {
+                        TypeMealId = 2,
+                        MealName = "Обед",
+                        Tag = $"lunch_day{i + 1}",
+                        RoomId = _roomId
+                    },
+                    new MealViewModel {
+                        TypeMealId = 4,
+                        MealName = "Перекус",
+                        Tag = $"snack_day{i + 1}",
+                        RoomId = _roomId
+                    },
+                    new MealViewModel {
+                        TypeMealId = 3,
+                        MealName = "Ужин",
+                        Tag = $"dinner_day{i + 1}",
+                        RoomId = _roomId
+                    }
+                }
+                        };
+                        _allDays.Add(day);
+                    }
+                }
+            }
+
+            // Кнопки дней: показываем ВСЕ дни
+            DaysButtonsControl.ItemsSource = _allDays;
+
+            // Контент: показываем ТОЛЬКО первый день
+            ShowCurrentDay(1);
+
+            // Устанавливаем заголовок текущего дня
+            UpdateCurrentDayTitle(1);
+        }
+
+        private void UpdateCurrentDayTitle(int dayNumber)
+        {
+            var currentDay = _allDays.FirstOrDefault(d => d.DayNumber == dayNumber);
+            if (currentDay != null)
+            {
+                CurrentDayTitle.Text = $"День {dayNumber}: {currentDay.Date:dd MMMM yyyy}";
+            }
+        }
+
+        private void ShowCurrentDay(int dayNumber)
+        {
+            var currentDay = _allDays.FirstOrDefault(d => d.DayNumber == dayNumber);
+            if (currentDay != null)
+            {
+                // Отображаем ТОЛЬКО один день в контенте
+                DaysContentControl.ItemsSource = new List<DayViewModel> { currentDay };
+                _currentDay = dayNumber;
+
+                // Обновляем заголовок
+                UpdateCurrentDayTitle(dayNumber);
+
+                // Активируем кнопку
+                Dispatcher.InvokeAsync(() => ActivateDayButton(dayNumber),
+                System.Windows.Threading.DispatcherPriority.Background);
+            }
+        }
+
+        // Активация кнопки дня
+        private void ActivateDayButton(int dayNumber)
+        {
+            for (int i = 0; i < DaysButtonsControl.Items.Count; i++)
+            {
+                var container = DaysButtonsControl.ItemContainerGenerator.ContainerFromIndex(i);
+                if (container != null)
+                {
+                    var button = FindVisualChild<Button>(container);
+                    if (button != null)
+                    {
+                        var dayVm = (DayViewModel)DaysButtonsControl.Items[i];
+                        if (dayVm.DayNumber == dayNumber)
+                        {
+                            button.Background = new SolidColorBrush(Color.FromRgb(52, 152, 219));
+                            button.Foreground = Brushes.White;
+                        }
+                        else
+                        {
+                            button.Background = Brushes.White;
+                            button.Foreground = new SolidColorBrush(Color.FromRgb(44, 62, 80));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Обработчик клика по дню
         private void DayButton_Click(object sender, RoutedEventArgs e)
         {
-            var button = sender as Button;
-            if (button?.Tag is string dayStr && int.TryParse(dayStr, out int day))
+            if (sender is Button button && button.Tag is int dayNumber)
             {
-                SwitchDay(day);
+                ShowCurrentDay(dayNumber);
             }
         }
 
-        private void SwitchDay(int day)
+        private T FindParent<T>(DependencyObject child) where T : DependencyObject
         {
-            // Скрываем все дни
-            Day1Content.Visibility = Visibility.Collapsed;
-            Day2Content.Visibility = Visibility.Collapsed;
-            // Day3Content.Visibility = Visibility.Collapsed; // Добавить при необходимости
+            var parentObject = VisualTreeHelper.GetParent(child);
 
-            // Показываем выбранный день
-            switch (day)
-            {
-                case 1:
-                    Day1Content.Visibility = Visibility.Visible;
-                    break;
-                case 2:
-                    Day2Content.Visibility = Visibility.Visible;
-                    break;
-                    // case 3:
-                    //     Day3Content.Visibility = Visibility.Visible;
-                    //     break;
-            }
+            if (parentObject is T parent)
+                return parent;
 
-            _currentDay = day;
-            ActivateDayButton(day);
+            if (parentObject == null)
+                return null;
+
+            return FindParent<T>(parentObject);
         }
 
-        private void ActivateDayButton(int day)
-        {
-            // Сбрасываем все кнопки
-            Day1Button.Background = System.Windows.Media.Brushes.White;
-            Day1Button.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(44, 62, 80));
-            Day2Button.Background = System.Windows.Media.Brushes.White;
-            Day2Button.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(44, 62, 80));
-            // Day3Button.Background = System.Windows.Media.Brushes.White;
-            // Day3Button.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(44, 62, 80));
 
-            // Активируем выбранную кнопку
-            switch (day)
-            {
-                case 1:
-                    Day1Button.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(52, 152, 219));
-                    Day1Button.Foreground = System.Windows.Media.Brushes.White;
-                    break;
-                case 2:
-                    Day2Button.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(52, 152, 219));
-                    Day2Button.Foreground = System.Windows.Media.Brushes.White;
-                    break;
-                    // case 3:
-                    //     Day3Button.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(52, 152, 219));
-                    //     Day3Button.Foreground = System.Windows.Media.Brushes.White;
-                    //     break;
-            }
-        }
-
-        private void AddDayButton_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBox.Show("Добавление нового дня будет реализовано в будущих версиях",
-                          "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-        }
-
+        // Обработчик добавления рецепта
         private void AddRecipeButton_Click(object sender, RoutedEventArgs e)
         {
-            var button = sender as Button;
-            string mealType = button?.Tag?.ToString() ?? "unknown";
+            if (sender is Button button && button.Tag is string mealTypeTag)
+            {
+                // Сохраняем текущий тег для последующего использования
+                _currentMealTypeTag = mealTypeTag;
 
-            MessageBox.Show($"Откроется каталог рецептов для добавления в {GetMealTypeName(mealType)}",
-                          "Добавление рецепта", MessageBoxButton.OK, MessageBoxImage.Information);
+                System.Diagnostics.Debug.WriteLine($"AddRecipeButton_Click: Tag = {mealTypeTag}");
+
+                // Переходим в каталог рецептов
+                NavigationService?.Navigate(new CatalogRecipesPage(this, _roomId));
+            }
         }
 
-        private string GetMealTypeName(string tag)
+        public void OnRecipeSelected(Recipe recipe, List<int> responsibleParticipantIds)
         {
-            return tag switch
+            try
             {
-                "breakfast" => "завтрак",
-                "lunch" => "обед",
-                "snack" => "перекус",
-                "dinner" => "ужин",
-                "day2_breakfast" => "завтрак (день 2)",
-                "day2_lunch" => "обед (день 2)",
-                "day2_snack" => "перекус (день 2)",
-                "day2_dinner" => "ужин (день 2)",
-                _ => "неизвестный приём пищи"
-            };
+
+                System.Diagnostics.Debug.WriteLine($"=== OnRecipeSelected ===");
+                System.Diagnostics.Debug.WriteLine($"Current meal tag: {_currentMealTypeTag}");
+                System.Diagnostics.Debug.WriteLine($"Recipe: {recipe.Title}");
+                System.Diagnostics.Debug.WriteLine($"Responsible participants: {responsibleParticipantIds.Count}");
+                int currentDayToRestore = _currentDay;
+
+                using var ctx = new TrackSyncContext();
+                var room = ctx.HikeRooms.Find(_roomId);
+                if (room == null)
+                {
+                    MessageBox.Show("Ошибка: Комната не найдена", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Парсим тег
+                var parts = _currentMealTypeTag.Split('_');
+                string mealType = parts[0];
+                int dayNumber = int.Parse(parts[1].Replace("day", ""));
+
+                int typeMealId = mealType switch
+                {
+                    "breakfast" => 1,
+                    "lunch" => 2,
+                    "dinner" => 3,
+                    "snack" => 4,
+                    _ => 1
+                };
+
+                DateOnly mealDate = room.StartDate.AddDays(dayNumber - 1);
+
+                // Ищем существующую запись рецепта для этого приёма пищи
+                var existing = ctx.HikeRoomsRecipes
+                    .FirstOrDefault(hrr => hrr.HikeRoomId == _roomId &&
+                                         hrr.MealDate == mealDate &&
+                                         hrr.TypeMealId == typeMealId);
+
+                if (existing != null)
+                {
+                    // Получаем участников этой комнаты
+                    var participantsInRoom = ctx.Participants
+                        .Where(p => p.HikeRoomId == _roomId)
+                        .Select(p => p.ParticipantId)
+                        .ToList();
+
+                    // Удаляем только связи с участниками этой комнаты
+                    var oldResponsibles = ctx.RecipesParticipants
+                        .Where(rp => rp.RecipeId == existing.RecipeId &&
+                                   participantsInRoom.Contains(rp.ParticipantId))
+                        .ToList();
+
+                    ctx.RecipesParticipants.RemoveRange(oldResponsibles);
+
+                    // Удаляем запись о рецепте в приёме пищи
+                    ctx.HikeRoomsRecipes.Remove(existing);
+                }
+
+                // Добавляем новую запись рецепта для приёма пищи
+                var newRecipeEntry = new HikeRoomsRecipe
+                {
+                    HikeRoomId = _roomId,
+                    RecipeId = recipe.RecipeId,
+                    TypeMealId = typeMealId,
+                    MealDate = mealDate
+                };
+                ctx.HikeRoomsRecipes.Add(newRecipeEntry);
+
+                // Добавляем новых ответственных (только если участник в этой комнате)
+                foreach (var participantId in responsibleParticipantIds)
+                {
+                    // Проверяем, что участник именно из этой комнаты
+                    var participantInRoom = ctx.Participants
+                        .Any(p => p.ParticipantId == participantId &&
+                                 p.HikeRoomId == _roomId);
+
+                    if (participantInRoom)
+                    {
+                        // Проверяем, не существует ли уже такая связь
+                        var existingLink = ctx.RecipesParticipants
+                            .FirstOrDefault(rp => rp.RecipeId == recipe.RecipeId &&
+                                                 rp.ParticipantId == participantId);
+
+                        if (existingLink == null)
+                        {
+                            ctx.RecipesParticipants.Add(new RecipesParticipant
+                            {
+                                RecipeId = recipe.RecipeId,
+                                ParticipantId = participantId
+                            });
+                        }
+                    }
+                }
+
+                ctx.SaveChanges();
+
+                // Перезагружаем раскладку
+                LoadMealPlan();
+                ShowCurrentDay(currentDayToRestore);
+
+                MessageBox.Show($"Рецепт '{recipe.Title}' успешно добавлен", "Успех",
+                    MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при добавлении рецепта:\n{ex.Message}\n{ex.InnerException?.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // === Дополнительные кнопки ===
+        private void LogoutButton_Click(object sender, EventArgs e)
+        {
+            FrameContext.MainWindowFrame.Navigate(new MainPage());
+        }
+
         private void InviteUsersButton_Click(object sender, RoutedEventArgs e)
         {
             NavigationService.Navigate(new InviteUsersPage(_roomId));
@@ -636,8 +1047,7 @@ namespace TrackSync.Pages
 
         private void RoomSettingsButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("Откроются настройки комнаты:\n- Изменение названия\n- Смена статуса\n- Управление доступом\n- Удаление комнаты",
-                          "Настройки комнаты", MessageBoxButton.OK, MessageBoxImage.Information);
+            NavigationService.Navigate(new RoomSettingsPage(_roomId));
         }
     }
 }

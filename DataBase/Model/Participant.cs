@@ -29,5 +29,6 @@ namespace TrackSync
         public virtual User User { get; set; } = null!;
         public virtual ICollection<HikeRoomsEquipment> HikeRoomsEquipments { get; set; }
         public virtual ICollection<RecipesParticipant> RecipesParticipants { get; set; }
+        public virtual ICollection<Waypoint> Waypoints { get; set; }
     }
 }

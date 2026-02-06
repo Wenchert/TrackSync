@@ -31,7 +31,7 @@ namespace TrackSync.Pages
                 if (_currentUser != null)
                 {
                     // Загружаем почту (только для чтения)
-                    EmailTextBox.Text = _currentUser.Name;
+                    EmailTextBox.Text = _currentUser.Email;
 
                     // Загружаем контакты
                     if (!string.IsNullOrWhiteSpace(_currentUser.Contacts))
@@ -271,6 +271,29 @@ namespace TrackSync.Pages
         private void HideMessage(TextBlock messageBlock)
         {
             messageBlock.Visibility = Visibility.Collapsed;
+        }
+
+        // Обработчик кнопки выхода
+        private void LogoutButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SessionManager.ClearSession();
+
+                if (FrameContext.MainWindowFrame != null)
+                {
+                    FrameContext.MainWindowFrame.Navigate(new AuthorizationPage());
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Ошибка при выходе из системы: {ex.Message}",
+                    "Ошибка",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error
+                );
+            }
         }
     }
 }

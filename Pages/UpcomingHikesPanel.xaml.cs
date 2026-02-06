@@ -51,14 +51,6 @@ namespace TrackSync.Pages
                 RoomSelected?.Invoke(this, new HikeRoomEventArgs(roomId));
             }
         }
-
-        /// <summary>
-        /// Обновить список комнат
-        /// </summary>
-        public void Refresh()
-        {
-            LoadRooms();
-        }
     }
 
         /// <summary>

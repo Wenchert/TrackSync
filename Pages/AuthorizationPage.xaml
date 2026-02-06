@@ -52,7 +52,7 @@
                     </StackPanel>
 
                     <StackPanel x:Name="LoginPanel" Margin="0,0,0,15">
-                        <TextBlock Style="{StaticResource BodyText}" Text="Логин" 
+                        <TextBlock Style="{StaticResource BodyText}" Text="Электронная почта" 
                                    Margin="0,0,0,5"/>
                         <TextBox Style="{StaticResource InputField}" x:Name="LoginText" 
                                  MaxLength="256"/>
@@ -64,6 +64,15 @@
                         <PasswordBox Style="{StaticResource PasswordField}" x:Name="PasswordText" 
                                     MaxLength="256"/>
                     </StackPanel>
+
+                    <!-- Новое поле для имени при регистрации -->
+                    <StackPanel x:Name="NamePanel" Visibility="Collapsed" Margin="0,0,0,15">
+                        <TextBlock Style="{StaticResource BodyText}" Text="Имя" 
+                                   Margin="0,0,0,5"/>
+                        <TextBox Style="{StaticResource InputField}" x:Name="NameText" 
+                                 MaxLength="256"/>
+                    </StackPanel>
+
                     <StackPanel x:Name="HeightWeightPanel" Visibility="Collapsed" Margin="0,0,0,15">
                         <Grid>
                             <Grid.ColumnDefinitions>

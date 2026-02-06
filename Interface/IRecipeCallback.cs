@@ -1,9 +1,10 @@
 ﻿using System.Collections.Generic;
 
-namespace TrackSync.Interface
+namespace TrackSync.Interfaces
 {
     public interface IRecipeCallback
     {
-        void OnRecipesSelected(List<Recipe> recipes);
+        void OnRecipeSelected(Recipe recipe, List<int> responsibleParticipantIds);
+
     }
 }

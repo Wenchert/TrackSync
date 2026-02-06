@@ -4,7 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using TrackSync.DataBase;
-//using TrackSync.DataBase.Model;
+
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Windows;
 

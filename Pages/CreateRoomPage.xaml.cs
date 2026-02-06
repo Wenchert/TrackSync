@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using TrackSync.DataBase;
 
-//using TrackSync.DataBase.Model;
+
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Windows;
 
@@ -108,7 +108,7 @@ namespace TrackSync.Pages
                 string? passwordHash = null;
                 if (PrivateRoomRadio.IsChecked.Value && !string.IsNullOrWhiteSpace(PasswordBox.Password))
                 {
-                    passwordHash = BCrypt.Net.BCrypt.HashPassword(PasswordBox.Password);
+                    passwordHash = BCrypt.Net.BCrypt.EnhancedHashPassword(PasswordBox.Password);
                 }
 
                 // Создаем новую комнату (статус "Планирование" = ID 1)
@@ -118,6 +118,7 @@ namespace TrackSync.Pages
                     title: TitleTextBox.Text.Trim(),
                     startDate: DateOnly.FromDateTime(StartDatePicker.SelectedDate.Value.Date),
                     endDate: DateOnly.FromDateTime(EndDatePicker.SelectedDate.Value.Date),
+                    leaderId: SessionManager.CurrentUserId,
                     password: passwordHash,
                     description: string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
                         ? null

@@ -9,19 +9,31 @@
       Background="#F8F9FA">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
-        <StackPanel MaxWidth="700" HorizontalAlignment="Center">
+        <StackPanel MinWidth="300" MaxWidth="500" HorizontalAlignment="Stretch">
             <!-- Заголовок страницы -->
             <StackPanel Margin="0,0,0,30">
                 <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
-                           FontWeight="Bold" Text="Настройки профиля"/>
+               FontWeight="Bold" Text="Настройки профиля"/>
                 <TextBlock Style="{StaticResource BodyText}" FontSize="16"
-                           Text="Управляйте вашими персональными данными и настройками безопасности"
-                           Foreground="#7F8C8D" Margin="0,5,0,0"/>
+               Text="Управляйте вашими персональными данными и настройками безопасности"
+               Foreground="#7F8C8D" Margin="0,5,0,0"/>
+
+                <!-- Кнопка выхода -->
+                <Button Style="{StaticResource TextButton}" 
+                    x:Name="LogoutButton"
+                    Click="LogoutButton_Click"
+                    HorizontalAlignment="Left"
+                    Margin="0,15,0,0"
+                    Foreground="#E74C3C">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Выйти из аккаунта"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
 
             <!-- ВКЛАДКИ НАСТРОЕК -->
             <Border Style="{StaticResource WidgetStyle}">
-                <TabControl Padding="20">
+                <TabControl Padding="20" HorizontalAlignment="Stretch">
                     <!-- Вкладка 1: Профиль -->
                     <TabItem Header="Профиль">
                         <StackPanel Margin="0,10,0,0">
@@ -163,7 +175,7 @@
                     </TabItem>
 
                     <!-- Вкладка 2: Безопасность -->
-                    <TabItem Header="Безопасность">
+                    <TabItem Header="Безопасность" HorizontalAlignment="Stretch">
                         <StackPanel Margin="0,10,0,0">
                             <TextBlock Style="{StaticResource TitleText}" FontSize="18" 
                                        FontWeight="SemiBold" Text="Изменение пароля"

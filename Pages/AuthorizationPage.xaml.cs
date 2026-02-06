@@ -9,10 +9,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using TrackSync.DataBase;
-//using TrackSync.DataBase.Model;
-using TrackSync.DataBase.WorkWithDB;
-using TrackSync.Functions;
-using TrackSync.Pages;
 using TrackSync.Windows;
 
 namespace TrackSync.Pages
@@ -54,8 +50,6 @@ namespace TrackSync.Pages
             CleanOldLoginAttempts(ctx, _currentIpAddress);
 
             BlockUser(ctx, _currentIpAddress);
-
-            return;
         }
 
         private void OnLoginMouseDown(object sender, MouseButtonEventArgs e)
@@ -77,6 +71,7 @@ namespace TrackSync.Pages
             RegisterTitle.Foreground = isLogin ? new SolidColorBrush(Color.FromRgb(149, 165, 166)) : new SolidColorBrush(Color.FromRgb(52, 152, 219));
 
             // Показ/скрытие дополнительных полей
+            NamePanel.Visibility = isLogin ? Visibility.Collapsed : Visibility.Visible;
             HeightWeightPanel.Visibility = isLogin ? Visibility.Collapsed : Visibility.Visible;
 
             // Обновление текста кнопки
@@ -92,7 +87,10 @@ namespace TrackSync.Pages
                 PasswordPanel.Visibility = Visibility.Collapsed;
                 AuthButton.Visibility = Visibility.Collapsed;
                 if (!_isLoginMode)
+                {
+                    NamePanel.Visibility = Visibility.Collapsed;
                     HeightWeightPanel.Visibility = Visibility.Collapsed;
+                }
             }
             else
             {
@@ -100,7 +98,10 @@ namespace TrackSync.Pages
                 PasswordPanel.Visibility = Visibility.Visible;
                 AuthButton.Visibility = Visibility.Visible;
                 if (!_isLoginMode)
+                {
+                    NamePanel.Visibility = Visibility.Visible;
                     HeightWeightPanel.Visibility = Visibility.Visible;
+                }
             }
         }
 
@@ -141,21 +142,21 @@ namespace TrackSync.Pages
 
                     using var ctx = new TrackSyncContext();
 
-                    //Чистим старые записи
+                    // Чистим старые записи
                     CleanOldLoginAttempts(ctx, ipAddress);
 
                     BlockUser(ctx, ipAddress);
 
-                    var user = ctx.Users.FirstOrDefault(u => u.Name == LoginText.Text);
+                    var user = ctx.Users.FirstOrDefault(u => u.Email == LoginText.Text);
 
                     // Проверяем пароль через BCrypt и существование логина в БД
-                    if (BCrypt.Net.BCrypt.Verify(PasswordText.Password, user.Password) || user == null)
+                    if (user != null && BCrypt.Net.BCrypt.Verify(PasswordText.Password, user.Password))
                     {
                         // Успешный вход
                         RecordLoginAttempt(ctx, ipAddress, LoginText.Text, true);
 
                         // Создание сессии
-                        SessionManager.CurrentUser = ctx.Users.FirstOrDefault(u => u.Name == LoginText.Text);
+                        SessionManager.CurrentUser = user;
 
                         FrameContext.MainWindowFrame.Navigate(new MainPage());
                     }
@@ -166,7 +167,7 @@ namespace TrackSync.Pages
 
                         BlockUser(ctx, ipAddress);
 
-                        ErrorMessageVisible($"*Неверный логин или пароль");
+                        ErrorMessageVisible("*Неверный логин или пароль");
                     }
                 }
             }
@@ -187,7 +188,8 @@ namespace TrackSync.Pages
                 // Создаём нового пользователя
                 var newUser = new User(
                     password: PasswordText.Password,
-                    name: LoginText.Text,
+                    name: NameText.Text,           // Имя/ФИО
+                    email: LoginText.Text,         // Почта
                     weight: int.Parse(WeightText.Text),
                     height: int.Parse(HeightText.Text)
                 );
@@ -202,7 +204,6 @@ namespace TrackSync.Pages
                 FrameContext.MainWindowFrame.Navigate(new MainPage());
             }
         }
-
 
         private void BlockUser(TrackSyncContext ctx, string ipAddress)
         {
@@ -229,6 +230,7 @@ namespace TrackSync.Pages
                 }
             }
         }
+
         private void RecordLoginAttempt(TrackSyncContext ctx, string ipAddress, string email, bool success)
         {
             ctx.Loginattempts.Add(new Loginattempt
@@ -240,6 +242,7 @@ namespace TrackSync.Pages
             });
             ctx.SaveChanges();
         }
+
         private void CleanOldLoginAttempts(TrackSyncContext ctx, string currentUserIp)
         {
             var cutoffDate = DateTime.Now.AddMinutes(-15);
@@ -267,6 +270,7 @@ namespace TrackSync.Pages
             LoginPanel.Visibility = Visibility.Collapsed;
             PasswordPanel.Visibility = Visibility.Collapsed;
             AuthButton.Visibility = Visibility.Collapsed;
+            NamePanel.Visibility = Visibility.Collapsed;
             HeightWeightPanel.Visibility = Visibility.Collapsed;
             LoginTitle.Visibility = Visibility.Collapsed;
             RegisterTitle.Visibility = Visibility.Collapsed;
@@ -307,11 +311,14 @@ namespace TrackSync.Pages
             IpBlockPanel.Visibility = Visibility.Collapsed;
             LoginTitle.Visibility = Visibility.Visible;
             RegisterTitle.Visibility = Visibility.Visible;
-            SetLoginMode(true); // Используем общий метод для показа полей
+            SetLoginMode(true); 
 
             // Очищаем поля
             LoginText.Text = string.Empty;
             PasswordText.Password = string.Empty;
+            NameText.Text = string.Empty;
+            WeightText.Text = "70";
+            HeightText.Text = "170";
         }
 
         private void RefreshButton_Click(object sender, RoutedEventArgs e)
@@ -352,6 +359,12 @@ namespace TrackSync.Pages
 
         private bool ValidateSignUpFields()
         {
+            if (string.IsNullOrWhiteSpace(NameText.Text))
+            {
+                ErrorMessageVisible("*Поле имени должно быть заполнено");
+                return false;
+            }
+
             if (string.IsNullOrEmpty(WeightText.Text) || string.IsNullOrEmpty(HeightText.Text))
             {
                 ErrorMessageVisible("*Все поля должны быть заполнены");
@@ -386,11 +399,11 @@ namespace TrackSync.Pages
             }
         }
 
-        public bool IsUserExists(string login)
+        public bool IsUserExists(string email)
         {
             using (var ctx = new TrackSyncContext())
             {
-                return ctx.Users.Any(u => u.Name == login);
+                return ctx.Users.Any(u => u.Email == email);
             }
         }
     }

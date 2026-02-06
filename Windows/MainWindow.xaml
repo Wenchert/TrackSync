@@ -39,28 +39,10 @@
                                    Foreground="#1B4F72"/>
                     </StackPanel>
                 </StackPanel>
-                <StackPanel Grid.Column="2" Orientation="Horizontal" 
-                           Margin="0,0,20,0" VerticalAlignment="Center">
-                    <Button x:Name="NotificationsBtn" Style="{StaticResource IconButton}"
-                            Click="NotificationsBtn_Click" ToolTip="Уведомления">
-                        <Grid>
-                            <Image Source="/Images/Icons/bell.png" Width="22" Height="22"/>
-                            <Border x:Name="NotificationBadge" Style="{StaticResource NotificationBadgeStyle}"
-                                    Visibility="Collapsed" 
-                                    HorizontalAlignment="Right" VerticalAlignment="Top"
-                                    Margin="0,-6,-6,0">
-                                <TextBlock x:Name="NotificationCount" Text="0" Foreground="White" 
-                                           FontSize="10" HorizontalAlignment="Center" 
-                                           VerticalAlignment="Center"/>
-                            </Border>
-                        </Grid>
-                    </Button>
-
-                    <Button x:Name="ProfileBtn" Style="{StaticResource IconButton}"
-                            Click="ProfileBtn_Click" Margin="15,0,0,0" ToolTip="Профиль">
-                        <Image Source="/Images/Icons/user.png" Width="22" Height="22"/>
-                    </Button>
-                </StackPanel>
+                <Button x:Name="ProfileBtn" Style="{StaticResource IconButton}"
+                            Click="ProfileBtn_Click" Margin="0,0,20,0" ToolTip="Профиль" Grid.Column="2" VerticalAlignment="Center">
+                    <Image Source="/Images/Icons/user.png" Width="22" Height="22"/>
+                </Button>
             </Grid>
         </Border>
         <Grid Grid.Row="1">
@@ -125,7 +107,7 @@
                                         Click="RecipesCatalogBtn_Click" Height="45" Margin="0,8,0,0">
                                     <StackPanel Orientation="Horizontal">
                                         <Image Source="/Images/Icons/food.png" Width="20" Height="20" Margin="0,0,10,0"/>
-                                        <TextBlock Text="Каталог рецептов" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Создать рецептов" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
 
@@ -133,7 +115,7 @@
                                         Click="EquipmentCatalogBtn_Click" Height="45" Margin="0,8,0,0">
                                     <StackPanel Orientation="Horizontal">
                                         <Image Source="/Images/Icons/backpack.png" Width="20" Height="20" Margin="0,0,10,0"/>
-                                        <TextBlock Text="Каталог снаряжения" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Создать снаряжения" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </StackPanel>
@@ -148,66 +130,96 @@
                                      HorizontalContentAlignment="Stretch">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Style="{StaticResource RoomItemStyle}" 
-                                                Tag="{Binding HikeRoomId}" 
-                                                Cursor="Hand"
-                                                MouseLeftButtonDown="SidebarRoomItem_MouseLeftButtonDown"
-                                                Margin="0,0,0,10"
-                                                Padding="15">
-                                            <Grid>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
+                                        <StackPanel>
+                                            <!-- Основной элемент комнаты -->
+                                            <Border Style="{StaticResource RoomItemStyle}" 
+                    Tag="{Binding HikeRoomId}" 
+                    Cursor="Hand"
+                    MouseLeftButtonDown="SidebarRoomItem_MouseLeftButtonDown"
+                    Margin="0,0,0,10"
+                    Padding="15">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
 
-                                                <TextBlock Grid.Row="0" Style="{StaticResource TitleText}" FontSize="15"
-                                                           Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Row="0" Style="{StaticResource TitleText}" FontSize="15"
+                               Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
 
-                                                <StackPanel Orientation="Horizontal" Grid.Row="1">
-                                                    <TextBlock Style="{StaticResource BodyText}"
-                                                           Text="{Binding StartDate, StringFormat={}{0:dd MMM yyyy}}"
-                                                           Foreground="#7F8C8D" FontSize="13"/>
-                                                    <TextBlock Style="{StaticResource BodyText}"
-                                                           Text=" - "
-                                                           Foreground="#7F8C8D" FontSize="13"/>
-                                                    <TextBlock Style="{StaticResource BodyText}"
-                                                           Text="{Binding EndDate, StringFormat={}{0:dd MMM yyyy}}"
-                                                           Foreground="#7F8C8D" FontSize="13"/>
-                                                </StackPanel>
-
-                                                <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,0">
-                                                    <Border CornerRadius="4" Padding="4,1">
-                                                        <Border.Style>
-                                                            <Style TargetType="Border">
-                                                                <Setter Property="Background" Value="#95A5A6"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Status.StatusId}" Value="1">
-                                                                        <Setter Property="Background" Value="#3498DB"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status.StatusId}" Value="2">
-                                                                        <Setter Property="Background" Value="#2ECC71"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status.StatusId}" Value="3">
-                                                                        <Setter Property="Background" Value="#95A5A6"/>
-                                                                    </DataTrigger>
-                                                                    <DataTrigger Binding="{Binding Status.StatusId}" Value="4">
-                                                                        <Setter Property="Background" Value="#E74C3C"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </Border.Style>
-                                                        <TextBlock Text="{Binding Status.Title}" Foreground="White" FontSize="10"/>
-                                                    </Border>
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{Binding Participants.Count}" 
-                                                               Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
-                                                        <TextBlock Text="участников" 
-                                                               Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
+                                                    <StackPanel Orientation="Horizontal" Grid.Row="1">
+                                                        <TextBlock Style="{StaticResource BodyText}"
+                               Text="{Binding StartDate, StringFormat={}{0:dd MMM yyyy}}"
+                               Foreground="#7F8C8D" FontSize="13"/>
+                                                        <TextBlock Style="{StaticResource BodyText}"
+                               Text=" - "
+                               Foreground="#7F8C8D" FontSize="13"/>
+                                                        <TextBlock Style="{StaticResource BodyText}"
+                               Text="{Binding EndDate, StringFormat={}{0:dd MMM yyyy}}"
+                               Foreground="#7F8C8D" FontSize="13"/>
                                                     </StackPanel>
-                                                </StackPanel>
-                                            </Grid>
-                                        </Border>
+
+                                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,0">
+                                                        <Border CornerRadius="4" Padding="4,1">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="#95A5A6"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="1">
+                                                                            <Setter Property="Background" Value="#3498DB"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="2">
+                                                                            <Setter Property="Background" Value="#2ECC71"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="3">
+                                                                            <Setter Property="Background" Value="#95A5A6"/>
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="4">
+                                                                            <Setter Property="Background" Value="#E74C3C"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock Text="{Binding Status.Title}" Foreground="White" FontSize="10"/>
+                                                        </Border>
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Text="{Binding Participants.Count}" 
+                                   Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
+                                                            <TextBlock Text="участников" 
+                                       Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
+                                                            </StackPanel>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+
+                                            <!-- Панель ввода пароля (скрыта по умолчанию) -->
+                                            <StackPanel x:Name="PasswordPanel" Visibility="Collapsed" Margin="15,0,15,15">
+                                                <TextBlock Style="{StaticResource BodyText}" 
+                                                   Foreground="#7F8C8D" 
+                                                   FontSize="13"
+                                                   Margin="0,0,0,8"
+                                                   Text="Введите пароль для приватной комнаты"/>
+                                                <PasswordBox x:Name="RoomPasswordBox" Style="{StaticResource PasswordField}" Height="40" Tag="{Binding HikeRoomId}" Margin="0,0,0,10"/>
+                                                    <TextBlock x:Name="PasswordError" Style="{StaticResource BodyText}" 
+                                                        Foreground="#E74C3C" 
+                                                        FontSize="13"
+                                                        Visibility="Collapsed"
+                                                        Margin="0,0,0,10"/>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                        <Button Style="{StaticResource TextButton}" 
+                Content="Отменить" 
+                Click="CancelPassword_Click"
+                Tag="{Binding HikeRoomId}"/>
+                                                        <Button Style="{StaticResource MainButton}" 
+                Content="Отправить" 
+                Click="SubmitPassword_Click"
+                Tag="{Binding HikeRoomId}"
+                Margin="10,0,0,0"
+                Padding="20,8"/>
+                                                    </StackPanel>
+                                            </StackPanel>
+                                        </StackPanel>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>
                             </ListBox>

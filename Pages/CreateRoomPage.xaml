@@ -153,8 +153,6 @@
                                 Click="CreateRoomButton_Click"
                                 Padding="28,12">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE105;" 
-                                          Margin="0,0,8,0"/>
                                 <TextBlock Text="Создать комнату"/>
                             </StackPanel>
                         </Button>
