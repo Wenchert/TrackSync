@@ -3,6 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="clr-namespace:TrackSync.Pages"
       mc:Ignorable="d" 
       d:DesignHeight="700" d:DesignWidth="1200"
       Title="TrackSync - Комната похода"
@@ -98,98 +99,109 @@
                             x:Name="InviteUsersButton"
                             Click="InviteUsersButton_Click"
                             ToolTip="Пригласить пользователей"
-                            Margin="0,0,10,0">
+                            Margin="0,0,10,0" Height="25">
                             <Image Source="/Images/Icons/user_plus.png" Width="20" Height="20"/>
                         </Button>
                         <Button Style="{StaticResource IconButton}"
                             x:Name="RoomSettingsButton"
                             Click="RoomSettingsButton_Click"
-                            ToolTip="Настройки комнаты">
+                            ToolTip="Настройки комнаты"
+                            Height="25">
                             <Image Source="/Images/Icons/settings.png" Width="20" Height="20"/>
                         </Button>
                     </StackPanel>
                 </Grid>
 
-                <TabControl x:Name="RoomTabControl" Style="{StaticResource {x:Type TabControl}}" MaxHeight="500" MinHeight="200">
-                    <TabItem Header="Маршруты">
-                        <Grid Margin="10">
+            <TabControl x:Name="RoomTabControl" Style="{StaticResource {x:Type TabControl}}" MaxHeight="500" MinHeight="200">
+                <TabItem Header="Маршруты">
+                    <Grid Margin="10">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
-                            <Border Grid.Row="0" Background="#ECF0F1" CornerRadius="8"
-                                    BorderBrush="#BDC3C7" BorderThickness="1">
+                            <Border Grid.Row="0" Background="#ECF0F1" CornerRadius="8" BorderBrush="#BDC3C7" BorderThickness="1">
                                 <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="*"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-
-                                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    </StackPanel>
-                                    <StackPanel Grid.Row="1" Orientation="Horizontal" 
-                                               HorizontalAlignment="Right" Margin="10">
-                                        <Button Style="{StaticResource TextButton}" 
-                                                Click="CreateRouteButton_Click">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Создать маршрут"/>
-                                            </StackPanel>
-                                        </Button>
-                                        <Button Style="{StaticResource TextButton}" 
-                                                Click="EditRouteButton_Click" Margin="10,0,0,0">
-                                            <StackPanel Orientation="Horizontal">
-                                                <TextBlock Text="Редактировать"/>
-                                            </StackPanel>
-                                        </Button>
+                                    <!-- Вставляем наш новый контроллер карты -->
+                                    <local:RouteBuilderControl x:Name="MyRouteBuilder"/>
+                                    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
+                                        <Button x:Name="UndoRouteButton" Content="Отменить действие" Click="UndoRouteButton_Click"  Margin="0,0,10,0" Style="{StaticResource TextButton}"/>
+                                        <Button x:Name="SaveRouteButton" Content="Очистить" Click="ClearRoute_Click" Margin="0,0,10,0" Style="{StaticResource MainButton}"/>
+                                        <Button x:Name="ClearRouteButton" Content="Сохранить" Click="SaveRoute_Click"  Style="{StaticResource MainButton}"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
-                            <Border Grid.Row="1" Style="{StaticResource WidgetStyle}" Margin="0,15,0,0">
-                                <StackPanel>
-                                    <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                Text="Статистика маршрута"
-                                               Margin="0,0,0,15"/>
 
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <StackPanel Grid.Column="0">
-                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                       Foreground="#7F8C8D" Text="Цвет маршрута"/>
-                                            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                                <Border Width="20" Height="20" Background="#E74C3C" CornerRadius="4"/>
-                                                <TextBlock Style="{StaticResource BodyText}" Margin="8,0,0,0" Text="Красный"/>
-                                            </StackPanel>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                       Foreground="#7F8C8D" Text="Длина маршрута"/>
-                                            <TextBlock Style="{StaticResource BodyText}"  
-                                                       Margin="0,5,0,0" Text="125.5 км"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="2">
-                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                       Foreground="#7F8C8D" Text="Перепад высот"/>
-                                            <TextBlock Style="{StaticResource BodyText}"  
-                                                       Margin="0,5,0,0" Text="2,450 м"/>
-                                        </StackPanel>
-                                        <StackPanel Grid.Column="3">
-                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12" 
-                                                       Foreground="#7F8C8D" Text="Точек на маршруте"/>
-                                            <TextBlock Style="{StaticResource BodyText}"  
-                                                       Margin="0,5,0,0" Text="42"/>
-                                        </StackPanel>
-                                    </Grid>
+                            <!-- Ваша панель статистики -->
+                        <Border Grid.Row="1" Style="{StaticResource WidgetStyle}" Margin="0,15,0,0">
+                            <!-- Используем Grid, чтобы он ограничивал высоту содержимого -->
+                            <Grid MaxHeight="250">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="*"/>
+                                    <!-- Для сообщений -->
+                                    <RowDefinition Height="*"/>
+                                    <!-- Для заголовка -->
+                                    <RowDefinition Height="*"/>
+                                    <!-- Для скролла (занимает все остальное место) -->
+                                </Grid.RowDefinitions>
+
+                                <StackPanel Orientation="Vertical">
+                                    <TextBlock Grid.Row="1" x:Name="MapMessage" Style="{StaticResource BodyText}" 
+                                        Foreground="#E74C3C" TextWrapping="Wrap" 
+                                        Visibility="Collapsed" Margin="0,0,0,10"/>
+
+                                    <TextBlock Grid.Row="1" Style="{StaticResource TitleText}" FontSize="16" 
+                                        Text="Статистика маршрутов похода" Margin="0,0,0,15"/>
                                 </StackPanel>
-                            </Border>
-                        </Grid>
-                    </TabItem>
 
-                <TabItem Header="Снаряжение">
+                                <!-- Теперь ScrollViewer ограничен высотой Grid и будет работать -->
+                                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Visible" 
+                      HorizontalScrollBarVisibility="Disabled">
+                                    <ItemsControl x:Name="RoutesStatisticsList">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate>
+                                                <!-- Ваш Grid с данными (без изменений) -->
+                                                <Grid Margin="0,0,15,10">
+                                                    <!-- Добавил отступ справа для бара -->
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="2*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+
+                                                    <!-- Содержимое карточки (Цвет, Автор, Дистанция, Точки) оставляем как было -->
+                                                    <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                                                        <TextBlock Text="Цвет" FontSize="11" Foreground="#7F8C8D"/>
+                                                        <Border Width="20" Height="20" CornerRadius="4" Margin="0,5,0,0"
+                                        Background="{Binding ColorBrush}" HorizontalAlignment="Left"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="1">
+                                                        <TextBlock Text="Создатель" FontSize="11" Foreground="#7F8C8D"/>
+                                                        <TextBlock Text="{Binding CreatorName}" FontWeight="Bold" Margin="0,5,0,0" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="2">
+                                                        <TextBlock Text="Дистанция" FontSize="11" Foreground="#7F8C8D"/>
+                                                        <TextBlock Text="{Binding DistanceStr}" FontWeight="Bold" Margin="0,5,0,0"/>
+                                                    </StackPanel>
+
+                                                    <StackPanel Grid.Column="3">
+                                                        <TextBlock Text="Точек" FontSize="11" Foreground="#7F8C8D"/>
+                                                        <TextBlock Text="{Binding PointsCount}" FontWeight="Bold" Margin="0,5,0,0"/>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+
+                    <TabItem Header="Снаряжение">
                     <Grid Margin="10">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -213,7 +225,7 @@
 
                         <!-- Список участников с внутренней прокруткой -->
                         <ScrollViewer Grid.Row="1" 
-                          VerticalScrollBarVisibility="Auto" 
+                          VerticalScrollBarVisibility="Visible" 
                           HorizontalScrollBarVisibility="Disabled"
                           Margin="0,0,0,15">
                             <ItemsControl x:Name="ParticipantsItemsControl" MaxHeight="250" MinHeight="200">

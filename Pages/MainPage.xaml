@@ -10,53 +10,70 @@
       Background="#F8F9FA"
       Loaded="Page_Loaded">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
-        <StackPanel>
+    <StackPanel Margin="40,30,40,30">
 
-            <StackPanel Margin="0,0,0,30">
-                <TextBlock x:Name="WelcomeTextBlock" 
-                           Style="{StaticResource TitleText}" 
-                           FontSize="28" 
-                           FontWeight="Bold" 
-                           Text="Добро пожаловать!"/>
-                <TextBlock Style="{StaticResource BodyText}" 
-                           FontSize="16"
-                           Text="Здесь вы можете управлять своими походами" 
-                           Foreground="#7F8C8D"/>
-            </StackPanel>
+        <StackPanel Margin="0,0,0,30">
+            <TextBlock x:Name="WelcomeTextBlock" 
+                       Style="{StaticResource TitleText}" 
+                       FontSize="28" 
+                       FontWeight="Bold" 
+                       Text="Добро пожаловать!"/>
+            <TextBlock Style="{StaticResource BodyText}" 
+                       FontSize="16"
+                       Text="Здесь вы можете управлять своими походами" 
+                       Foreground="#7F8C8D"/>
+        </StackPanel>
 
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0" Style="{StaticResource WidgetStyle}" Margin="0,0,20,0">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                            <Image Source="/Images/Icons/bell.png" Width="24" Height="24" Margin="0,0,10,0"/>
-                            <TextBlock Style="{StaticResource TitleText}" FontSize="18" FontWeight="Bold" Text="Уведомления"/>
-                        </StackPanel>
+            <!-- УВЕДОМЛЕНИЯ -->
+            <Border Grid.Column="0" Style="{StaticResource WidgetStyle}" Margin="0,0,20,0">
+                <Grid>
+                    <!-- ЗАМЕНИЛ StackPanel на Grid -->
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
-                        <pages:NotificationsPanel x:Name="NotificationsControl" 
-                                                  VerticalAlignment="Top"
-                                                  Margin="0,0,0,20"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <Image Source="/Images/Icons/bell.png" Width="24" Height="24" Margin="0,0,10,0"/>
+                        <TextBlock Style="{StaticResource TitleText}" FontSize="18" FontWeight="Bold" Text="Уведомления"/>
                     </StackPanel>
-                </Border>
 
-                <Border Grid.Column="1" Style="{StaticResource WidgetStyle}">
-                    <StackPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                            <Image Source="/Images/Icons/calendar.png" Width="24" Height="24" Margin="0,0,10,0"/>
-                            <TextBlock Style="{StaticResource TitleText}" FontSize="18" FontWeight="Bold" Text="Предстоящие походы"/>
-                        </StackPanel>
+                    <ScrollViewer Grid.Row="1" 
+                                  VerticalScrollBarVisibility="Auto" 
+                                  MaxHeight="400">
+                        <pages:NotificationsPanel x:Name="NotificationsControl" Margin="0,0,0,20"/>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
 
+            <!-- ПРЕДСТОЯЩИЕ ПОХОДЫ -->
+            <Border Grid.Column="1" Style="{StaticResource WidgetStyle}">
+                <Grid>
+                    <!-- ЗАМЕНИЛ StackPanel на Grid -->
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                        <Image Source="/Images/Icons/calendar.png" Width="24" Height="24" Margin="0,0,10,0"/>
+                        <TextBlock Style="{StaticResource TitleText}" FontSize="18" FontWeight="Bold" Text="Предстоящие походы"/>
+                    </StackPanel>
+
+                    <ScrollViewer Grid.Row="1" 
+                                  VerticalScrollBarVisibility="Auto" 
+                                  MaxHeight="400">
                         <pages:UpcomingHikesPanel x:Name="UpcomingHikesControl"
                                                   RoomSelected="UpcomingHikesControl_RoomSelected"/>
-
-                    </StackPanel>
-                </Border>
-            </Grid>
-        </StackPanel>
-    </ScrollViewer>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </StackPanel>
 </Page>

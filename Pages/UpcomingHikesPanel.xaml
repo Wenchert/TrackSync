@@ -4,69 +4,69 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d" 
-             d:DesignHeight="400" d:DesignWidth="600"
+             d:DesignHeight="400" d:DesignWidth="600">
+
+    <!-- УБРАЛ ВНЕШНИЙ StackPanel -->
+    <ListBox x:Name="RoomsListBox" 
+             BorderThickness="0" 
+             Background="Transparent"
+             HorizontalContentAlignment="Stretch"
              MaxHeight="400">
-    <StackPanel>
-        <ListBox x:Name="RoomsListBox" 
-                 BorderThickness="0" 
-                 Background="Transparent"
-                 ScrollViewer.VerticalScrollBarVisibility="Disabled"
-                 HorizontalContentAlignment="Stretch">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <Border Style="{StaticResource HikeItemStyle}" 
-                            Tag="{Binding HikeRoomId}" 
-                            Cursor="Hand"
-                            MouseLeftButtonDown="RoomItem_MouseLeftButtonDown"
-                            Margin="0,0,0,12"
-                            Padding="15">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+        <!-- MaxHeight напрямую на ListBox -->
+        <ListBox.ItemTemplate>
+            <DataTemplate>
+                <Border Style="{StaticResource HikeItemStyle}" 
+                        Tag="{Binding HikeRoomId}" 
+                        Cursor="Hand"
+                        MouseLeftButtonDown="RoomItem_MouseLeftButtonDown"
+                        Margin="0,0,0,12"
+                        Padding="15">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                            <Border Width="6" Grid.Column="0" Margin="0,0,15,0" CornerRadius="3,0,0,3">
-                                <Border.Style>
-                                    <Style TargetType="Border">
-                                        <Setter Property="Background" Value="#95A5A6"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Status.StatusId}" Value="1">
-                                                <Setter Property="Background" Value="#3498DB"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Status.StatusId}" Value="2">
-                                                <Setter Property="Background" Value="#2ECC71"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Status.StatusId}" Value="3">
-                                                <Setter Property="Background" Value="#95A5A6"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Status.StatusId}" Value="4">
-                                                <Setter Property="Background" Value="#E74C3C"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Border.Style>
-                            </Border>
+                        <Border Width="6" Grid.Column="0" Margin="0,0,15,0" CornerRadius="3,0,0,3">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="Background" Value="#95A5A6"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="1">
+                                            <Setter Property="Background" Value="#3498DB"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="2">
+                                            <Setter Property="Background" Value="#2ECC71"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="3">
+                                            <Setter Property="Background" Value="#95A5A6"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="4">
+                                            <Setter Property="Background" Value="#E74C3C"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                        </Border>
 
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="{Binding Title}" 
-                                           Style="{StaticResource BodyText}" 
-                                           FontWeight="Bold"
-                                           TextTrimming="CharacterEllipsis"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                    <TextBlock Text="{Binding StartDate, StringFormat=dd MMM yyyy}" 
-                                               Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
-                                    <TextBlock Text=" – " Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
-                                    <TextBlock Text="{Binding EndDate, StringFormat=dd MMM yyyy}" 
-                                               Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
-                                </StackPanel>
-                                <TextBlock Text="{Binding Participants.Count, StringFormat={}{0} участников}" 
-                                           Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13" Margin="0,4,0,0"/>
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="{Binding Title}" 
+                                       Style="{StaticResource BodyText}" 
+                                       FontWeight="Bold"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                <TextBlock Text="{Binding StartDate, StringFormat=dd MMM yyyy}" 
+                                           Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
+                                <TextBlock Text=" – " Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
+                                <TextBlock Text="{Binding EndDate, StringFormat=dd MMM yyyy}" 
+                                           Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
                             </StackPanel>
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-    </StackPanel>
+                            <TextBlock Text="{Binding Participants.Count, StringFormat={}{0} участников}" 
+                                       Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </ListBox.ItemTemplate>
+    </ListBox>
 </UserControl>

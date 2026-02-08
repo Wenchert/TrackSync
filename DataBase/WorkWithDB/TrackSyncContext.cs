@@ -39,6 +39,7 @@ namespace TrackSync.DataBase
         {
             if (!optionsBuilder.IsConfigured)
             {
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
                 optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=TrackSync;Username=postgres;Password=popgg006");
             }
         }
@@ -454,6 +455,8 @@ namespace TrackSync.DataBase
 
                 entity.Property(e => e.HikeRoomId).HasColumnName("hike_room_id");
 
+                entity.Property(e => e.ParticipantId).HasColumnName("participant_id");
+
                 entity.Property(e => e.Title)
                     .HasMaxLength(256)
                     .HasColumnName("title");
@@ -463,6 +466,12 @@ namespace TrackSync.DataBase
                     .HasForeignKey(d => d.HikeRoomId)
                     .OnDelete(DeleteBehavior.ClientSetNull)
                     .HasConstraintName("tracks_hike_room_id_fkey");
+
+                entity.HasOne(d => d.Participant)
+                    .WithMany(p => p.Tracks)
+                    .HasForeignKey(d => d.ParticipantId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("fk_tracks_participants");
             });
 
             modelBuilder.Entity<TypeMeal>(entity =>
@@ -523,13 +532,6 @@ namespace TrackSync.DataBase
                 entity.Property(e => e.Title)
                     .HasMaxLength(256)
                     .HasColumnName("title");
-
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-
-                entity.HasOne(d => d.User)
-                    .WithMany(p => p.Waypoints)
-                    .HasForeignKey(d => d.UserId)
-                    .HasConstraintName("waypoints_user_id_fkey");
             });
 
             OnModelCreatingPartial(modelBuilder);

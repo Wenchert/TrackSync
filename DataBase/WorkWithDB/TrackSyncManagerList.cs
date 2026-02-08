@@ -1237,5 +1237,73 @@ namespace TrackSync.DataBase.WorkWithDB
                 return null;
             }
         }
+
+        public static Track GetTrackForRoom(int roomId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    return ctx.Tracks
+                        .Include(t => t.Segments)
+                            .ThenInclude(s => s.StartWaypoint)
+                        .Include(t => t.Segments)
+                            .ThenInclude(s => s.EndWaypoint)
+                        .FirstOrDefault(t => t.HikeRoomId == roomId);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при загрузке маршрута: {ex.Message}");
+                return null;
+            }
+        }
+        public static List<Track> GetAllTracksForRoom(int roomId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    return ctx.Tracks
+                        .AsNoTracking()
+                        .Where(t => t.HikeRoomId == roomId)
+                        .Include(t => t.Participant)          // Загружаем участника
+                            .ThenInclude(p => p.User)         // Внутри участника загружаем пользователя
+                        .Include(t => t.Segments)
+                            .ThenInclude(s => s.StartWaypoint)
+                        .Include(t => t.Segments)
+                            .ThenInclude(s => s.EndWaypoint)
+                        .ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при загрузке маршрута: {ex.Message}");
+                return null;
+            }
+        }
+        public static int GetCurrentParticipantId(int userId, int roomId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    // Отключаем отслеживание и ленивую загрузку для этого запроса
+                    return ctx.Participants
+                        .AsNoTracking()
+                        .Where(p => p.UserId == userId && p.HikeRoomId == roomId)
+                        .Select(p => p.ParticipantId) // Берем только ID, не загружая весь объект
+                        .FirstOrDefault();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Логируем в консоль, чтобы не спамить месседжбоксами при частых вызовах
+                Console.WriteLine($"Ошибка при поиске участника: {ex.Message}");
+                return 0;
+            }
+        }
+
+
     }
 }

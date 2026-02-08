@@ -1,0 +1,281 @@
+﻿using GMap.NET;
+using GMap.NET.WindowsPresentation;
+using System;
+using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Shapes;
+
+namespace TrackSync.Pages
+{
+    public partial class RouteBuilderControl : UserControl
+    {
+        public List<PointLatLng> RoutePoints => _routePoints;
+        private List<GMapMarker> _myVisualMarkers = new List<GMapMarker>();
+        private string _currentHexColor = "#FF0000";
+        private List<PointLatLng> _routePoints = new List<PointLatLng>();
+        private GMapRoute _currentRoute;
+        public event EventHandler<string> ColorChanged;
+        private bool _canEdit = true;
+
+        // Событие для обновления статистики в родительском окне
+        public event EventHandler<(double distance, int points)> RouteUpdated;
+
+        public RouteBuilderControl()
+        {
+            InitializeComponent();
+            InitMap();
+        }
+
+        public void SetPermissions(bool canEdit)
+        {
+            _canEdit = canEdit;
+            // Скрываем панель выбора цвета, если прав нет
+            ColorPickerPanel.Visibility = canEdit ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void ColorSelect_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag != null)
+            {
+                _currentHexColor = btn.Tag.ToString();
+
+                SelectedColorDisplay.Background = btn.Background;
+                ColorHexText.Text = _currentHexColor;
+
+                ColorPickerToggleButton.IsChecked = false;
+
+                DrawRoute();
+
+                ColorChanged?.Invoke(this, _currentHexColor);
+            }
+        }
+
+
+        public void DisableUsedColors(List<string> usedColors)
+        {
+            // Проходим по всем кнопкам внутри контейнера палитры (UniformGrid)
+            // Предположим, ваш UniformGrid называется "ColorsGrid"
+            foreach (var child in ColorsGrid.Children)
+            {
+                if (child is Button btn && btn.Tag != null)
+                {
+                    string btnColor = btn.Tag.ToString().ToUpper();
+
+                    // Если цвет есть в списке занятых — выключаем кнопку и делаем её полупрозрачной
+                    bool isUsed = usedColors.Any(c => c.ToUpper() == btnColor);
+
+                    btn.IsEnabled = !isUsed;
+                    btn.Opacity = isUsed ? 0.3 : 1.0;
+                    btn.ToolTip = isUsed ? "Этот цвет уже занят другим участником" : null;
+                }
+            }
+        }
+
+
+        // Теперь GetSelectedBrush берет цвет из переменной
+        private Brush GetSelectedBrush()
+        {
+            return GetBrushFromString(_currentHexColor);
+        }
+
+        // Свойство для сохранения в БД (теперь возвращает HEX)
+        public string SelectedColor => _currentHexColor;
+
+
+        public void LoadRoute(List<PointLatLng> points, string colorHex)
+        {
+            // 1. Очищаем только свои маркеры (чтобы не стереть чужие при загрузке)
+            foreach (var marker in _myVisualMarkers)
+            {
+                MapControl.Markers.Remove(marker);
+            }
+            _myVisualMarkers.Clear();
+
+            // 2. Обновляем список координат
+            _routePoints = new List<PointLatLng>(points);
+
+            // 3. Устанавливаем цвет в новый Color Picker
+            if (!string.IsNullOrEmpty(colorHex))
+            {
+                _currentHexColor = colorHex;
+
+                // Обновляем визуальные элементы, которые мы создали в XAML
+                SelectedColorDisplay.Background = GetBrushFromString(_currentHexColor);
+                ColorHexText.Text = _currentHexColor;
+            }
+
+            // 4. Отрисовка и статистика
+            DrawRoute();
+            NotifyUpdate();
+        }
+
+
+
+        public void DisplayOtherTrack(List<PointLatLng> points, string colorString)
+        {
+            if (points == null || points.Count < 2) return;
+
+            var routeMarker = new GMapRoute(points)
+            {
+                Shape = new Path
+                {
+                    Stroke = GetBrushFromString(colorString),
+                    StrokeThickness = 2.5,
+                    Opacity = 1
+                }
+            };
+
+            MapControl.Markers.Add(routeMarker);
+        }
+
+
+        private Brush GetBrushFromString(string colorString)
+        {
+            try
+            {
+                var brush = (Brush)new BrushConverter().ConvertFromString(colorString);
+                if (brush != null)
+                {
+                    brush.Freeze(); // Замораживаем для производительности
+                    return brush;
+                }
+            }
+            catch
+            {
+            }
+            return Brushes.Black;
+        }
+
+
+        private void InitMap()
+        {
+            MapControl.MapProvider = GMap.NET.MapProviders.OpenStreetMapProvider.Instance;
+            GMaps.Instance.Mode = AccessMode.ServerAndCache;
+
+            // 1. Обязательно задайте границы зума
+            MapControl.MinZoom = 2;
+            MapControl.MaxZoom = 20;
+            MapControl.Zoom = 10;
+
+            // 2. Настройка зума
+            MapControl.MouseWheelZoomType = MouseWheelZoomType.MousePositionWithoutCenter;
+            MapControl.IgnoreMarkerOnMouseWheel = true;
+
+            // 3. Управление
+            MapControl.CanDragMap = true;
+            MapControl.DragButton = MouseButton.Left;
+
+            // 4. Подписки
+            MapControl.MouseRightButtonDown += MapControl_MouseRightButtonDown;
+
+            // 5. Чтобы зум работал сразу, карте нужен фокус при наведении
+            MapControl.MouseEnter += (s, e) => MapControl.Focus();
+        }
+
+
+        private void MapControl_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (!_canEdit)
+            {
+                return;
+            }
+
+            var pos = e.GetPosition(MapControl);
+            var latLng = MapControl.FromLocalToLatLng((int)pos.X, (int)pos.Y);
+            _routePoints.Add(latLng);
+            DrawRoute();
+            NotifyUpdate();
+        }
+
+        private void DrawRoute()
+        {
+            // ОЧИСТКА: Удаляем только свои визуальные элементы
+            foreach (var marker in _myVisualMarkers)
+            {
+                MapControl.Markers.Remove(marker);
+            }
+            _myVisualMarkers.Clear();
+
+            var currentBrush = GetSelectedBrush();
+
+            // 1. Рисуем линию своего маршрута
+            if (_routePoints.Count > 1)
+            {
+                var line = new GMapRoute(_routePoints)
+                {
+                    Shape = new Path
+                    {
+                        Stroke = currentBrush,
+                        StrokeThickness = 4,
+                        StrokeStartLineCap = PenLineCap.Round,
+                        StrokeEndLineCap = PenLineCap.Round
+                    }
+                };
+
+                // Устанавливаем высокий ZIndex, чтобы линия была поверх чужих треков
+                Panel.SetZIndex(line.Shape, 10);
+
+                MapControl.Markers.Add(line);
+                _myVisualMarkers.Add(line);
+            }
+
+            // 2. Рисуем точки своего маршрута
+            foreach (var p in _routePoints)
+            {
+                var marker = new GMapMarker(p)
+                {
+                    Shape = new Ellipse
+                    {
+                        Width = 10,
+                        Height = 10,
+                        Fill = currentBrush, // Используем актуальную кисть
+                        Stroke = Brushes.White,
+                        StrokeThickness = 2
+                    },
+                    Offset = new Point(-5, -5)
+                };
+
+                // Точки должны быть выше линии
+                Panel.SetZIndex(marker.Shape, 11);
+
+                MapControl.Markers.Add(marker);
+                _myVisualMarkers.Add(marker);
+            }
+        }
+
+        public void Clear()
+        {
+            foreach (var marker in _myVisualMarkers)
+            {
+                MapControl.Markers.Remove(marker);
+            }
+            _myVisualMarkers.Clear();
+
+            _routePoints.Clear();
+        }
+
+        public void UndoLastPoint()
+        {
+            if (_routePoints.Count > 0)
+            {
+                _routePoints.RemoveAt(_routePoints.Count - 1);
+
+                DrawRoute();
+
+                NotifyUpdate();
+            }
+        }
+
+        private void NotifyUpdate()
+        {
+            double dist = 0;
+            for (int i = 0; i < _routePoints.Count - 1; i++)
+                dist += GMap.NET.MapProviders.EmptyProvider.Instance.Projection.GetDistance(_routePoints[i], _routePoints[i + 1]);
+
+            RouteUpdated?.Invoke(this, (dist, _routePoints.Count));
+        }
+    }
+}

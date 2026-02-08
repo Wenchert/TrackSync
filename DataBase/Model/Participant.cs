@@ -9,6 +9,7 @@ namespace TrackSync
         {
             HikeRoomsEquipments = new HashSet<HikeRoomsEquipment>();
             RecipesParticipants = new HashSet<RecipesParticipant>();
+            Tracks = new HashSet<Track>();
         }
         public Participant(int userId, int hikeRoomId, bool editMealPlan, bool editTrack, bool editEquipment)
         {
@@ -29,6 +30,6 @@ namespace TrackSync
         public virtual User User { get; set; } = null!;
         public virtual ICollection<HikeRoomsEquipment> HikeRoomsEquipments { get; set; }
         public virtual ICollection<RecipesParticipant> RecipesParticipants { get; set; }
-        public virtual ICollection<Waypoint> Waypoints { get; set; }
+        public virtual ICollection<Track> Tracks { get; set; }
     }
 }

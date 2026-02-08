@@ -14,8 +14,10 @@ namespace TrackSync
         public int HikeRoomId { get; set; }
         public string Title { get; set; } = null!;
         public string Color { get; set; } = null!;
+        public int ParticipantId { get; set; }
 
         public virtual HikeRoom HikeRoom { get; set; } = null!;
+        public virtual Participant Participant { get; set; } = null!;
         public virtual ICollection<Segment> Segments { get; set; }
     }
 }

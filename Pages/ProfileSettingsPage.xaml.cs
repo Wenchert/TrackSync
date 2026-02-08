@@ -19,6 +19,7 @@ namespace TrackSync.Pages
         }
 
         // Загрузка данных текущего пользователя
+        // Загрузка данных текущего пользователя
         private void LoadUserProfile()
         {
             try
@@ -32,6 +33,12 @@ namespace TrackSync.Pages
                 {
                     // Загружаем почту (только для чтения)
                     EmailTextBox.Text = _currentUser.Email;
+
+                    // Загружаем имя
+                    if (!string.IsNullOrWhiteSpace(_currentUser.Name))
+                    {
+                        NameTextBox.Text = _currentUser.Name;
+                    }
 
                     // Загружаем контакты
                     if (!string.IsNullOrWhiteSpace(_currentUser.Contacts))
@@ -54,6 +61,79 @@ namespace TrackSync.Pages
             }
         }
 
+        // Сохранение изменений профиля (вкладка "Профиль")
+        private void SaveProfileButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideMessage(ErrorMessage);
+
+            // Валидация имени
+            if (!ValidateName())
+                return;
+
+            // Валидация роста и веса
+            if (!ValidateHeightWeight())
+                return;
+
+            // Сохраняем изменения
+            if (SaveProfileChanges())
+            {
+                ShowMessage(ErrorMessage, "*Настройки успешно сохранены!", true);
+            }
+        }
+
+        // Валидация имени
+        private bool ValidateName()
+        {
+            if (string.IsNullOrWhiteSpace(NameTextBox.Text))
+            {
+                ShowMessage(ErrorMessage, "*Поле имени должно быть заполнено", false);
+                return false;
+            }
+
+            if (NameTextBox.Text.Length > 30)
+            {
+                ShowMessage(ErrorMessage, "*Поле имени должно содержать не больше 30 символов", false);
+                return false;
+            }
+
+            return true;
+        }
+
+        // Сохранение изменений профиля
+        private bool SaveProfileChanges()
+        {
+            try
+            {
+                using var ctx = new TrackSyncContext();
+                var user = ctx.Users.Find(_currentUser.UserId);
+
+                if (user == null)
+                    throw new Exception("Пользователь не найден");
+
+                // Сохраняем имя
+                user.Name = NameTextBox.Text.Trim();
+
+                // Сохраняем контакты
+                string contacts = ContactsTextBox.Text.Trim();
+                user.Contacts = string.IsNullOrWhiteSpace(contacts) ? null : contacts;
+
+                // Сохраняем рост и вес
+                user.Height = int.Parse(HeightText.Text);
+                user.Weight = int.Parse(WeightText.Text);
+
+                ctx.SaveChanges();
+
+                // Обновляем локальную копию
+                _currentUser = user;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                ShowMessage(ErrorMessage, $"*Ошибка сохранения: {ex.Message}", false);
+                return false;
+            }
+        }
+
         // Ввод - только цифры
         private void NumberPreviewTextInput(object sender, TextCompositionEventArgs e)
         {
@@ -66,22 +146,6 @@ namespace TrackSync.Pages
                 }
             }
             HideMessage(ErrorMessage);
-        }
-
-        // Сохранение изменений профиля (вкладка "Профиль")
-        private void SaveProfileButton_Click(object sender, RoutedEventArgs e)
-        {
-            HideMessage(ErrorMessage);
-
-            // Валидация роста и веса
-            if (!ValidateHeightWeight())
-                return;
-
-            // Сохраняем изменения
-            if (SaveProfileChanges())
-            {
-                ShowMessage(ErrorMessage, "*Настройки успешно сохранены!", true);
-            }
         }
 
         // Изменение пароля (вкладка "Безопасность")
@@ -189,38 +253,6 @@ namespace TrackSync.Pages
             catch (Exception ex)
             {
                 ShowMessage(PasswordMessage, $"*Ошибка проверки пароля: {ex.Message}", false);
-                return false;
-            }
-        }
-
-        // Сохранение изменений профиля
-        private bool SaveProfileChanges()
-        {
-            try
-            {
-                using var ctx = new TrackSyncContext();
-                var user = ctx.Users.Find(_currentUser.UserId);
-
-                if (user == null)
-                    throw new Exception("Пользователь не найден");
-
-                // Сохраняем контакты
-                string contacts = ContactsTextBox.Text.Trim();
-                user.Contacts = string.IsNullOrWhiteSpace(contacts) ? null : contacts;
-
-                // Сохраняем рост и вес
-                user.Height = int.Parse(HeightText.Text);
-                user.Weight = int.Parse(WeightText.Text);
-
-                ctx.SaveChanges();
-
-                // Обновляем локальную копию
-                _currentUser = user;
-                return true;
-            }
-            catch (Exception ex)
-            {
-                ShowMessage(ErrorMessage, $"*Ошибка сохранения: {ex.Message}", false);
                 return false;
             }
         }

@@ -35,45 +35,63 @@
             <Border Style="{StaticResource WidgetStyle}">
                 <TabControl Padding="20" HorizontalAlignment="Stretch">
                     <!-- Вкладка 1: Профиль -->
+                    <!-- Вкладка 1: Профиль -->
                     <TabItem Header="Профиль">
                         <StackPanel Margin="0,10,0,0">
                             <!-- Email (только для чтения) -->
                             <StackPanel Margin="0,0,0,25">
                                 <TextBlock Style="{StaticResource BodyText}" 
-                                           FontWeight="SemiBold" 
-                                           Text="Электронная почта" 
-                                           Margin="0,0,0,8"/>
+                       FontWeight="SemiBold" 
+                       Text="Электронная почта" 
+                       Margin="0,0,0,8"/>
                                 <TextBox x:Name="EmailTextBox" 
-                                         Style="{StaticResource InputField}" 
-                                         IsReadOnly="True"
-                                         Height="40"
-                                         Background="#F0F0F0"
-                                         Foreground="#555"/>
+                     Style="{StaticResource InputField}" 
+                     IsReadOnly="True"
+                     Height="40"
+                     Background="#F0F0F0"
+                     Foreground="#555"/>
                                 <TextBlock Style="{StaticResource BodyText}" 
-                                           Foreground="#7F8C8D" 
-                                           FontSize="12"
-                                           Margin="0,5,0,0"
-                                           Text="Ваша почта используется для входа в систему"/>
+                       Foreground="#7F8C8D" 
+                       FontSize="12"
+                       Margin="0,5,0,0"
+                       Text="Ваша почта используется для входа в систему"/>
+                            </StackPanel>
+
+                            <!-- Имя пользователя -->
+                            <StackPanel Margin="0,0,0,25">
+                                <TextBlock Style="{StaticResource BodyText}" 
+                                   FontWeight="SemiBold" 
+                                   Text="Имя" 
+                                   Margin="0,0,0,8"/>
+                                <TextBox x:Name="NameTextBox" 
+                                    Style="{StaticResource InputField}" 
+                                    Height="40"
+                                    MaxLength="30"/>
+                                <TextBlock Style="{StaticResource BodyText}" 
+                                   Foreground="#7F8C8D" 
+                                   FontSize="12"
+                                   Margin="0,5,0,0"
+                                   Text="Ваше имя будет отображаться в приложении"/>
                             </StackPanel>
 
                             <!-- Контакты -->
                             <StackPanel Margin="0,0,0,25">
                                 <TextBlock Style="{StaticResource BodyText}" 
-                                           FontWeight="SemiBold" 
-                                           Text="Контактная информация" 
-                                           Margin="0,0,0,8"/>
+                                   FontWeight="SemiBold" 
+                                   Text="Контактная информация" 
+                                   Margin="0,0,0,8"/>
                                 <TextBox x:Name="ContactsTextBox" 
-                                         Style="{StaticResource InputField}" 
-                                         AcceptsReturn="True"
-                                         TextWrapping="Wrap"
-                                         VerticalScrollBarVisibility="Auto"
-                                         MinHeight="80"
-                                         MaxHeight="150"/>
+                                     Style="{StaticResource InputField}" 
+                                     AcceptsReturn="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     MinHeight="80"
+                                     MaxHeight="150"/>
                                 <TextBlock Style="{StaticResource BodyText}" 
-                                           Foreground="#7F8C8D" 
-                                           FontSize="12"
-                                           Margin="0,5,0,0"
-                                           Text="Телефон, соцсети или другие способы связи"/>
+                                       Foreground="#7F8C8D" 
+                                       FontSize="12"
+                                       Margin="0,5,0,0"
+                                       Text="Телефон, соцсети или другие способы связи"/>
                             </StackPanel>
 
                             <!-- Физические параметры -->

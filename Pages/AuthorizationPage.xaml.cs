@@ -364,6 +364,11 @@ namespace TrackSync.Pages
                 ErrorMessageVisible("*Поле имени должно быть заполнено");
                 return false;
             }
+            if (NameText.Text.Length > 30)
+            {
+                ErrorMessageVisible("*Поле имени должно содержать не больше 30 символов");
+                return false;
+            }
 
             if (string.IsNullOrEmpty(WeightText.Text) || string.IsNullOrEmpty(HeightText.Text))
             {

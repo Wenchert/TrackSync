@@ -89,12 +89,10 @@ namespace TrackSync.Pages
                 if (allNotifications.Count == 0)
                 {
                     EmptyState.Visibility = Visibility.Visible;
-                    NotificationsScroll.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
                     EmptyState.Visibility = Visibility.Collapsed;
-                    NotificationsScroll.Visibility = Visibility.Visible;
                     NotificationsList.ItemsSource = allNotifications;
                 }
 
