@@ -193,8 +193,6 @@ namespace TrackSync.Pages
                         ctx.Equipments.Add(newEquipment);
                         ctx.SaveChanges();
 
-                        MessageBox.Show($"Снаряжение \"{newEquipment.Title}\" успешно добавлено в каталог!",
-                            "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
 
                     // Возвращаемся в каталог
@@ -225,9 +223,9 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            if (NameTextBox.Text.Length > 256)
+            if (NameTextBox.Text.Length > 50)
             {
-                ErrorMessageVisible("*Название не должно превышать 256 символов");
+                ErrorMessageVisible("*Название не должно превышать 50 символов");
                 return false;
             }
 

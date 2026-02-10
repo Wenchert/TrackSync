@@ -150,8 +150,6 @@ namespace TrackSync.Pages
                     {
                         message += $"\n{skipped} приглашени{(skipped == 1 ? "е" : skipped < 5 ? "я" : "й")} пропущено.";
                     }
-
-                    MessageBox.Show(message, "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
                 else if (skipped > 0)
                 {

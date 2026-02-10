@@ -14,6 +14,7 @@
     <None Remove="Images\Icons\backpack.png" />
     <None Remove="Images\Icons\bell.png" />
     <None Remove="Images\Icons\calendar.png" />
+    <None Remove="Images\Icons\download.png" />
     <None Remove="Images\Icons\edit.png" />
     <None Remove="Images\Icons\filter.png" />
     <None Remove="Images\Icons\food.png" />
@@ -42,6 +43,9 @@
     </PackageReference>
     <PackageReference Include="Npgsql" Version="6.0.13" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="6.0.8" />
+    <PackageReference Include="PdfSharp" Version="6.2.4" />
+    <PackageReference Include="PDFsharp-MigraDoc" Version="6.2.4" />
+    <PackageReference Include="PdfSharp.MigraDoc" Version="2.0.1" />
     <PackageReference Include="System.Net.Http" Version="4.3.4" />
   </ItemGroup>
   <ItemGroup>
@@ -51,6 +55,7 @@
     <Resource Include="Images\Icons\backpack.png" />
     <Resource Include="Images\Icons\bell.png" />
     <Resource Include="Images\Icons\calendar.png" />
+    <Resource Include="Images\Icons\download.png" />
     <Resource Include="Images\Icons\edit.png" />
     <Resource Include="Images\Icons\favicon.png" />
     <Resource Include="Images\Icons\filter.png" />
@@ -64,5 +69,8 @@
     <Resource Include="Images\Icons\user.png" />
     <Resource Include="Images\Icons\user_plus.png" />
     <Resource Include="Images\Icons\vk.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Fonts\" />
   </ItemGroup>
 </Project>

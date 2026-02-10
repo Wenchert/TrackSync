@@ -24,6 +24,7 @@ namespace TrackSync.Pages
             private bool _editTrack;
             private bool _editEquipment;
             private bool _isEditable;
+            private bool _canExclude;
 
             public int ParticipantId { get; set; }
             public int UserId { get; set; }
@@ -80,6 +81,19 @@ namespace TrackSync.Pages
                     {
                         _isEditable = value;
                         OnPropertyChanged(nameof(IsEditable));
+                    }
+                }
+            }
+
+            public bool CanExclude
+            {
+                get => _canExclude;
+                set
+                {
+                    if (_canExclude != value)
+                    {
+                        _canExclude = value;
+                        OnPropertyChanged(nameof(CanExclude));
                     }
                 }
             }
@@ -181,7 +195,6 @@ namespace TrackSync.Pages
         }
 
         // Загрузка участников с правами
-        // Загрузка участников с правами
         private void LoadParticipants()
         {
             try
@@ -212,14 +225,15 @@ namespace TrackSync.Pages
                     {
                         ParticipantId = participant.ParticipantId,
                         UserId = participant.UserId,
-                        UserName = participant.User.Name,      
-                        Email = participant.User.Email,        
+                        UserName = participant.User.Name,
+                        Email = participant.User.Email,
                         Role = isLeader ? "Лидер" : "Участник",
                         IsLeader = isLeader,
                         EditMealPlan = participant.EditMealPlan ?? false,
                         EditTrack = participant.EditTrack ?? false,
                         EditEquipment = participant.EditEquipment ?? false,
-                        IsEditable = _isLeader && !isLeader
+                        IsEditable = _isLeader && !isLeader,
+                        CanExclude = _isLeader && !isLeader // Только лидер может исключать, и нельзя исключить себя (лидера)
                     });
                 }
 
@@ -253,8 +267,119 @@ namespace TrackSync.Pages
             // Кнопки
             SaveButton.Visibility = isEditable ? Visibility.Visible : Visibility.Collapsed;
             CancelButton.Content = isEditable ? "Отмена" : "Назад";
+        }
 
-            // Права участников уже установлены в LoadParticipants
+        // Обработчик кнопки исключения участника
+        private void ExcludeButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is int participantId)
+            {
+                ExcludeParticipant(participantId);
+            }
+        }
+
+        // Исключение участника из комнаты
+        private void ExcludeParticipant(int participantId)
+        {
+            // Подтверждение действия
+            var result = MessageBox.Show("Вы уверены, что хотите исключить этого участника из комнаты?",
+                "Подтверждение исключения",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes)
+                return;
+
+            try
+            {
+                using var ctx = new TrackSyncContext();
+
+                // Находим участника
+                var participant = ctx.Participants
+                    .Include(p => p.User)
+                    .FirstOrDefault(p => p.ParticipantId == participantId && p.HikeRoomId == _roomId);
+
+                if (participant == null)
+                {
+                    MessageBox.Show("Участник не найден", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Проверяем, что текущий пользователь - лидер
+                if (!_isLeader)
+                {
+                    MessageBox.Show("Только лидер комнаты может исключать участников", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Проверяем, что не пытаемся исключить лидера
+                if (participant.UserId == _currentRoom.LeaderId)
+                {
+                    MessageBox.Show("Нельзя исключить лидера комнаты", "Ошибка",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Удаляем связанные данные участника в правильном порядке
+
+                // 1. Удаляем снаряжение участника
+                var equipment = ctx.HikeRoomsEquipments
+                    .Where(hre => hre.ParticipantId == participantId)
+                    .ToList();
+                ctx.HikeRoomsEquipments.RemoveRange(equipment);
+
+                // 2. Удаляем связи участника с рецептами
+                var recipeParticipants = ctx.RecipesParticipants
+                    .Where(rp => rp.ParticipantId == participantId)
+                    .ToList();
+                ctx.RecipesParticipants.RemoveRange(recipeParticipants);
+
+                // 3. Удаляем треки участника и связанные с ними данные
+                var tracks = ctx.Tracks
+                    .Include(t => t.Segments)
+                    .Where(t => t.ParticipantId == participantId)
+                    .ToList();
+
+                foreach (var track in tracks)
+                {
+                    // Удаляем сегменты трека
+                    var segments = track.Segments.ToList();
+                    ctx.Segments.RemoveRange(segments);
+
+                    // Удаляем трек
+                    ctx.Tracks.Remove(track);
+                }
+
+                // 4. Удаляем заявки участника на вступление в эту комнату (если есть)
+                var bids = ctx.Bids
+                    .Where(b => b.UserId == participant.UserId && b.HikeRoomId == _roomId)
+                    .ToList();
+                ctx.Bids.RemoveRange(bids);
+
+                // 5. Удаляем приглашения участника (если есть)
+                var invitations = ctx.Invitations
+                    .Where(i => i.UserId == participant.UserId && i.HikeRoomId == _roomId)
+                    .ToList();
+                ctx.Invitations.RemoveRange(invitations);
+
+                // 6. Удаляем самого участника
+                ctx.Participants.Remove(participant);
+
+                ctx.SaveChanges();
+
+                // Обновляем список участников
+                LoadParticipants();
+
+                MessageBox.Show($"Участник {participant.User.Name} успешно исключен из комнаты",
+                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при исключении участника:\n{ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         // Обработчик изменения типа комнаты
@@ -340,9 +465,6 @@ namespace TrackSync.Pages
                 {
                     UpdateParticipantsPermissions(ctx, participants);
                 }
-
-                MessageBox.Show("Настройки комнаты успешно сохранены!",
-                              "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
                 FrameContext.MainWindowFrame.Navigate(new HikeRoomPage(_roomId));
             }

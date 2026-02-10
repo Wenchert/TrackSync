@@ -23,32 +23,38 @@ namespace TrackSync.Pages
 
         private List<RecipeWithSelection> _recipeItems;
         private List<RecipeWithSelection> _filteredItems;
+        private List<Participant> _roomParticipants;
         private readonly IRecipeCallback _callback;
         private readonly int _roomId;
         private bool _showOnlyMyItems = false;
         private RecipeWithSelection _selectedRecipe;
+        private List<int> _selectedParticipantIds = new List<int>();
 
-        // Конструктор для выбора рецепта в раскладке
         public CatalogRecipesPage(IRecipeCallback callback, int roomId)
         {
             InitializeComponent();
             _callback = callback;
             _roomId = roomId;
 
-            // Делаем кнопку "Добавить выбранное" видимой
+            // Скрываем кнопку "Добавить рецепт" пока не выбран рецепт
             if (AddSelectedButton != null)
                 AddSelectedButton.Visibility = System.Windows.Visibility.Visible;
 
             LoadRecipes();
+            LoadParticipants();
             UpdateFilterButtons();
         }
 
-        // Оригинальный конструктор для других сценариев
         public CatalogRecipesPage()
         {
             InitializeComponent();
             _callback = null;
             _roomId = 0;
+
+            // В обычном режиме скрываем кнопку добавления
+            if (AddSelectedButton != null)
+                AddSelectedButton.Visibility = System.Windows.Visibility.Collapsed;
+
             LoadRecipes();
             UpdateFilterButtons();
         }
@@ -64,6 +70,15 @@ namespace TrackSync.Pages
 
             _filteredItems = new List<RecipeWithSelection>(_recipeItems);
             RecipesListBox.ItemsSource = _filteredItems;
+        }
+
+        private void LoadParticipants()
+        {
+            if (_roomId == 0) return;
+
+            // Используем существующий метод для загрузки участников
+            _roomParticipants = TrackSyncManagerList.GetParticipantsByRoomId(_roomId)
+                ?? new List<Participant>();
         }
 
         private void AllButton_Click(object sender, RoutedEventArgs e)
@@ -117,12 +132,11 @@ namespace TrackSync.Pages
             ErrorMessageHide();
         }
 
-        // Одиночный выбор рецепта (снимаем выбор со всех кроме текущего)
         private void RecipeItem_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (sender is Border border && border.Tag is RecipeWithSelection item)
             {
-                // Снимаем выбор со всех
+                // Снимаем выбор со всех рецептов
                 foreach (var recipe in _filteredItems)
                     recipe.IsSelected = false;
 
@@ -131,10 +145,85 @@ namespace TrackSync.Pages
                 _selectedRecipe = item;
                 RecipesListBox.Items.Refresh();
                 ErrorMessageHide();
+
+                // Если есть комната, показываем панель выбора ответственных
+                if (_roomId > 0)
+                {
+                    ShowResponsibleSelectionPanel();
+                }
             }
         }
 
-        // Основная логика: выбор одного рецепта + выбор ответственных через диалог
+        private void ShowResponsibleSelectionPanel()
+        {
+            if (_roomParticipants == null || !_roomParticipants.Any())
+            {
+                ErrorMessageVisible("В комнате нет участников для выбора");
+                return;
+            }
+
+            // Сбрасываем предыдущие выборы
+            _selectedParticipantIds.Clear();
+
+            // Заполняем CheckBox'ы для каждого участника
+            ParticipantsList.Children.Clear();
+            foreach (var participant in _roomParticipants)
+            {
+                if (participant?.User == null) continue;
+
+                var checkBox = new CheckBox
+                {
+                    Content = participant.User.Name ?? "Неизвестный пользователь",
+                    Tag = participant.ParticipantId,
+                    Margin = new Thickness(5, 2, 5, 2),
+                    FontSize = 14
+                };
+                checkBox.Checked += ParticipantCheckBox_Checked;
+                checkBox.Unchecked += ParticipantCheckBox_Unchecked;
+
+                ParticipantsList.Children.Add(checkBox);
+            }
+
+            // Показываем панель выбора
+            ResponsibleSelectionPanel.Visibility = System.Windows.Visibility.Visible;
+
+            // Прокручиваем к панели выбора
+            Dispatcher.BeginInvoke(new System.Action(() =>
+            {
+                ResponsibleSelectionPanel.BringIntoView();
+            }), System.Windows.Threading.DispatcherPriority.Background);
+        }
+
+        private void ParticipantCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.Tag is int participantId)
+            {
+                if (!_selectedParticipantIds.Contains(participantId))
+                {
+                    _selectedParticipantIds.Add(participantId);
+                }
+            }
+        }
+
+        private void ParticipantCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            if (sender is CheckBox checkBox && checkBox.Tag is int participantId)
+            {
+                _selectedParticipantIds.Remove(participantId);
+            }
+        }
+
+        private void HideResponsibleSelectionPanel()
+        {
+            ResponsibleSelectionPanel.Visibility = System.Windows.Visibility.Collapsed;
+            _selectedRecipe = null;
+
+            // Снимаем выделение с рецептов
+            foreach (var recipe in _filteredItems)
+                recipe.IsSelected = false;
+            RecipesListBox.Items.Refresh();
+        }
+
         private void AddSelectedButton_Click(object sender, RoutedEventArgs e)
         {
             if (_selectedRecipe == null)
@@ -143,20 +232,28 @@ namespace TrackSync.Pages
                 return;
             }
 
-            // Показываем диалог выбора ответственных
-            var dialog = new SelectResponsibleDialog(_roomId);
-            if (dialog.ShowDialog() == true && dialog.SelectedParticipantIds.Any())
-            {
-                // Передаём выбранный рецепт и ответственных обратно в раскладку
-                _callback?.OnRecipeSelected(_selectedRecipe.Recipe, dialog.SelectedParticipantIds);
-
-                if (NavigationService?.CanGoBack == true)
-                    NavigationService.GoBack();
-            }
-            else if (!dialog.SelectedParticipantIds.Any())
+            // Проверяем, выбраны ли ответственные
+            if (_selectedParticipantIds == null || !_selectedParticipantIds.Any())
             {
                 ErrorMessageVisible("Выберите хотя бы одного ответственного участника");
+                return;
             }
+
+            // Передаём выбранный рецепт и ответственных обратно в раскладку
+            _callback?.OnRecipeSelected(_selectedRecipe.Recipe, _selectedParticipantIds);
+
+            if (NavigationService?.CanGoBack == true)
+                NavigationService.GoBack();
+        }
+
+        private void ConfirmResponsibleButton_Click(object sender, RoutedEventArgs e)
+        {
+            AddSelectedButton_Click(sender, e);
+        }
+
+        private void CancelResponsibleButton_Click(object sender, RoutedEventArgs e)
+        {
+            HideResponsibleSelectionPanel();
         }
 
         private void CreateRecipeButton_Click(object sender, RoutedEventArgs e)
@@ -244,127 +341,6 @@ namespace TrackSync.Pages
         {
             if (ErrorMessage != null)
                 ErrorMessage.Visibility = System.Windows.Visibility.Collapsed;
-        }
-    }
-
-    // Простой диалог для выбора ответственных участников
-    public class SelectResponsibleDialog : Window
-    {
-        public List<int> SelectedParticipantIds { get; private set; } = new();
-
-        public SelectResponsibleDialog(int roomId)
-        {
-            Title = "Выбор ответственных участников";
-            Width = 400;
-            Height = 350;
-            WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            ResizeMode = ResizeMode.NoResize;
-
-            var stackPanel = new StackPanel { Margin = new Thickness(20) };
-
-            var title = new TextBlock
-            {
-                Text = "Выберите ответственных за рецепт:",
-                FontWeight = System.Windows.FontWeights.Bold,
-                Margin = new Thickness(0, 0, 0, 15),
-                FontSize = 14
-            };
-            stackPanel.Children.Add(title);
-
-            // Загружаем участников комнаты
-            List<Participant> participants;
-            using (var ctx = new TrackSyncContext())
-            {
-                participants = ctx.Participants
-                    .Where(p => p.HikeRoomId == roomId)
-                    .Include(p => p.User)
-                    .Distinct() // Убедимся, что нет дубликатов
-                    .ToList();
-            }
-
-            // Проверяем, что участники действительно загружены
-            if (!participants.Any())
-            {
-                stackPanel.Children.Add(new TextBlock
-                {
-                    Text = "В комнате нет участников",
-                    Foreground = System.Windows.Media.Brushes.Red,
-                    Margin = new Thickness(0, 10, 0, 10)
-                });
-            }
-            else
-            {
-                // Создаём чекбоксы для каждого участника
-                foreach (var participant in participants)
-                {
-                    var checkBox = new CheckBox
-                    {
-                        Content = $"{participant.User.Name} (ID: {participant.ParticipantId})",
-                        Tag = participant.ParticipantId,
-                        Margin = new Thickness(0, 5, 0, 5),
-                        FontSize = 13
-                    };
-                    stackPanel.Children.Add(checkBox);
-                }
-            }
-
-            // Кнопки действий
-            var buttonPanel = new StackPanel
-            {
-                Orientation = Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Margin = new Thickness(0, 20, 0, 0)
-            };
-
-            var cancelButton = new Button
-            {
-                Content = "Отмена",
-                Width = 80,
-                Margin = new Thickness(0, 0, 10, 0),
-                IsCancel = true
-            };
-            cancelButton.Click += (s, e) => DialogResult = false;
-
-            var okButton = new Button
-            {
-                Content = "Выбрать",
-                Width = 80,
-                IsDefault = true,
-                Background = System.Windows.Media.Brushes.DodgerBlue,
-                Foreground = System.Windows.Media.Brushes.White
-            };
-            okButton.Click += (s, e) =>
-            {
-                // Собираем выбранные ID участников
-                SelectedParticipantIds.Clear();
-
-                foreach (var child in stackPanel.Children)
-                {
-                    if (child is CheckBox checkBox && checkBox.IsChecked == true)
-                    {
-                        if (checkBox.Tag is int participantId)
-                        {
-                            SelectedParticipantIds.Add(participantId);
-                        }
-                    }
-                }
-
-                if (SelectedParticipantIds.Any())
-                {
-                    DialogResult = true;
-                }
-                else
-                {
-                    MessageBox.Show("Выберите хотя бы одного ответственного участника",
-                                  "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-            };
-
-            buttonPanel.Children.Add(cancelButton);
-            buttonPanel.Children.Add(okButton);
-            stackPanel.Children.Add(buttonPanel);
-
-            Content = stackPanel;
         }
     }
 }

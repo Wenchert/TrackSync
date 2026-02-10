@@ -353,8 +353,6 @@ namespace TrackSync.Pages
                         }
 
                         ctx.SaveChanges();
-                        MessageBox.Show($"Рецепт \"{newRecipe.Title}\" успешно создан!",
-                                      "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     }
 
                     if (FrameContext.MainWindowFrame.CanGoBack)

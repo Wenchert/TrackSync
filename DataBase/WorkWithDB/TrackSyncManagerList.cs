@@ -754,8 +754,6 @@ namespace TrackSync.DataBase.WorkWithDB
 
                     ctx.SaveChanges();
 
-                    MessageBox.Show($"Вы присоединились к походу \"{invitation.HikeRoom.Title}\"!",
-                                  "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                     return true;
                 }
             }
@@ -1141,7 +1139,7 @@ namespace TrackSync.DataBase.WorkWithDB
                         .Select(p => p.ParticipantId)
                         .ToList();
 
-                    // Получаем все рецепты для комнаты с группировкой по дате и типу приёма пищи
+                    // Получаем все рецепты для комнаты
                     var allRecipeEntries = ctx.HikeRoomsRecipes
                         .Where(hrr => hrr.HikeRoomId == roomId)
                         .Include(hrr => hrr.Recipe)
@@ -1184,12 +1182,12 @@ namespace TrackSync.DataBase.WorkWithDB
 
                         // Создаём приёмы пищи
                         var mealTypes = new[]
-                                {
-                            new { TypeMealId = 1, MealName = "Завтрак", Tag = $"breakfast_day{i + 1}" },
-                            new { TypeMealId = 2, MealName = "Обед", Tag = $"lunch_day{i + 1}" },
-                            new { TypeMealId = 4, MealName = "Перекус", Tag = $"snack_day{i + 1}" },
-                            new { TypeMealId = 3, MealName = "Ужин", Tag = $"dinner_day{i + 1}" }
-                        };
+                        {
+                    new { TypeMealId = 1, MealName = "Завтрак", Tag = $"breakfast_day{i + 1}" },
+                    new { TypeMealId = 2, MealName = "Обед", Tag = $"lunch_day{i + 1}" },
+                    new { TypeMealId = 4, MealName = "Перекус", Tag = $"snack_day{i + 1}" },
+                    new { TypeMealId = 3, MealName = "Ужин", Tag = $"dinner_day{i + 1}" }
+                };
 
                         foreach (var mealType in mealTypes)
                         {
@@ -1215,21 +1213,10 @@ namespace TrackSync.DataBase.WorkWithDB
                         }
 
                         result.Add(day);
-
-                        System.Diagnostics.Debug.WriteLine($"=== GetMealPlanForRoom (Room: {roomId}) ===");
-                        foreach (var day1 in result)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"Day {day1.DayNumber} ({day1.Date}):");
-                            foreach (var meal in day1.Meals)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"  Meal Type: {meal.TypeMealId}, Recipe: {meal.Recipe?.Title ?? "нет"}, Responsible: {meal.ResponsibleParticipants?.Count ?? 0}");
-                            }
-                        }
-
-                        return result;
                     }
+
+                    return result;
                 }
-                return null;
             }
             catch (Exception ex)
             {

@@ -8,6 +8,10 @@
       Title="TrackSync - Настройки комнаты"
       Background="#F8F9FA">
 
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Page.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
         <StackPanel MaxWidth="700" HorizontalAlignment="Center">
 
@@ -164,16 +168,6 @@
                                    Margin="0,0,0,15"/>
 
                         <StackPanel x:Name="ParticipantsPermissionsPanel" Margin="0,0,0,25">
-                            <TextBlock Style="{StaticResource TitleText}" FontSize="20" 
-               FontWeight="SemiBold" Text="Права доступа участников"
-               Margin="0,0,0,15"/>
-
-                            <TextBlock Style="{StaticResource BodyText}" 
-                               Text="Установите права для каждого участника комнаты"
-                               Foreground="#7F8C8D" 
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,15"/>
-
                             <ScrollViewer MaxHeight="400" VerticalScrollBarVisibility="Auto">
                                 <ItemsControl x:Name="ParticipantsItemsControl">
                                     <ItemsControl.ItemTemplate>
@@ -183,25 +177,46 @@
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
                                                     </Grid.RowDefinitions>
 
                                                     <!-- Шапка участника -->
-                                                    <StackPanel Grid.Row="0">
-                                                        <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
-                                                           FontWeight="SemiBold" 
-                                                           Text="{Binding UserName}"/>
-                                                        <!-- Исправлено: было User.Name -->
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="13"
-                                                           Foreground="#7F8C8D" 
-                                                           Margin="0,3,0,0"
-                                                           Text="{Binding Email}"/>
-                                                        <!-- Добавлено: отображение Email -->
-                                                        <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                           Foreground="#95A5A6" 
-                                                           Margin="0,3,0,0"
-                                                           Text="{Binding Role}"/>      
-                                                        <!-- Роль под Email -->
-                                                    </StackPanel>
+                                                    <Grid Grid.Row="0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="Auto"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel Grid.Column="0">
+                                                            <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
+                                                               FontWeight="SemiBold" 
+                                                               Text="{Binding UserName}"/>
+                                                            <!-- Исправлено: было User.Name -->
+                                                            <TextBlock Style="{StaticResource BodyText}" FontSize="13"
+                                                               Foreground="#7F8C8D" 
+                                                               Margin="0,3,0,0"
+                                                               Text="{Binding Email}"/>
+                                                            <!-- Добавлено: отображение Email -->
+                                                            <TextBlock Style="{StaticResource BodyText}" FontSize="12"
+                                                               Foreground="#95A5A6" 
+                                                               Margin="0,3,0,0"
+                                                               Text="{Binding Role}"/>
+                                                            <!-- Роль под Email -->
+                                                        </StackPanel>
+                                                        <!-- Кнопка исключения (только для не-лидеров) -->
+                                                        <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                            VerticalAlignment="Center">
+                                                            <Button x:Name="ExcludeButton"
+                                                                    Tag="{Binding ParticipantId}"
+                                                                    Click="ExcludeButton_Click"
+                                                                    ToolTip="Исключить пользователя из комнаты"
+                                                                    Style="{StaticResource IconButton}"
+                                                                    Visibility="{Binding CanExclude, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                    Width="25" Height="25"
+                                                                    Margin="5,0,0,0">
+                                                                <Image Source="/Images/Icons/trash.png" Width="25" Height="25"/>
+                                                            </Button>
+                                                        </StackPanel>
+                                                    </Grid>
 
                                                     <!-- Права доступа -->
                                                     <StackPanel Grid.Row="1" Margin="0,15,0,0">
@@ -253,8 +268,9 @@
                                Text="В этой комнате пока нет участников"
                                Visibility="Collapsed"
                                Margin="0,15,0,0"/>
-                    </StackPanel>
                         </StackPanel>
+                    </StackPanel>
+
                     <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
                                Foreground="#E74C3C" TextWrapping="Wrap" 
                                Visibility="Collapsed" Margin="0,0,0,15"

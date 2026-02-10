@@ -55,10 +55,10 @@
                                        FontWeight="Bold"
                                        TextTrimming="CharacterEllipsis"/>
                             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                                <TextBlock Text="{Binding StartDate, StringFormat=dd MMM yyyy}" 
+                                <TextBlock Text="{Binding StartDate, StringFormat=dd MMM yyyy, ConverterCulture=ru-RU}" 
                                            Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
                                 <TextBlock Text=" – " Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
-                                <TextBlock Text="{Binding EndDate, StringFormat=dd MMM yyyy}" 
+                                <TextBlock Text="{Binding EndDate, StringFormat=dd MMM yyyy, ConverterCulture=ru-RU}" 
                                            Style="{StaticResource BodyText}" Foreground="#7F8C8D" FontSize="13"/>
                             </StackPanel>
                             <TextBlock Text="{Binding Participants.Count, StringFormat={}{0} участников}" 

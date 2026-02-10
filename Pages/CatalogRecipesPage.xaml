@@ -1,4 +1,5 @@
-﻿<Page x:Class="TrackSync.Pages.CatalogRecipesPage"
+﻿
+<Page x:Class="TrackSync.Pages.CatalogRecipesPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -201,6 +202,24 @@
                 </ScrollViewer>
             </Border>
 
+            <!-- Панель выбора ответственных (скрыта по умолчанию) -->
+            <Border x:Name="ResponsibleSelectionPanel"
+        Style="{StaticResource WidgetStyle}"
+        Visibility="Collapsed"
+        Margin="0,0,0,15">
+                <StackPanel>
+                    <TextBlock Style="{StaticResource TitleText}" FontSize="16"
+                   Text="Выберите ответственных участников"
+                   Margin="0,0,0,10"/>
+
+                    <ScrollViewer MaxHeight="150" VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ParticipantsList">
+                            <!-- CheckBox'ы будут добавляться динамически -->
+                        </StackPanel>
+                    </ScrollViewer>
+                </StackPanel>
+            </Border>
+
             <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
                        Foreground="#E74C3C" TextWrapping="Wrap" 
                        Visibility="Collapsed" Margin="0,15,0,0"
@@ -220,7 +239,7 @@
                         Click="AddSelectedButton_Click"
                         Padding="28,12">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Добавить выбранное"/>
+                        <TextBlock Text="Добавить рецепт"/>
                     </StackPanel>
                 </Button>
             </StackPanel>

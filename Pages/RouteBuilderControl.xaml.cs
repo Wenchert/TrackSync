@@ -2,11 +2,14 @@
 using GMap.NET.WindowsPresentation;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
 namespace TrackSync.Pages
 {
@@ -120,7 +123,7 @@ namespace TrackSync.Pages
 
             var routeMarker = new GMapRoute(points)
             {
-                Shape = new Path
+                Shape = new System.Windows.Shapes.Path
                 {
                     Stroke = GetBrushFromString(colorString),
                     StrokeThickness = 2.5,
@@ -152,7 +155,7 @@ namespace TrackSync.Pages
 
         private void InitMap()
         {
-            MapControl.MapProvider = GMap.NET.MapProviders.OpenStreetMapProvider.Instance;
+            MapControl.MapProvider = GMap.NET.MapProviders.GoogleMapProvider.Instance;
             GMaps.Instance.Mode = AccessMode.ServerAndCache;
 
             // 1. Обязательно задайте границы зума
@@ -173,6 +176,8 @@ namespace TrackSync.Pages
 
             // 5. Чтобы зум работал сразу, карте нужен фокус при наведении
             MapControl.MouseEnter += (s, e) => MapControl.Focus();
+
+            MapControl.ZoomAndCenterMarkers(null);
         }
 
 
@@ -206,7 +211,7 @@ namespace TrackSync.Pages
             {
                 var line = new GMapRoute(_routePoints)
                 {
-                    Shape = new Path
+                    Shape = new System.Windows.Shapes.Path
                     {
                         Stroke = currentBrush,
                         StrokeThickness = 4,

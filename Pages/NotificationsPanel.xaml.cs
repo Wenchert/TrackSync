@@ -1,8 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows;
 using TrackSync.DataBase;
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Windows;
@@ -89,11 +86,13 @@ namespace TrackSync.Pages
                 if (allNotifications.Count == 0)
                 {
                     EmptyState.Visibility = Visibility.Visible;
+                    NotificationsList.Visibility = Visibility.Collapsed;
                 }
                 else
                 {
                     EmptyState.Visibility = Visibility.Collapsed;
                     NotificationsList.ItemsSource = allNotifications;
+                    NotificationsList.Visibility = Visibility.Visible;
                 }
 
                 InvitationsChanged?.Invoke(this, EventArgs.Empty);
@@ -152,6 +151,65 @@ namespace TrackSync.Pages
                         LoadNotifications();
                     }
                 }
+            }
+        }
+
+        // Проверка, что пользователь уже есть в комнате
+        public static bool IsUserAlreadyParticipant(int userId, int roomId)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    return ctx.Participants
+                        .Any(p => p.UserId == userId && p.HikeRoomId == roomId);
+                }
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // Добавление участника в комнату (права отсутствуют)
+        public static bool AddParticipantSafely(int userId, int roomId, bool
+            editMealPlan = false, bool editTrack = false, bool editEquipment = false)
+        {
+            try
+            {
+                using (var ctx = new TrackSyncContext())
+                {
+                    // Проверяем, не является ли пользователь уже участником
+                    if (ctx.Participants.Any(p => p.UserId == userId && p.HikeRoomId == roomId))
+                    {
+                        return true; // Уже участник, считаем успехом
+                    }
+
+                    // Создаем нового участника
+                    var participant = new Participant(
+                        userId: userId,
+                        hikeRoomId: roomId,
+                        editMealPlan: editMealPlan,
+                        editTrack: editTrack,
+                        editEquipment: editEquipment
+                    );
+
+                    ctx.Participants.Add(participant);
+                    ctx.SaveChanges();
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                // Проверяем, не является ли ошибка нарушением уникальности
+                if (ex.InnerException?.Message?.Contains("duplicate key") == true ||
+                    ex.Message.Contains("duplicate key"))
+                {
+                    return true;
+                }
+
+                MessageBox.Show($"Ошибка добавления участника: {ex.Message}", "Ошибка");
+                return false;
             }
         }
     }

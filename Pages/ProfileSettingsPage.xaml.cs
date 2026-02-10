@@ -2,6 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 using TrackSync.DataBase;
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Windows;
@@ -18,7 +19,6 @@ namespace TrackSync.Pages
             LoadUserProfile();
         }
 
-        // Загрузка данных текущего пользователя
         // Загрузка данных текущего пользователя
         private void LoadUserProfile()
         {
@@ -298,6 +298,14 @@ namespace TrackSync.Pages
             messageBlock.Foreground = isSuccess ?
                 (System.Windows.Media.Brushes.Green) :
                 (System.Windows.Media.Brushes.Red);
+
+            var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            timer.Tick += (s, args) =>
+            {
+                messageBlock.Visibility = Visibility.Collapsed;
+                timer.Stop();
+            };
+            timer.Start();
         }
 
         private void HideMessage(TextBlock messageBlock)
