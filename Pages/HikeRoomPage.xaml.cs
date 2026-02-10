@@ -15,7 +15,6 @@ using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Functions;
 using TrackSync.Interfaces;
 using TrackSync.Windows;
-using static TrackSync.Pages.HikeRoomPage;
 
 namespace TrackSync.Pages
 {
@@ -61,6 +60,22 @@ namespace TrackSync.Pages
 
         public class MealViewModel
         {
+            public class IngredientDisplay
+            {
+                public string Title { get; set; }
+                public int TotalWeight { get; set; } // Вес, умноженный на количество участников
+            }
+
+            public Visibility ShowDescriptionButtonVisibility
+            {
+                get
+                {
+                    if (Recipe != null && !string.IsNullOrWhiteSpace(RecipeDescription))
+                        return Visibility.Visible;
+                    return Visibility.Collapsed;
+                }
+            }
+
             public int TypeMealId { get; set; }
             public string MealName { get; set; }
             public string Tag { get; set; }
@@ -185,6 +200,25 @@ namespace TrackSync.Pages
                 using var ctx = new TrackSyncContext();
                 return ctx.Participants.Count(p => p.HikeRoomId == roomId);
             }
+
+            public List<IngredientDisplay> IngredientsDisplay
+            {
+                get
+                {
+                    if (Recipe?.IngredientsRecipes == null)
+                        return new List<IngredientDisplay>();
+
+                    int participantCount = GetParticipantCount(RoomId);
+                    return Recipe.IngredientsRecipes.Select(ir => new IngredientDisplay
+                    {
+                        Title = ir.Ingredient?.Title ?? "Неизвестный ингредиент",
+                        TotalWeight = ir.Weight * participantCount
+                    }).ToList();
+                }
+            }
+
+            // Также добавьте свойство для отображения описания
+            public string RecipeDescription => Recipe?.Description;
         }
 
         public class RouteStatItem
@@ -246,6 +280,8 @@ namespace TrackSync.Pages
 
             LoadParticipants();
             LoadMealPlan();
+
+            // Сначала загружаем карту, потом обновляем
             RefreshMap();
 
             Dispatcher.BeginInvoke(() =>
@@ -791,18 +827,23 @@ namespace TrackSync.Pages
                 var usedColors = new List<string>();
                 int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
 
-                // Используем временный список
+                // Используем временный список для статистики
                 var stats = new List<RouteStatItem>();
+                var allPoints = new List<GMap.NET.PointLatLng>(); // Собираем ВСЕ точки всех треков
 
                 foreach (var track in allTracks)
                 {
                     var points = ExtractPoints(track);
 
+                    // Добавляем точки в общий список для центрирования
+                    allPoints.AddRange(points);
+
                     // Расчет дистанции
                     double dist = 0;
                     for (int i = 0; i < points.Count - 1; i++)
                         dist += GMap.NET.MapProviders.EmptyProvider.Instance.Projection.GetDistance(points[i], points[i + 1]);
-                    // Добавляем в статистику (даже если 0 точек, чтобы видеть участников)
+
+                    // Добавляем в статистику
                     stats.Add(new RouteStatItem
                     {
                         CreatorName = track.Participant?.User?.Name ?? "Участник",
@@ -828,6 +869,17 @@ namespace TrackSync.Pages
                 }
 
                 MyRouteBuilder.DisableUsedColors(usedColors);
+
+                if (allPoints.Count > 0)
+                {
+                    MyRouteBuilder.CenterMapOnRoutes(allPoints);
+                }
+                else
+                {
+                    // Если нет сохраненных маршрутов, можно центрировать на стандартном месте
+                    // или просто оставить текущие настройки
+                    MyRouteBuilder.CenterMapOnPoint(new GMap.NET.PointLatLng(55.7558, 37.6173), 10);
+                }
 
                 RoutesStatisticsList.ItemsSource = null;
                 RoutesStatisticsList.ItemsSource = stats;
@@ -1676,8 +1728,8 @@ namespace TrackSync.Pages
                 double originalWidth = MyRouteBuilder.MapControl.ActualWidth;
                 double originalHeight = MyRouteBuilder.MapControl.ActualHeight;
 
-                double targetWidth = 1123;  // Ширина для альбомной A4 в пикселях
-                double targetHeight = 794;  // Высота для альбомной A4 в пикселях
+                double targetWidth = 3500;  // Ширина для альбомной A4 в пикселях
+                double targetHeight = 2000;  // Высота для альбомной A4 в пикселях
 
                 // Устанавливаем временные размеры для рендеринга
                 MyRouteBuilder.MapControl.Width = targetWidth;
@@ -1761,6 +1813,46 @@ namespace TrackSync.Pages
             {
                 MessageBox.Show($"Ошибка подготовки PDF:\n{ex.Message}", "Ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ToggleDescriptionButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is MealViewModel meal)
+            {
+                // Проверяем, есть ли рецепт и описание
+                if (meal.Recipe == null || string.IsNullOrWhiteSpace(meal.RecipeDescription))
+                {
+                    return; // Ничего не делаем, если нет рецепта или описания
+                }
+
+                // Найти DescriptionText в визуальном дереве
+                var container = button.Parent as StackPanel;
+                if (container != null)
+                {
+                    var descriptionText = container.Children
+                        .OfType<TextBlock>()
+                        .FirstOrDefault(tb => tb.Name == "DescriptionText");
+
+                    if (descriptionText != null)
+                    {
+                        descriptionText.Visibility = descriptionText.Visibility == Visibility.Visible ?
+                            Visibility.Collapsed :
+                            Visibility.Visible;
+
+                        // Изменить текст кнопки
+                        var arrowText = (button.Content as StackPanel)?.Children
+                            .OfType<TextBlock>()
+                            .LastOrDefault();
+
+                        if (arrowText != null)
+                        {
+                            arrowText.Text = descriptionText.Visibility == Visibility.Visible ?
+                                "Закрыть описание рецепта" :
+                                "Описание рецепта";
+                        }
+                    }
+                }
             }
         }
     }

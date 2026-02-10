@@ -74,6 +74,10 @@ namespace TrackSync.Pages
             if (!ValidateHeightWeight())
                 return;
 
+            // Валидация контактов
+            if (!ValidateContacts())
+                return;
+
             // Сохраняем изменения
             if (SaveProfileChanges())
             {
@@ -93,6 +97,18 @@ namespace TrackSync.Pages
             if (NameTextBox.Text.Length > 30)
             {
                 ShowMessage(ErrorMessage, "*Поле имени должно содержать не больше 30 символов", false);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ValidateContacts()
+        {
+
+            if (ContactsTextBox.Text.Length > 50)
+            {
+                ShowMessage(ErrorMessage, "*Поле контктов должно содержать не больше 50 символов", false);
                 return false;
             }
 

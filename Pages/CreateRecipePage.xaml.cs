@@ -227,15 +227,18 @@ namespace TrackSync.Pages
         {
             if (sender is TextBox textBox && textBox.Tag is IngredientQuantityItem item)
             {
-                if (int.TryParse(textBox.Text, out int quantity) && quantity > 0)
+                // Если поле пустое, устанавливаем 0
+                if (string.IsNullOrWhiteSpace(textBox.Text))
+                {
+                    item.Quantity = 0;
+                    return;  // Выходим раньше, не заменяем текст
+                }
+
+                if (int.TryParse(textBox.Text, out int quantity) && quantity >= 0)  // Разрешаем 0
                 {
                     item.Quantity = quantity;
                 }
-                else
-                {
-                    textBox.Text = item.Quantity.ToString();
-                }
-                ErrorMessageHide();
+                    ErrorMessageHide();
             }
         }
 

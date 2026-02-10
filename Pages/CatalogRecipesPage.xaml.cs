@@ -40,10 +40,25 @@ namespace TrackSync.Pages
             if (AddSelectedButton != null)
                 AddSelectedButton.Visibility = System.Windows.Visibility.Visible;
 
+            this.Loaded += (s, e) =>
+            {
+                LoadRecipes();
+                UpdateFilterButtons();
+            };
+
             LoadRecipes();
             LoadParticipants();
             UpdateFilterButtons();
         }
+
+        private void CatalogRecipesPage_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+{
+    if (this.IsVisible)
+    {
+        LoadRecipes();
+        UpdateFilterButtons();
+    }
+}
 
         public CatalogRecipesPage()
         {

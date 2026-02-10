@@ -314,14 +314,14 @@
                             </ItemsControl>
                         </ScrollViewer>
 
-                        <!-- Кнопка сохранения (ВНЕ прокрутки, всегда видна) -->
+                        <!-- Кнопка сохранения -->
                         <StackPanel Grid.Row="2" 
-                    Orientation="Horizontal" 
-                    HorizontalAlignment="Right">
+                            Orientation="Horizontal" 
+                            HorizontalAlignment="Right">
                             <Button Style="{StaticResource MainButton}"
-                    x:Name="SaveChangesButton"
-                    Click="SaveChangesButton_Click"
-                    Padding="28,12">
+                                    x:Name="SaveChangesButton"
+                                    Click="SaveChangesButton_Click"
+                                    Padding="28,12">
                                 <StackPanel Orientation="Horizontal">
                                     <TextBlock Text="Сохранить изменения"/>
                                 </StackPanel>
@@ -342,24 +342,26 @@
                                FontSize="20" 
                                Margin="0,0,0,10" 
                                Grid.Row="0"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                            <ItemsControl x:Name="DaysButtonsControl">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="10" Rows="1"/>
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Style="{StaticResource SidebarButton}"
-                                            Content="{Binding DayNumber}"
-                                            Tag="{Binding DayNumber}"
-                                            Margin="2"
-                                            Click="DayButton_Click"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                              VerticalScrollBarVisibility="Disabled" 
+                              Margin="0,0,0,15">
+                                <ItemsControl x:Name="DaysButtonsControl">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <StackPanel Orientation="Horizontal"/>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Style="{StaticResource SidebarButton}"
+                                                Content="{Binding DayNumber}"
+                                                Tag="{Binding DayNumber}"
+                                                Margin="2"
+                                                Click="DayButton_Click"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
                         </StackPanel>
 
                         <!-- Прокручиваемый контент дней -->
@@ -379,11 +381,34 @@
                                                                 <!-- Заголовок приёма пищи -->
                                                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                                                                     <TextBlock Style="{StaticResource TitleText}" FontSize="16"
-                                                        Text="{Binding MealName}"/>
+                                                                        Text="{Binding MealName}"/>
                                                                     <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                                                        Foreground="#7F8C8D"
-                                                        Text="{Binding CaloriesText}"
-                                                        Margin="8,2,0,0"/>
+                                                                        Foreground="#7F8C8D"
+                                                                        Text="{Binding CaloriesText}"
+                                                                        Margin="8,2,0,0"/>
+                                                                </StackPanel>
+                                                                <!-- Раскрывающееся описание: -->
+                                                                <StackPanel Margin="0,0,0,10">
+                                                                    <!-- Изменение в TabItem "Раскладка" -->
+                                                                    <Button x:Name="ToggleDescriptionButton"
+                                                                        HorizontalAlignment="Left"
+                                                                        Click="ToggleDescriptionButton_Click"
+                                                                        Tag="{Binding}"
+                                                                        Visibility="{Binding ShowDescriptionButtonVisibility}"
+                                                                        Style="{StaticResource TextButton}">
+                                                                        <StackPanel Orientation="Horizontal">
+                                                                            <TextBlock Text="Описание рецепта"/>
+                                                                        </StackPanel>
+                                                                    </Button>
+
+                                                                    <TextBlock x:Name="DescriptionText"
+                                                                       Style="{StaticResource BodyText}"
+                                                                       Text="{Binding RecipeDescription}"
+                                                                       TextWrapping="Wrap"
+                                                                       Foreground="#7F8C8D"
+                                                                       FontSize="13"
+                                                                       Margin="15,5,0,0"
+                                                                       Visibility="Collapsed"/>
                                                                 </StackPanel>
 
                                                                 <!-- Рецепт (если есть) -->
@@ -466,17 +491,18 @@
                                                                             </StackPanel>
                                                                         </Grid>
                                                                     </Grid>
+                                                                    
                                                                     <!-- Ингредиенты -->
                                                                     <StackPanel Margin="0,0,0,5">
                                                                         <TextBlock Style="{StaticResource BodyText}" FontSize="13" Text="Ингредиенты:"/>
-                                                                        <ItemsControl ItemsSource="{Binding Recipe.IngredientsRecipes}">
+                                                                        <ItemsControl ItemsSource="{Binding IngredientsDisplay}">
                                                                             <ItemsControl.ItemTemplate>
                                                                                 <DataTemplate>
                                                                                     <TextBlock Style="{StaticResource BodyText}" Margin="15,3,0,0">
                                                                                         <TextBlock.Text>
-                                                                                            <MultiBinding StringFormat="{}{0} {1}г">
-                                                                                                <Binding Path="Ingredient.Title"/>
-                                                                                                <Binding Path="Weight"/>
+                                                                                            <MultiBinding StringFormat="{}{0} - {1}г">
+                                                                                                <Binding Path="Title"/>
+                                                                                                <Binding Path="TotalWeight"/>
                                                                                             </MultiBinding>
                                                                                         </TextBlock.Text>
                                                                                     </TextBlock>
@@ -546,19 +572,19 @@
                                                         </Grid.ColumnDefinitions>
                                                         <StackPanel Grid.Column="0">
                                                             <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                           Foreground="#7F8C8D" 
-                           Text="Общая калорийность"/>
+                                                               Foreground="#7F8C8D" 
+                                                               Text="Общая калорийность"/>
                                                             <TextBlock Style="{StaticResource BodyText}" 
-                           Text="{Binding TotalDayCaloriesText}" 
-                           Margin="0,3,0,0"/>
+                                                               Text="{Binding TotalDayCaloriesText}" 
+                                                               Margin="0,3,0,0"/>
                                                         </StackPanel>
                                                         <StackPanel Grid.Column="1">
                                                             <TextBlock Style="{StaticResource BodyText}" FontSize="12"
-                           Foreground="#7F8C8D" 
-                           Text="Общий вес еды"/>
+                                                               Foreground="#7F8C8D" 
+                                                               Text="Общий вес еды"/>
                                                             <TextBlock Style="{StaticResource BodyText}" 
-                           Text="{Binding TotalDayWeightText}" 
-                           Margin="0,3,0,0"/>
+                                                               Text="{Binding TotalDayWeightText}" 
+                                                               Margin="0,3,0,0"/>
                                                         </StackPanel>
                                                     </Grid>
 

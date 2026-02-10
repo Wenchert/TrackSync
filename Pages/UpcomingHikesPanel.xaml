@@ -11,7 +11,8 @@
              BorderThickness="0" 
              Background="Transparent"
              HorizontalContentAlignment="Stretch"
-             MaxHeight="400">
+             MaxHeight="400"
+             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
         <!-- MaxHeight напрямую на ListBox -->
         <ListBox.ItemTemplate>
             <DataTemplate>

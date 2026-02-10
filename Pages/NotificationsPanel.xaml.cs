@@ -42,7 +42,7 @@ namespace TrackSync.Pages
         /// <summary>
         /// Загрузка всех уведомлений: приглашений и заявок
         /// </summary>
-        private void LoadNotifications()
+        public void LoadNotifications()
         {
             try
             {

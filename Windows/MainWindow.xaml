@@ -133,11 +133,11 @@
                                         <StackPanel>
                                             <!-- Основной элемент комнаты -->
                                             <Border Style="{StaticResource RoomItemStyle}" 
-                    Tag="{Binding HikeRoomId}" 
-                    Cursor="Hand"
-                    MouseLeftButtonDown="SidebarRoomItem_MouseLeftButtonDown"
-                    Margin="0,0,0,10"
-                    Padding="15">
+                                                Tag="{Binding HikeRoomId}" 
+                                                Cursor="Hand"
+                                                MouseLeftButtonDown="SidebarRoomItem_MouseLeftButtonDown"
+                                                Margin="0,0,0,10"
+                                                Padding="15">
                                                 <Grid>
                                                     <Grid.RowDefinitions>
                                                         <RowDefinition Height="Auto"/>
@@ -146,18 +146,18 @@
                                                     </Grid.RowDefinitions>
 
                                                     <TextBlock Grid.Row="0" Style="{StaticResource TitleText}" FontSize="15"
-                               Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
+                                                        Text="{Binding Title}" TextTrimming="CharacterEllipsis"/>
 
                                                     <StackPanel Orientation="Horizontal" Grid.Row="1">
                                                         <TextBlock Style="{StaticResource BodyText}"
-                               Text="{Binding StartDate, StringFormat={}{0:dd MMM yyyy}}"
-                               Foreground="#7F8C8D" FontSize="13"/>
+                                                           Text="{Binding StartDate, StringFormat={}{0:dd MMM yyyy}, ConverterCulture=ru-RU}"
+                                                           Foreground="#7F8C8D" FontSize="13"/>
                                                         <TextBlock Style="{StaticResource BodyText}"
-                               Text=" - "
-                               Foreground="#7F8C8D" FontSize="13"/>
+                                                           Text=" - "
+                                                           Foreground="#7F8C8D" FontSize="13"/>
                                                         <TextBlock Style="{StaticResource BodyText}"
-                               Text="{Binding EndDate, StringFormat={}{0:dd MMM yyyy}}"
-                               Foreground="#7F8C8D" FontSize="13"/>
+                                                           Text="{Binding EndDate, StringFormat={}{0:dd MMM yyyy} , ConverterCulture=ru-RU}"
+                                                           Foreground="#7F8C8D" FontSize="13"/>
                                                     </StackPanel>
 
                                                     <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,0">
@@ -185,9 +185,9 @@
                                                         </Border>
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock Text="{Binding Participants.Count}" 
-                                   Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
+                                                                Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
                                                             <TextBlock Text="участников" 
-                                       Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
+                                                                Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
                                                             </StackPanel>
                                                     </StackPanel>
                                                 </Grid>

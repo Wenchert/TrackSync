@@ -190,29 +190,50 @@
                                                             <TextBlock Style="{StaticResource TitleText}" FontSize="16" 
                                                                FontWeight="SemiBold" 
                                                                Text="{Binding UserName}"/>
-                                                            <!-- Исправлено: было User.Name -->
                                                             <TextBlock Style="{StaticResource BodyText}" FontSize="13"
                                                                Foreground="#7F8C8D" 
                                                                Margin="0,3,0,0"
                                                                Text="{Binding Email}"/>
-                                                            <!-- Добавлено: отображение Email -->
                                                             <TextBlock Style="{StaticResource BodyText}" FontSize="12"
                                                                Foreground="#95A5A6" 
                                                                Margin="0,3,0,0"
                                                                Text="{Binding Role}"/>
-                                                            <!-- Роль под Email -->
+                                                            <TextBlock FontSize="12"
+                                                               Foreground="#3498DB" 
+                                                               Margin="0,3,0,0"
+                                                               Text="{Binding Contacts}"
+                                                               TextWrapping="Wrap"
+                                                               MaxHeight="40"
+                                                               TextTrimming="CharacterEllipsis">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock" BasedOn="{StaticResource BodyText}">
+                                                                        <Setter Property="FontSize" Value="12"/>
+                                                                        <Setter Property="Foreground" Value="#3498DB"/>
+                                                                        <Setter Property="Margin" Value="0,3,0,0"/>
+                                                                        <Setter Property="TextWrapping" Value="Wrap"/>
+                                                                        <Setter Property="MaxHeight" Value="40"/>
+                                                                        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                                                        <Style.Triggers>
+                                                                            <Trigger Property="Text" Value="Контакты не указаны">
+                                                                                <Setter Property="Foreground" Value="#95A5A6"/>
+                                                                                <Setter Property="FontStyle" Value="Italic"/>
+                                                                            </Trigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
                                                         </StackPanel>
                                                         <!-- Кнопка исключения (только для не-лидеров) -->
                                                         <StackPanel Grid.Column="1" Orientation="Horizontal"
                                                             VerticalAlignment="Center">
                                                             <Button x:Name="ExcludeButton"
-                                                                    Tag="{Binding ParticipantId}"
-                                                                    Click="ExcludeButton_Click"
-                                                                    ToolTip="Исключить пользователя из комнаты"
-                                                                    Style="{StaticResource IconButton}"
-                                                                    Visibility="{Binding CanExclude, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                                    Width="25" Height="25"
-                                                                    Margin="5,0,0,0">
+                                                                Tag="{Binding ParticipantId}"
+                                                                Click="ExcludeButton_Click"
+                                                                ToolTip="Исключить пользователя из комнаты"
+                                                                Style="{StaticResource IconButton}"
+                                                                Visibility="{Binding CanExclude, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                Width="25" Height="25"
+                                                                Margin="5,0,0,0">
                                                                 <Image Source="/Images/Icons/trash.png" Width="25" Height="25"/>
                                                             </Button>
                                                         </StackPanel>

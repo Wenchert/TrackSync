@@ -14,8 +14,22 @@ namespace TrackSync.Pages
 
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            // Загружаем имя пользователя из сессии
             LoadUserName();
+
+            // Подписываемся на событие изменения уведомлений
+            if (NotificationsControl != null)
+            {
+                NotificationsControl.InvitationsChanged += NotificationsControl_InvitationsChanged;
+            }
+        }
+
+        private void NotificationsControl_InvitationsChanged(object sender, EventArgs e)
+        {
+            // Обновляем список предстоящих походов
+            if (UpcomingHikesControl != null)
+            {
+                UpcomingHikesControl.LoadRooms();
+            }
         }
 
         /// <summary>

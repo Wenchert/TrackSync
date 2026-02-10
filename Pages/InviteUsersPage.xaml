@@ -8,144 +8,163 @@
       Title="TrackSync - Приглашение пользователей"
       Background="#F8F9FA">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="40,30,40,30">
-        <StackPanel>
-            <!-- Заголовок страницы -->
-            <StackPanel Margin="0,0,0,30">
-                <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
-                           FontWeight="Bold" Text="Приглашение пользователей"/>
-                <TextBlock Style="{StaticResource BodyText}" FontSize="16"
-                           Text="Выберите пользователей для приглашения в комнату"
-                           Foreground="#7F8C8D" Margin="0,5,0,0"/>
-            </StackPanel>
+    <Grid Margin="40,30,40,30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-            <!-- Панель поиска -->
-            <Border Style="{StaticResource WidgetStyle}" Margin="0,0,0,20">
-                <Border Background="White"
-                        BorderBrush="#E9ECEF"
-                        BorderThickness="1"
-                        CornerRadius="8"
-                        Height="40">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-
-                        <Image Grid.Column="0" 
-                               Source="/Images/Icons/search.png" 
-                               Width="18" Height="18" 
-                               Margin="12,0,0,0"
-                               VerticalAlignment="Center"/>
-
-                        <TextBox Grid.Column="1" 
-                                 x:Name="SearchTextBox"
-                                 BorderThickness="0"
-                                 Background="Transparent"
-                                 Padding="8,0,12,0"
-                                 FontSize="14"
-                                 Foreground="#2C3E50"
-                                 VerticalAlignment="Center"
-                                 TextChanged="SearchTextBox_TextChanged"/>
-                    </Grid>
-                </Border>
-            </Border>
-
-            <!-- Список пользователей -->
-            <Border Style="{StaticResource WidgetStyle}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
-                    <StackPanel>
-                        <!-- Заголовок таблицы -->
-                        <Grid Margin="0,0,0,15">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="40"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-
-                            <TextBlock Grid.Column="1" 
-                                       Style="{StaticResource BodyText}" 
-                                       FontWeight="SemiBold"
-                                       Text="Email пользователя"/>
-                        </Grid>
-
-                        <!-- Разделитель -->
-                        <Border Height="2" 
-                                Background="#3498DB" 
-                                Margin="0,0,0,10"/>
-
-                        <!-- Динамический список пользователей -->
-                        <ItemsControl x:Name="UsersListBox">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border x:Name="UserBorder"
-                                            Style="{StaticResource NotificationItemStyle}" 
-                                            Margin="0,0,0,8"
-                                            Height="50"
-                                            MouseLeftButtonDown="UserItem_MouseLeftButtonDown"
-                                            Tag="{Binding}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="40"/>
-                                                <ColumnDefinition Width="*"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <CheckBox Grid.Column="0" 
-                                                      x:Name="UserCheckBox"
-                                                      IsChecked="{Binding IsSelected}"
-                                                      VerticalAlignment="Center"
-                                                      HorizontalAlignment="Center"
-                                                      Click="UserCheckBox_Click"/>
-
-                                            <TextBlock Grid.Column="1" 
-                                                       Style="{StaticResource BodyText}" 
-                                                       VerticalAlignment="Center"
-                                                       Text="{Binding User.Email}"/>
-                                        </Grid>
-                                    </Border>
-                                    <DataTemplate.Triggers>
-                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                            <Setter TargetName="UserBorder" Property="Style" Value="{StaticResource SelectedEquipmentItemStyle}"/>
-                                        </DataTrigger>
-                                    </DataTemplate.Triggers>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
-                </ScrollViewer>
-            </Border>
-
-            <!-- Информация о выбранных пользователях -->
-            <TextBlock x:Name="SelectedCountText" 
-                       Style="{StaticResource BodyText}" 
-                       FontWeight="SemiBold"
-                       Text="Выбрано: 0 пользователей"
-                       Margin="0,15,0,0"/>
-
-            <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
-                       Foreground="#E74C3C" TextWrapping="Wrap" 
-                       Visibility="Collapsed" Margin="0,10,0,0"
-                       FontSize="14"/>
-
-            <!-- Кнопки действий -->
-            <StackPanel Orientation="Horizontal" 
-                        HorizontalAlignment="Right"
-                        Margin="0,20,0,0">
-                <Button Style="{StaticResource TextButton}" 
-                        x:Name="CancelButton"
-                        Click="CancelButton_Click"
-                        Padding="24,12"
-                        Margin="0,0,15,0">
-                    <TextBlock Text="Отмена"/>
-                </Button>
-                <Button Style="{StaticResource MainButton}" 
-                        x:Name="InviteUsersButton"
-                        Click="InviteUsersButton_Click"
-                        Padding="28,12">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Отправить приглашение"/>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
+        <!-- Заголовок страницы -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,30">
+            <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
+                       FontWeight="Bold" Text="Приглашение пользователей"/>
+            <TextBlock Style="{StaticResource BodyText}" FontSize="16"
+                       Text="Выберите пользователей для приглашения в комнату"
+                       Foreground="#7F8C8D" Margin="0,5,0,0"/>
         </StackPanel>
-    </ScrollViewer>
+
+        <!-- Панель поиска -->
+        <Border Grid.Row="1" Style="{StaticResource WidgetStyle}" Margin="0,0,0,20">
+            <Border Background="White"
+                    BorderBrush="#E9ECEF"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Height="40">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Image Grid.Column="0" 
+                           Source="/Images/Icons/search.png" 
+                           Width="18" Height="18" 
+                           Margin="12,0,0,0"
+                           VerticalAlignment="Center"/>
+
+                    <TextBox Grid.Column="1" 
+                             x:Name="SearchTextBox"
+                             BorderThickness="0"
+                             Background="Transparent"
+                             Padding="8,0,12,0"
+                             FontSize="14"
+                             Foreground="#2C3E50"
+                             VerticalAlignment="Center"
+                             TextChanged="SearchTextBox_TextChanged"/>
+                </Grid>
+            </Border>
+        </Border>
+
+        <!-- Список пользователей -->
+        <Border Grid.Row="2" Style="{StaticResource WidgetStyle}" Margin="0,0,0,20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Заголовок таблицы -->
+                <Grid Grid.Row="0" Margin="0,0,0,15">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="40"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="1" 
+                               Style="{StaticResource BodyText}" 
+                               FontWeight="SemiBold"
+                               Text="Email пользователя"/>
+                </Grid>
+
+                <!-- Разделитель -->
+                <Border Grid.Row="1" Height="2" 
+                        Background="#3498DB" 
+                        Margin="0,0,0,10"/>
+
+                <!-- Динамический список пользователей -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="UsersListBox" MaxHeight="300">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="UserBorder"
+                                        Style="{StaticResource NotificationItemStyle}" 
+                                        Margin="0,0,0,8"
+                                        Height="50"
+                                        MouseLeftButtonDown="UserItem_MouseLeftButtonDown"
+                                        Tag="{Binding}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="40"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <CheckBox Grid.Column="0" 
+                                                  x:Name="UserCheckBox"
+                                                  IsChecked="{Binding IsSelected}"
+                                                  VerticalAlignment="Center"
+                                                  HorizontalAlignment="Center"
+                                                  Click="UserCheckBox_Click"/>
+
+                                        <TextBlock Grid.Column="1" 
+                                                   Style="{StaticResource BodyText}" 
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding User.Email}"/>
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                        <Setter TargetName="UserBorder" Property="Style" Value="{StaticResource SelectedEquipmentItemStyle}"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
+        <!-- Информация о выбранных пользователях -->
+        <TextBlock Grid.Row="3"
+                   x:Name="SelectedCountText" 
+                   Style="{StaticResource BodyText}" 
+                   FontWeight="SemiBold"
+                   Text="Выбрано: 0 пользователей"
+                   Margin="0,0,0,10"/>
+
+        <TextBlock Grid.Row="4"
+                   x:Name="ErrorMessage" 
+                   Style="{StaticResource BodyText}" 
+                   Foreground="#E74C3C" 
+                   TextWrapping="Wrap" 
+                   Visibility="Collapsed" 
+                   Margin="0,0,0,10"
+                   FontSize="14"/>
+
+        <!-- Кнопки действий -->
+        <StackPanel Grid.Row="5"
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button Style="{StaticResource TextButton}" 
+                    x:Name="CancelButton"
+                    Click="CancelButton_Click"
+                    Padding="24,12"
+                    Margin="0,0,15,0">
+                <TextBlock Text="Отмена"/>
+            </Button>
+            <Button Style="{StaticResource MainButton}" 
+                    x:Name="InviteUsersButton"
+                    Click="InviteUsersButton_Click"
+                    Padding="28,12">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Отправить приглашение"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Grid>
 </Page>

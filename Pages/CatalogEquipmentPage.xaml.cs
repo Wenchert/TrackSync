@@ -43,6 +43,13 @@ namespace TrackSync.Pages
         {
             InitializeComponent();
             _callback = callback;
+
+            this.Loaded += (s, e) =>
+            {
+                LoadEquipment();
+                UpdateFilterButtons();
+            };
+
             LoadEquipment();
             UpdateFilterButtons();
         }

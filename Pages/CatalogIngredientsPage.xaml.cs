@@ -44,8 +44,24 @@ namespace TrackSync.Pages
         {
             InitializeComponent();
             _callback = callback;
+
+            this.Loaded += (s, e) =>
+            {
+                LoadIngredients();
+                UpdateFilterButtons();
+            };
+
             LoadIngredients();
             UpdateFilterButtons();
+        }
+
+        private void CatalogIngredientsPage_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+        {
+            if (this.IsVisible)
+            {
+                LoadIngredients();
+                UpdateFilterButtons();
+            }
         }
 
         /// <summary>

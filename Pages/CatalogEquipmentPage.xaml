@@ -5,7 +5,7 @@
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
       mc:Ignorable="d" 
       d:DesignHeight="700" d:DesignWidth="1200"
-      Title="TrackSync - Каталог снаряжения"
+      Title="TrackSync"
       Background="#F8F9FA">
 
     <Page.Resources>
@@ -25,204 +25,233 @@
         </Style>
     </Page.Resources>
 
-    <StackPanel Margin="40,30,40,30">
-        <StackPanel>
-            <StackPanel Margin="0,0,0,30">
-                <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
-                           FontWeight="Bold" Text="Каталог снаряжения"/>
-                <TextBlock Style="{StaticResource BodyText}" FontSize="16"
-                           Text="Выберите снаряжение для добавления в поход или к пользователю"
-                           Foreground="#7F8C8D" Margin="0,5,0,0"/>
-            </StackPanel>
+    <Grid Margin="40,30,40,30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-            <Border Style="{StaticResource WidgetStyle}" Margin="0,0,0,20">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
+        <!-- Заголовок страницы -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,30">
+            <TextBlock Style="{StaticResource TitleText}" FontSize="28" 
+                       FontWeight="Bold" Text="Каталог снаряжения"/>
+            <TextBlock Style="{StaticResource BodyText}" FontSize="16"
+                       Text="Выберите снаряжение для добавления в поход или к пользователю"
+                       Foreground="#7F8C8D" Margin="0,5,0,0"/>
+        </StackPanel>
 
-                    <Border Grid.Column="0" 
-                            Background="White"
-                            BorderBrush="#E9ECEF"
-                            BorderThickness="1"
-                            CornerRadius="8"
-                            Height="40">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+        <!-- Панель поиска и фильтров -->
+        <Border Grid.Row="1" Style="{StaticResource WidgetStyle}" Margin="0,0,0,20">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
 
-                            <Image Grid.Column="0" 
-                                   Source="/Images/Icons/search.png" 
-                                   Width="18" Height="18" 
-                                   Margin="12,0,0,0"
-                                   VerticalAlignment="Center"/>
+                <Border Grid.Column="0" 
+                        Background="White"
+                        BorderBrush="#E9ECEF"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Height="40">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                            <TextBox Grid.Column="1" 
-                                     x:Name="SearchTextBox"
-                                     BorderThickness="0"
-                                     Background="Transparent"
-                                     Padding="8,0,12,0"
-                                     FontSize="14"
-                                     Foreground="#2C3E50"
-                                     VerticalAlignment="Center"
-                                     TextChanged="SearchTextBox_TextChanged"/>
-                        </Grid>
-                    </Border>
+                        <Image Grid.Column="0" 
+                               Source="/Images/Icons/search.png" 
+                               Width="18" Height="18" 
+                               Margin="12,0,0,0"
+                               VerticalAlignment="Center"/>
 
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="15,0,0,0">
-                        <Button x:Name="AllButton" 
+                        <TextBox Grid.Column="1" 
+                                 x:Name="SearchTextBox"
+                                 BorderThickness="0"
+                                 Background="Transparent"
+                                 Padding="8,0,12,0"
+                                 FontSize="14"
+                                 Foreground="#2C3E50"
+                                 VerticalAlignment="Center"
+                                 TextChanged="SearchTextBox_TextChanged"/>
+                    </Grid>
+                </Border>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="15,0,0,0">
+                    <Button x:Name="AllButton" 
                             Style="{StaticResource TextButton}"
                             Click="AllButton_Click"
                             Padding="15,10"
                             Background="#3498DB"
                             Foreground="White"
                             BorderBrush="#3498DB">
-                            <TextBlock Text="Все"/>
-                        </Button>
-                        <Button x:Name="MyButton" 
-                    Style="{StaticResource TextButton}"
-                    Click="MyButton_Click"
-                    Padding="15,10"
-                    Margin="5,0,0,0">
-                            <TextBlock Text="Мои"/>
-                        </Button>
-                    </StackPanel>
-                    <Button Grid.Column="2" 
-                            Style="{StaticResource MainButton}"
-                            Click="CreateEquipmentButton_Click"
-                            Margin="15,0,0,0"
-                            Padding="20,10">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="+ Создать снаряжение"/>
-                        </StackPanel>
+                        <TextBlock Text="Все"/>
                     </Button>
+                    <Button x:Name="MyButton" 
+                            Style="{StaticResource TextButton}"
+                            Click="MyButton_Click"
+                            Padding="15,10"
+                            Margin="5,0,0,0">
+                        <TextBlock Text="Мои"/>
+                    </Button>
+                </StackPanel>
+
+                <Button Grid.Column="2" 
+                        Style="{StaticResource MainButton}"
+                        Click="CreateEquipmentButton_Click"
+                        Margin="15,0,0,0"
+                        Padding="20,10">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="+ Создать снаряжение"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- Список снаряжения -->
+        <Border Grid.Row="2" Style="{StaticResource WidgetStyle}" Margin="0,0,0,20">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Заголовки таблицы -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="100"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" 
+                               Style="{StaticResource BodyText}" 
+                               FontWeight="SemiBold"
+                               Text="Название снаряжения"
+                               Margin="15,10,10,10"/>
+
+                    <TextBlock Grid.Column="1" 
+                               Style="{StaticResource BodyText}" 
+                               FontWeight="SemiBold"
+                               Text="Вес"
+                               HorizontalAlignment="Right"
+                               Margin="0,10,15,10"/>
+
+                    <TextBlock Grid.Column="2" 
+                               Style="{StaticResource BodyText}" 
+                               FontWeight="SemiBold"
+                               Text="Действия"
+                               HorizontalAlignment="Center"
+                               Margin="0,10,0,10"/>
                 </Grid>
-            </Border>
 
-            <Border Style="{StaticResource WidgetStyle}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="400">
-                    <StackPanel>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="120"/>
-                                <ColumnDefinition Width="100"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" 
-                                       Style="{StaticResource BodyText}" 
-                                       FontWeight="SemiBold"
-                                       Text="Название снаряжения"
-                                       Margin="15,10,10,10"/>
+                <!-- Разделитель -->
+                <Border Grid.Row="1" Height="2" 
+                        Background="#3498DB"
+                        Margin="0,5,0,10"/>
 
-                            <TextBlock Grid.Column="1" 
-                                       Style="{StaticResource BodyText}" 
-                                       FontWeight="SemiBold"
-                                       Text="Вес"
-                                       HorizontalAlignment="Right"
-                                       Margin="0,10,15,10"/>
-
-                            <TextBlock Grid.Column="2" 
-                                       Style="{StaticResource BodyText}" 
-                                       FontWeight="SemiBold"
-                                       Text="Действия"
-                                       HorizontalAlignment="Center"
-                                       Margin="0,10,0,10"/>
-                        </Grid>
-                        <Border Height="2" 
-                                Background="#3498DB"
-                                Margin="0,5,0,10"/>
-                        <ItemsControl x:Name="EquipmentsListBox">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <Border x:Name="EquipmentBorder"
+                <!-- Список снаряжения с внутренним скроллом -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="EquipmentsListBox">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border x:Name="EquipmentBorder"
                                         Style="{StaticResource NotificationItemStyle}" 
                                         Margin="0,0,0,8"
                                         Height="55"
                                         MouseLeftButtonDown="EquipmentItem_MouseLeftButtonDown"
                                         Tag="{Binding}">
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="120"/>
-                                                <ColumnDefinition Width="100"/>
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                                <TextBlock Style="{StaticResource BodyText}" 
-                                                           Text="{Binding Equipment.Title}"
-                                                           Margin="15,0,5,0"/>
-                                                <Image Source="/Images/Icons/user-item.png" 
-                                                       Width="16" Height="16" 
-                                                       Margin="5,0,0,0"
-                                                       Visibility="{Binding ActionButtonsVisibility}"
-                                                       ToolTip="Ваше снаряжение"/>
-                                            </StackPanel>
-                                            <TextBlock Grid.Column="1" 
-                                                       Style="{StaticResource BodyText}" 
-                                                       VerticalAlignment="Center"
-                                                       Text="{Binding Equipment.Weight, StringFormat={}{0}г}"
-                                                       Foreground="#7F8C8D"
-                                                       HorizontalAlignment="Right"
-                                                       Margin="0,0,15,0"/>
-                                            <StackPanel Grid.Column="2" 
-                                                Orientation="Horizontal" 
-                                                HorizontalAlignment="Center"
-                                                Margin="5,0,5,0"
-                                                Visibility="{Binding ActionButtonsVisibility}">
-                                                <Button Style="{StaticResource IconButton}"
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="120"/>
+                                            <ColumnDefinition Width="100"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <TextBlock Style="{StaticResource BodyText}" 
+                                                       Text="{Binding Equipment.Title}"
+                                                       Margin="15,0,5,0"/>
+                                            <Image Source="/Images/Icons/user-item.png" 
+                                                   Width="16" Height="16" 
+                                                   Margin="5,0,0,0"
+                                                   Visibility="{Binding ActionButtonsVisibility}"
+                                                   ToolTip="Ваше снаряжение"/>
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="1" 
+                                                   Style="{StaticResource BodyText}" 
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding Equipment.Weight, StringFormat={}{0}г}"
+                                                   Foreground="#7F8C8D"
+                                                   HorizontalAlignment="Right"
+                                                   Margin="0,0,15,0"/>
+                                        <StackPanel Grid.Column="2" 
+                                                    Orientation="Horizontal" 
+                                                    HorizontalAlignment="Center"
+                                                    Margin="5,0,5,0"
+                                                    Visibility="{Binding ActionButtonsVisibility}">
+                                            <Button Style="{StaticResource IconButton}"
                                                     Click="EditButton_Click"
                                                     Tag="{Binding}"
                                                     ToolTip="Редактировать"
                                                     Margin="0,0,8,0">
-                                                    <Image Source="/Images/Icons/edit.png" Width="18" Height="18"/>
-                                                </Button>
-                                                <Button Style="{StaticResource IconButton}"
+                                                <Image Source="/Images/Icons/edit.png" Width="18" Height="18"/>
+                                            </Button>
+                                            <Button Style="{StaticResource IconButton}"
                                                     Click="DeleteButton_Click"
                                                     Tag="{Binding}"
                                                     ToolTip="Удалить">
-                                                    <Image Source="/Images/Icons/trash.png" Width="18" Height="18"/>
-                                                </Button>
-                                            </StackPanel>
-                                        </Grid>
-                                    </Border>
-                                    <DataTemplate.Triggers>
-                                        <DataTrigger Binding="{Binding IsSelected}" Value="True">
-                                            <Setter TargetName="EquipmentBorder" Property="Style" Value="{StaticResource SelectedEquipmentItemStyle}"/>
-                                        </DataTrigger>
-                                    </DataTemplate.Triggers>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </StackPanel>
+                                                <Image Source="/Images/Icons/trash.png" Width="18" Height="18"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                                <DataTemplate.Triggers>
+                                    <DataTrigger Binding="{Binding IsSelected}" Value="True">
+                                        <Setter TargetName="EquipmentBorder" Property="Style" Value="{StaticResource SelectedEquipmentItemStyle}"/>
+                                    </DataTrigger>
+                                </DataTemplate.Triggers>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                 </ScrollViewer>
-            </Border>
+            </Grid>
+        </Border>
 
-            <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
-                       Foreground="#E74C3C" TextWrapping="Wrap" 
-                       Visibility="Collapsed" Margin="0,15,0,0"
-                       FontSize="14"/>
-            <StackPanel Orientation="Horizontal" 
-                        HorizontalAlignment="Right"
-                        Margin="0,20,0,0">
-                <Button Style="{StaticResource TextButton}" 
-                        x:Name="CancelButton"
-                        Click="CancelButton_Click"
-                        Padding="24,12"
-                        Margin="0,0,15,0">
-                    <TextBlock Text="Отмена"/>
-                </Button>
-                <Button Style="{StaticResource MainButton}" 
-                        x:Name="AddSelectedButton"
-                        Click="AddSelectedButton_Click"
-                        Padding="28,12">
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Добавить выбранное"/>
-                    </StackPanel>
-                </Button>
-            </StackPanel>
+        <!-- Сообщение об ошибке -->
+        <TextBlock Grid.Row="3"
+                   x:Name="ErrorMessage" 
+                   Style="{StaticResource BodyText}" 
+                   Foreground="#E74C3C" 
+                   TextWrapping="Wrap" 
+                   Visibility="Collapsed" 
+                   Margin="0,0,0,10"
+                   FontSize="14"/>
+
+        <!-- Кнопки действий -->
+        <StackPanel Grid.Row="4"
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right"
+                    Margin="0,20,0,0">
+            <Button Style="{StaticResource TextButton}" 
+                    x:Name="CancelButton"
+                    Click="CancelButton_Click"
+                    Padding="24,12"
+                    Margin="0,0,15,0">
+                <TextBlock Text="Отмена"/>
+            </Button>
+            <Button Style="{StaticResource MainButton}" 
+                    x:Name="AddSelectedButton"
+                    Click="AddSelectedButton_Click"
+                    Padding="28,12">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Добавить выбранное"/>
+                </StackPanel>
+            </Button>
         </StackPanel>
-    </StackPanel>
+    </Grid>
 </Page>

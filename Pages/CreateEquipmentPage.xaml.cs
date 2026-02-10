@@ -195,6 +195,7 @@ namespace TrackSync.Pages
 
                     }
 
+
                     // Возвращаемся в каталог
                     if (FrameContext.MainWindowFrame.CanGoBack)
                         FrameContext.MainWindowFrame.GoBack();

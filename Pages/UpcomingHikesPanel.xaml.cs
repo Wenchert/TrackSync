@@ -17,10 +17,8 @@ namespace TrackSync.Pages
             LoadRooms();
         }
 
-        /// <summary>
         /// Загрузка списка комнат пользователя
-        /// </summary>
-        private void LoadRooms()
+        public void LoadRooms()
         {
             try
             {

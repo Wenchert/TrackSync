@@ -1,8 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
+using TrackSync.Pages;
 
 
 namespace TrackSync.DataBase.WorkWithDB
@@ -726,35 +724,41 @@ namespace TrackSync.DataBase.WorkWithDB
                     }
 
                     // Проверяем, не является ли пользователь уже участником комнаты
-                    var existingParticipant = ctx.Participants
-                        .FirstOrDefault(p => p.UserId == userId && p.HikeRoomId == invitation.HikeRoomId);
-
-                    if (existingParticipant != null)
+                    if (NotificationsPanel.IsUserAlreadyParticipant(userId, invitation.HikeRoomId))
                     {
-                        MessageBox.Show("Вы уже являетесь участником этой комнаты!", "Ошибка");
-                        // Удаляем приглашение, так как оно больше не нужно
                         ctx.Invitations.Remove(invitation);
                         ctx.SaveChanges();
-                        return false;
+                        return true; // Уже участник, считаем успехом
                     }
 
-                    // Создаем нового участника с базовыми правами (без прав на редактирование)
-                    var participant = new Participant(
+                    // Используем безопасное добавление
+                    var success = NotificationsPanel.AddParticipantSafely(
                         userId: userId,
-                        hikeRoomId: invitation.HikeRoomId,
+                        roomId: invitation.HikeRoomId,
                         editMealPlan: false,
                         editTrack: false,
                         editEquipment: false
                     );
 
-                    ctx.Participants.Add(participant);
+                    if (success)
+                    {
+                        // Удаляем приглашение
+                        ctx.Invitations.Remove(invitation);
 
-                    // Удаляем приглашение
-                    ctx.Invitations.Remove(invitation);
+                        // Также удаляем все заявки этого пользователя в эту комнату
+                        var bidsToRemove = ctx.Bids
+                            .Where(b => b.UserId == userId && b.HikeRoomId == invitation.HikeRoomId)
+                            .ToList();
 
-                    ctx.SaveChanges();
+                        if (bidsToRemove.Any())
+                        {
+                            ctx.Bids.RemoveRange(bidsToRemove);
+                        }
 
-                    return true;
+                        ctx.SaveChanges();
+                    }
+
+                    return success;
                 }
             }
             catch (Exception ex)
@@ -931,9 +935,7 @@ namespace TrackSync.DataBase.WorkWithDB
                     var searchLower = searchText.ToLower();
                     var usersList = ctx.Users
                         .Where(u => !excludedUserIds.Contains(u.UserId) &&
-                                   (u.Name.ToLower().Contains(searchLower) ||
-                                    (u.Name != null && u.Name.ToLower().Contains(searchLower)) ||
-                                    (u.Contacts != null && u.Contacts.ToLower().Contains(searchLower))))
+                                    (u.Email != null && u.Email.ToLower().Contains(searchLower)))
                         .ToList();
 
                     return usersList;
@@ -1038,27 +1040,42 @@ namespace TrackSync.DataBase.WorkWithDB
                 if (bid == null || bid.HikeRoom.LeaderId != currentUserId)
                     return false;
 
-                // Добавляем пользователя в участники
-                var participant = new Participant
+                // Проверяем, не является ли пользователь уже участником комнаты
+                if (NotificationsPanel.IsUserAlreadyParticipant(bid.UserId, bid.HikeRoomId))
                 {
-                    HikeRoomId = bid.HikeRoomId,
-                    UserId = bid.UserId,
-                };
-
-                context.Participants.Add(participant);
-
-                // Удаляем заявку
-                context.Bids.Remove(bid);
-
-                try
-                {
+                    context.Bids.Remove(bid);
                     context.SaveChanges();
-                    return true;
+                    return true; // Уже участник, считаем успехом
                 }
-                catch
+
+                // Используем безопасное добавление
+                var success = NotificationsPanel.AddParticipantSafely(
+                    userId: bid.UserId,
+                    roomId: bid.HikeRoomId,
+                    editMealPlan: false,
+                    editTrack: false,
+                    editEquipment: false
+                );
+
+                if (success)
                 {
-                    return false;
+                    // Удаляем заявку
+                    context.Bids.Remove(bid);
+
+                    // Также удаляем все приглашения этого пользователя в эту комнату
+                    var invitationsToRemove = context.Invitations
+                        .Where(i => i.UserId == bid.UserId && i.HikeRoomId == bid.HikeRoomId)
+                        .ToList();
+
+                    if (invitationsToRemove.Any())
+                    {
+                        context.Invitations.RemoveRange(invitationsToRemove);
+                    }
+
+                    context.SaveChanges();
                 }
+
+                return success;
             }
         }
 

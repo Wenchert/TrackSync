@@ -84,9 +84,8 @@ namespace TrackSync.Pages
             return GetBrushFromString(_currentHexColor);
         }
 
-        // Свойство для сохранения в БД (теперь возвращает HEX)
+        // Свойство для сохранения в БД
         public string SelectedColor => _currentHexColor;
-
 
         public void LoadRoute(List<PointLatLng> points, string colorHex)
         {
@@ -115,7 +114,56 @@ namespace TrackSync.Pages
             NotifyUpdate();
         }
 
+        // Добавим метод для установки центра и зума на основе всех точек
+        public void CenterMapOnRoutes(List<PointLatLng> allPoints)
+        {
+            if (allPoints == null || allPoints.Count == 0)
+            {
+                // Если нет точек, центрируем на Москве (или другом месте по умолчанию)
+                MapControl.Position = new PointLatLng(55.7558, 37.6173);
+                MapControl.Zoom = 10;
+                return;
+            }
 
+            // Вычисляем границы всех точек
+            double minLat = allPoints.Min(p => p.Lat);
+            double maxLat = allPoints.Max(p => p.Lat);
+            double minLng = allPoints.Min(p => p.Lng);
+            double maxLng = allPoints.Max(p => p.Lng);
+
+            // Вычисляем центр
+            double centerLat = (minLat + maxLat) / 2;
+            double centerLng = (minLng + maxLng) / 2;
+
+            // Устанавливаем центр карты
+            MapControl.Position = new PointLatLng(centerLat, centerLng);
+
+            // Вычисляем приблизительный зум, чтобы охватить все точки
+            double latDiff = maxLat - minLat;
+            double lngDiff = maxLng - minLng;
+            double maxDiff = Math.Max(latDiff, lngDiff);
+
+            // Эмпирическая формула для определения зума
+            int zoom = 15; // По умолчанию
+            if (maxDiff > 10) zoom = 8;
+            else if (maxDiff > 5) zoom = 9;
+            else if (maxDiff > 2) zoom = 10;
+            else if (maxDiff > 1) zoom = 11;
+            else if (maxDiff > 0.5) zoom = 12;
+            else if (maxDiff > 0.2) zoom = 13;
+            else if (maxDiff > 0.1) zoom = 14;
+            else if (maxDiff > 0.05) zoom = 15;
+            else zoom = 16;
+
+            MapControl.Zoom = zoom;
+        }
+
+        // Также добавим метод для центрирования на конкретную точку
+        public void CenterMapOnPoint(PointLatLng point, int zoom = 15)
+        {
+            MapControl.Position = point;
+            MapControl.Zoom = zoom;
+        }
 
         public void DisplayOtherTrack(List<PointLatLng> points, string colorString)
         {
@@ -134,7 +182,6 @@ namespace TrackSync.Pages
             MapControl.Markers.Add(routeMarker);
         }
 
-
         private Brush GetBrushFromString(string colorString)
         {
             try
@@ -142,7 +189,7 @@ namespace TrackSync.Pages
                 var brush = (Brush)new BrushConverter().ConvertFromString(colorString);
                 if (brush != null)
                 {
-                    brush.Freeze(); // Замораживаем для производительности
+                    brush.Freeze();
                     return brush;
                 }
             }
@@ -152,16 +199,14 @@ namespace TrackSync.Pages
             return Brushes.Black;
         }
 
-
         private void InitMap()
         {
             MapControl.MapProvider = GMap.NET.MapProviders.GoogleMapProvider.Instance;
             GMaps.Instance.Mode = AccessMode.ServerAndCache;
 
-            // 1. Обязательно задайте границы зума
+            // 1. Границы зума
             MapControl.MinZoom = 2;
             MapControl.MaxZoom = 20;
-            MapControl.Zoom = 10;
 
             // 2. Настройка зума
             MapControl.MouseWheelZoomType = MouseWheelZoomType.MousePositionWithoutCenter;
@@ -176,8 +221,6 @@ namespace TrackSync.Pages
 
             // 5. Чтобы зум работал сразу, карте нужен фокус при наведении
             MapControl.MouseEnter += (s, e) => MapControl.Focus();
-
-            MapControl.ZoomAndCenterMarkers(null);
         }
 
 

@@ -16,6 +16,8 @@ namespace TrackSync.Pages
         private HikeRoom _currentRoom;
         private readonly int _currentUserId;
         private bool _isLeader;
+        private int _completedStatusId = 3; // ID статуса "Завершён"
+        private int _cancelledStatusId = 4;
 
         // Вспомогательный класс для отображения участника с правами
         private class ParticipantViewModel : INotifyPropertyChanged
@@ -31,6 +33,7 @@ namespace TrackSync.Pages
             public string UserName { get; set; }
             public string Email { get; set; }
             public string Role { get; set; }
+            public string Contacts { get; set; }
             public bool IsLeader { get; set; }
 
             public bool EditMealPlan
@@ -181,6 +184,12 @@ namespace TrackSync.Pages
                     {
                         StatusComboBox.SelectedItem = item;
                     }
+
+                    // Находим ID статуса "Завершён"
+                    if (status.Title == "Завершён")
+                    {
+                        _completedStatusId = status.StatusId;
+                    }
                 }
 
                 if (StatusComboBox.SelectedIndex == -1 && StatusComboBox.Items.Count > 0)
@@ -194,6 +203,7 @@ namespace TrackSync.Pages
             }
         }
 
+        // Загрузка участников с правами
         // Загрузка участников с правами
         private void LoadParticipants()
         {
@@ -227,6 +237,7 @@ namespace TrackSync.Pages
                         UserId = participant.UserId,
                         UserName = participant.User.Name,
                         Email = participant.User.Email,
+                        Contacts = participant.User.Contacts, 
                         Role = isLeader ? "Лидер" : "Участник",
                         IsLeader = isLeader,
                         EditMealPlan = participant.EditMealPlan ?? false,
@@ -263,10 +274,6 @@ namespace TrackSync.Pages
             bool isPrivateRoom = PrivateRoomRadio.IsChecked == true;
             PasswordPanel.Visibility = isPrivateRoom ? Visibility.Visible : Visibility.Collapsed;
             PasswordBox.IsEnabled = isEditable && isPrivateRoom;
-
-            // Кнопки
-            SaveButton.Visibility = isEditable ? Visibility.Visible : Visibility.Collapsed;
-            CancelButton.Content = isEditable ? "Отмена" : "Назад";
         }
 
         // Обработчик кнопки исключения участника
@@ -371,9 +378,6 @@ namespace TrackSync.Pages
 
                 // Обновляем список участников
                 LoadParticipants();
-
-                MessageBox.Show($"Участник {participant.User.Name} успешно исключен из комнаты",
-                    "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -419,7 +423,56 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Обновляем данные комнаты
+                // Получаем выбранный статус
+                int selectedStatusId = 0;
+                string selectedStatusName = "";
+                if (StatusComboBox.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is int statusId)
+                {
+                    selectedStatusId = statusId;
+                }
+
+                // Проверяем, если выбран статус "Завершён" или "Отменён"
+                bool isDeletionStatus = selectedStatusId == _completedStatusId ||
+                                        selectedStatusId == _cancelledStatusId;
+
+                if (isDeletionStatus && selectedStatusId != 0)
+                {
+                    // Определяем глагол для сообщения в зависимости от статуса
+                    string actionVerb = selectedStatusId == _completedStatusId ? "завершить" : "отменить";
+
+                    // Запрашиваем подтверждение у пользователя
+                    var result = MessageBox.Show(
+                        $"Вы собираетесь установить статус '{selectedStatusName}'. " +
+                        $"При этом комната будет удалена вместе со всеми данными (снаряжение, рецепты, маршруты).\n\n" +
+                        $"Вы уверены, что хотите {actionVerb} поход и удалить комнату?",
+                        "Подтверждение удаления комнаты",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning);
+
+                    if (result != MessageBoxResult.Yes)
+                    {
+                        // Пользователь отказался, не сохраняем изменения
+                        return;
+                    }
+
+                    // Удаляем комнату и все связанные данные
+                    DeleteRoomWithAllData(ctx, room);
+
+                    // Сообщение в зависимости от статуса
+                    string completionMessage = selectedStatusId == _completedStatusId
+                        ? "Поход успешно завершён и комната удалена."
+                        : "Поход успешно отменён и комната удалена.";
+
+                    MessageBox.Show(completionMessage,
+                        "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                    // Переходим на главную страницу или страницу списка комнат
+                    // Замените MainPage на нужную страницу (например, RoomsPage)
+                    FrameContext.MainWindowFrame.Navigate(new MainPage());
+                    return;
+                }
+
+                // Обычное обновление данных комнаты (если статус не требует удаления)
                 room.Title = TitleTextBox.Text.Trim();
                 room.Description = string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
                     ? null
@@ -432,11 +485,7 @@ namespace TrackSync.Pages
                     room.EndDate = DateOnly.FromDateTime(EndDatePicker.SelectedDate.Value.Date);
 
                 // Обновляем статус
-                if (StatusComboBox.SelectedItem is ComboBoxItem selectedItem &&
-                    selectedItem.Tag is int statusId)
-                {
-                    room.StatusId = statusId;
-                }
+                room.StatusId = selectedStatusId;
 
                 // Обновляем пароль ТОЛЬКО если он был изменён и комната приватная
                 if (!room.AccessType)
@@ -471,6 +520,82 @@ namespace TrackSync.Pages
             catch (Exception ex)
             {
                 ErrorMessageVisible($"*Ошибка при сохранении: {ex.Message}");
+            }
+        }
+
+        // Удаление комнаты со всеми связанными данными
+        private void DeleteRoomWithAllData(TrackSyncContext ctx, HikeRoom room)
+        {
+            try
+            {
+                // 1. Удаляем снаряжение комнаты
+                var equipment = ctx.HikeRoomsEquipments
+                    .Where(hre => hre.HikeRoomId == _roomId)
+                    .ToList();
+                ctx.HikeRoomsEquipments.RemoveRange(equipment);
+
+                // 2. Удаляем рецепты комнаты
+                var roomRecipes = ctx.HikeRoomsRecipes
+                    .Where(hrr => hrr.HikeRoomId == _roomId)
+                    .ToList();
+                ctx.HikeRoomsRecipes.RemoveRange(roomRecipes);
+
+                // 3. Удаляем связи рецептов с участниками
+                var participants = ctx.Participants
+                    .Where(p => p.HikeRoomId == _roomId)
+                    .Select(p => p.ParticipantId)
+                    .ToList();
+                
+                if (participants.Any())
+                {
+                    var recipeParticipants = ctx.RecipesParticipants
+                        .Where(rp => participants.Contains(rp.ParticipantId))
+                        .ToList();
+                    ctx.RecipesParticipants.RemoveRange(recipeParticipants);
+                }
+
+                // 4. Удаляем треки и связанные сегменты
+                var tracks = ctx.Tracks
+                    .Include(t => t.Segments)
+                    .Where(t => t.HikeRoomId == _roomId)
+                    .ToList();
+
+                foreach (var track in tracks)
+                {
+                    // Удаляем сегменты трека
+                    var segments = track.Segments.ToList();
+                    ctx.Segments.RemoveRange(segments);
+                    
+                    // Удаляем трек
+                    ctx.Tracks.Remove(track);
+                }
+
+                // 5. Удаляем заявки на вступление
+                var bids = ctx.Bids
+                    .Where(b => b.HikeRoomId == _roomId)
+                    .ToList();
+                ctx.Bids.RemoveRange(bids);
+
+                // 6. Удаляем приглашения
+                var invitations = ctx.Invitations
+                    .Where(i => i.HikeRoomId == _roomId)
+                    .ToList();
+                ctx.Invitations.RemoveRange(invitations);
+
+                // 7. Удаляем участников
+                var roomParticipants = ctx.Participants
+                    .Where(p => p.HikeRoomId == _roomId)
+                    .ToList();
+                ctx.Participants.RemoveRange(roomParticipants);
+
+                // 8. Удаляем саму комнату
+                ctx.HikeRooms.Remove(room);
+
+                ctx.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Ошибка при удалении комнаты: {ex.Message}", ex);
             }
         }
 
