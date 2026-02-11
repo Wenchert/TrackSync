@@ -112,8 +112,16 @@
                     <Button Style="{StaticResource IconButton}"
                         x:Name="DownloadPdfButton"
                         Click="DownloadPdfButton_Click"
-                        ToolTip="Скачать статистику (PDF)" Height="25">
+                        ToolTip="Скачать статистику (PDF)" Height="25"
+                        Margin="0,0,10,0">
                         <Image Source="/Images/Icons/download.png" Width="20" Height="20"/>
+                    </Button>
+                    <Button Style="{StaticResource IconButton}"
+                        x:Name="DownloadGpxButton"
+                        Click="DownloadGpxButton_Click"
+                        ToolTip="Скачать маршруты (GPX)"
+                        Height="25">
+                        <Image Source="/Images/Icons/download_gpx.png" Width="20" Height="20"/>
                     </Button>
                 </StackPanel>
             </Grid>

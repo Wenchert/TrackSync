@@ -16,8 +16,11 @@ namespace TrackSync.Functions
     public class HikeRoomPdfGenerator
     {
         private readonly int _roomId;
+        private readonly string _roomTitle;
         private readonly XImage _mapImage;
         private readonly TrackSyncContext _context;
+        private readonly double _mapZoom;
+
 
         // Статический конструктор для инициализации FontResolver
         static HikeRoomPdfGenerator()
@@ -28,12 +31,17 @@ namespace TrackSync.Functions
             }
         }
 
-        public HikeRoomPdfGenerator(int roomId, RenderTargetBitmap mapImage)
+        public HikeRoomPdfGenerator(int roomId, RenderTargetBitmap mapImage, double mapZoom)
         {
             _roomId = roomId;
             _context = new TrackSyncContext();
+            _roomTitle = _context.HikeRooms
+                .Where(r => r.HikeRoomId == roomId)
+                .Select(r => r.Title)
+                .FirstOrDefault() ?? $"Комната_{roomId}";
+            _mapZoom = mapZoom;
 
-            // Конвертируем RenderTargetBitmap в XImage для PdfSharp
+            // Конвертируем RenderTargetBitmap в XImage
             if (mapImage != null)
             {
                 var bitmapEncoder = new PngBitmapEncoder();
@@ -61,7 +69,7 @@ namespace TrackSync.Functions
                 AddMapPage(pdfDocument);
 
                 // Страница 2: Статистика маршрутов
-                AddRoutesStatisticsPage(pdfDocument);
+                //AddRoutesStatisticsPage(pdfDocument);
 
                 // Страница 3: Снаряжение участников
                 AddEquipmentPage(pdfDocument);
@@ -93,177 +101,55 @@ namespace TrackSync.Functions
         private void AddMapPage(PdfDocument document)
         {
             var page = document.AddPage();
-            // Явно задаем альбомный A4
             page.Width = XUnit.FromPoint(842);
             page.Height = XUnit.FromPoint(595);
             var gfx = XGraphics.FromPdfPage(page);
 
-            DrawAppTitle(gfx, page);
-
-            var fontTitle = new XFont("Times New Roman", 20, XFontStyleEx.Bold);
-            var fontNormal = new XFont("Times New Roman", 12);
-            var fontSmall = new XFont("Times New Roman", 10);
-
-            // Заголовок страницы
-            gfx.DrawString("Карта маршрутов похода", fontTitle, XBrushes.Black,
-                new XRect(0, 30, page.Width, 30), XStringFormats.Center);
-
-            // Легенда (статистика маршрутов) - вверху страницы
-            double legendY = 100;
+            // Получаем статистику маршрутов для легенды
             var routes = GetRoutesStatistics();
 
-            gfx.DrawString("Легенда маршрутов", new XFont("Times New Roman", 14, XFontStyleEx.Bold),
-                XBrushes.Black, 40, legendY);
-            legendY += 30;
-
-            // Рисуем легенду как горизонтальную таблицу
-            double legendX = 40;
-            int routesPerRow = 4; // Увеличим количество маршрутов в строке для альбомной ориентации
-            double routeWidth = (page.Width - 80) / routesPerRow;
-
-            for (int i = 0; i < routes.Count; i++)
-            {
-                var route = routes[i];
-
-                // Новая строка после каждых routesPerRow маршрутов
-                if (i % routesPerRow == 0 && i > 0)
-                {
-                    legendY += 60; // Уменьшим высоту строки
-                    legendX = 40;
-                }
-
-                // Прямоугольник с фоном для каждого маршрута в легенде
-                gfx.DrawRectangle(XPens.LightGray, XBrushes.White,
-                    legendX, legendY, routeWidth - 10, 55); // Уменьшим высоту
-
-                // Цвет маршрута
-                try
-                {
-                    var color = XColor.FromArgb(255,
-                        Convert.ToByte(route.ColorHex.Substring(1, 2), 16),
-                        Convert.ToByte(route.ColorHex.Substring(3, 2), 16),
-                        Convert.ToByte(route.ColorHex.Substring(5, 2), 16));
-
-                    gfx.DrawRectangle(new XSolidBrush(color), legendX + 5, legendY + 5, 15, 15); // Уменьшим размер
-                }
-                catch
-                {
-                    // Если ошибка с цветом, рисуем черный квадрат
-                    gfx.DrawRectangle(XBrushes.Black, legendX + 5, legendY + 5, 15, 15);
-                }
-
-                // Информация о маршруте (уменьшим шрифт)
-                gfx.DrawString(route.CreatorName, new XFont("Times New Roman", 8), XBrushes.Black,
-                    legendX + 25, legendY + 5);
-                gfx.DrawString($"Дистанция: {route.DistanceStr}", new XFont("Times New Roman", 7), XBrushes.Black,
-                    legendX + 25, legendY + 20);
-                gfx.DrawString($"Точек: {route.PointsCount}", new XFont("Times New Roman", 7), XBrushes.Black,
-                    legendX + 25, legendY + 32);
-
-                legendX += routeWidth;
-            }
-
-            // Карта под легендой
-            double mapY = legendY + 70; // Уменьшим отступ
-            double mapMargin = 20;
-            double mapTop = 65;
-            double legendHeight = 110; // Резервируем место под легенду внизу
-            double mapAreaWidth = page.Width - (mapMargin * 2);
-            double mapAreaHeight = page.Height - mapTop - legendHeight - 10;
-
+            // Рисуем карту
             if (_mapImage != null)
             {
                 try
                 {
-                    double scale = Math.Min(mapAreaWidth / _mapImage.PixelWidth, mapAreaHeight / _mapImage.PixelHeight);
-                    double drawWidth = _mapImage.PixelWidth * scale;
-                    double drawHeight = _mapImage.PixelHeight * scale;
-
-                    // Центрируем
-                    double drawX = mapMargin + (mapAreaWidth - drawWidth) / 2;
-                    double drawY = mapTop + (mapAreaHeight - drawHeight) / 2;
-
-                    gfx.DrawImage(_mapImage, drawX, drawY, drawWidth, drawHeight);
-
-                    // Рамка вокруг карты (опционально)
-                    gfx.DrawRectangle(XPens.LightGray, drawX, drawY, drawWidth, drawHeight);
-
-                    // Добавим подпись под картой
-                    gfx.DrawString("Карта маршрутов", new XFont("Times New Roman", 10, XFontStyleEx.Bold),
-                        XBrushes.Black, new XRect(40, mapY + mapAreaHeight + 10, mapAreaWidth, 20),
-                        XStringFormats.Center);
+                    gfx.DrawImage(_mapImage, 0, 0, page.Width, page.Height);
                 }
                 catch (Exception ex)
                 {
-                    gfx.DrawString($"Ошибка загрузки карты: {ex.Message}", fontNormal, XBrushes.Red,
-                        new XRect(40, mapY, page.Width - 80, 100), XStringFormats.Center);
+                    gfx.DrawString($"Ошибка загрузки карты: {ex.Message}",
+                        new XFont("Times New Roman", 12), XBrushes.Red,
+                        new XRect(40, 150, page.Width - 80, 100),
+                        XStringFormats.Center);
                 }
             }
-            else
-            {
-                gfx.DrawString("Карта не доступна", fontNormal, XBrushes.Gray,
-                    new XRect(40, mapY, page.Width - 80, 100), XStringFormats.Center);
-            }
-        }
 
-        // Страница 2: Подробная статистика маршрутов
-        private void AddRoutesStatisticsPage(PdfDocument document)
-        {
-            var page = document.AddPage();
-            var gfx = XGraphics.FromPdfPage(page);
+            // Рисуем название приложения
+            var fontAppTitle = new XFont("Times New Roman", 14, XFontStyleEx.Bold);
+            gfx.DrawString("TrackSync", fontAppTitle, XBrushes.DarkBlue, 20, 20);
 
-            // Название приложения
-            DrawAppTitle(gfx, page);
-
-            var fontTitle = new XFont("Times New Roman", 18, XFontStyleEx.Bold);
-            var fontNormal = new XFont("Times New Roman", 12);
-            var fontSmall = new XFont("Times New Roman", 10);
-            var fontHeader = new XFont("Times New Roman", 12, XFontStyleEx.Bold);
-
-            // Заголовок
-            gfx.DrawString("Подробная статистика маршрутов", fontTitle, XBrushes.Black,
-                new XRect(0, 50, page.Width, 30), XStringFormats.Center);
-
-            double yPos = 100;
-
-            // Получаем статистику маршрутов
-            var routes = GetRoutesStatistics();
-
+            // Рисуем легенду в левом нижнем углу
             if (routes.Any())
             {
-                // Заголовки таблицы
-                gfx.DrawString("Цвет", fontHeader, XBrushes.Black, 40, yPos);
-                gfx.DrawString("Создатель", fontHeader, XBrushes.Black, 100, yPos);
-                gfx.DrawString("Дистанция", fontHeader, XBrushes.Black, 300, yPos);
-                gfx.DrawString("Точек", fontHeader, XBrushes.Black, 400, yPos);
-                gfx.DrawString("Участник ID", fontHeader, XBrushes.Black, 480, yPos);
+                double legendX = 20; // Отступ слева
+                double legendWidth = 200;
+                double legendHeight = routes.Count * 40 + 60; // +60 для заголовка и масштаба
+                double legendY = page.Height - legendHeight - 20; // Отступ снизу
 
-                yPos += 25;
-                gfx.DrawLine(XPens.Black, 40, yPos, page.Width - 40, yPos);
-                yPos += 10;
+                // Полупрозрачный фон
+                var legendBg = new XSolidBrush(XColor.FromArgb(230, 255, 255, 255));
+                gfx.DrawRectangle(legendBg, legendX, legendY, legendWidth, legendHeight);
+                gfx.DrawRectangle(XPens.LightGray, legendX, legendY, legendWidth, legendHeight);
 
-                // Данные маршрутов
+                // Заголовок легенды
+                gfx.DrawString("Легенда маршрутов",
+                    new XFont("Times New Roman", 12, XFontStyleEx.Bold),
+                    XBrushes.Black, legendX + 10, legendY + 15);
+
+                double currentY = legendY + 40;
+
                 foreach (var route in routes)
                 {
-                    if (yPos > page.Height - 50)
-                    {
-                        page = document.AddPage();
-                        gfx = XGraphics.FromPdfPage(page);
-                        DrawAppTitle(gfx, page);
-                        yPos = 100;
-
-                        // Повторяем заголовки на новой странице
-                        gfx.DrawString("Цвет", fontHeader, XBrushes.Black, 40, yPos);
-                        gfx.DrawString("Создатель", fontHeader, XBrushes.Black, 100, yPos);
-                        gfx.DrawString("Дистанция", fontHeader, XBrushes.Black, 300, yPos);
-                        gfx.DrawString("Точек", fontHeader, XBrushes.Black, 400, yPos);
-                        gfx.DrawString("Участник ID", fontHeader, XBrushes.Black, 480, yPos);
-
-                        yPos += 25;
-                        gfx.DrawLine(XPens.Black, 40, yPos, page.Width - 40, yPos);
-                        yPos += 10;
-                    }
-
                     // Цвет маршрута
                     try
                     {
@@ -272,28 +158,134 @@ namespace TrackSync.Functions
                             Convert.ToByte(route.ColorHex.Substring(3, 2), 16),
                             Convert.ToByte(route.ColorHex.Substring(5, 2), 16));
 
-                        gfx.DrawRectangle(new XSolidBrush(color), 40, yPos - 5, 20, 20);
+                        gfx.DrawRectangle(new XSolidBrush(color),
+                            legendX + 10, currentY, 15, 15);
+                        gfx.DrawRectangle(XPens.Black,
+                            legendX + 10, currentY, 15, 15);
                     }
                     catch
                     {
-                        gfx.DrawString(route.ColorHex, fontSmall, XBrushes.Black, 40, yPos);
+                        gfx.DrawRectangle(XBrushes.Black,
+                            legendX + 10, currentY, 15, 15);
                     }
 
-                    // Остальные данные
-                    gfx.DrawString(route.CreatorName, fontSmall, XBrushes.Black, 100, yPos);
-                    gfx.DrawString(route.DistanceStr, fontSmall, XBrushes.Black, 300, yPos);
-                    gfx.DrawString(route.PointsCount.ToString(), fontSmall, XBrushes.Black, 400, yPos);
-                    gfx.DrawString(route.ParticipantId.ToString(), fontSmall, XBrushes.Black, 480, yPos);
+                    // Информация о маршруте
+                    string creatorText = route.CreatorName;
+                    string statsText = $"{route.DistanceStr}, {route.PointsCount} точек";
 
-                    yPos += 25;
+                    gfx.DrawString(creatorText,
+                        new XFont("Times New Roman", 9, XFontStyleEx.Bold),
+                        XBrushes.Black,
+                        legendX + 30, currentY + 2);
+
+                    gfx.DrawString(statsText,
+                        new XFont("Times New Roman", 8),
+                        XBrushes.Black,
+                        legendX + 30, currentY + 15);
+
+                    currentY += 40;
+                }
+
+                // Добавляем масштаб под легендой
+                if (_mapZoom > 0)
+                {
+                    currentY += 5;
+                    gfx.DrawString($"Масштаб: 1:{_mapZoom:F1}",
+                        new XFont("Times New Roman", 9),
+                        XBrushes.Black,
+                        legendX + 10, currentY);
                 }
             }
-            else
-            {
-                gfx.DrawString("Нет данных о маршрутах", fontNormal, XBrushes.Gray,
-                    new XRect(40, 150, page.Width - 80, 100), XStringFormats.Center);
-            }
         }
+
+        // Страница 2: Подробная статистика маршрутов
+        //private void AddRoutesStatisticsPage(PdfDocument document)
+        //{
+        //    var page = document.AddPage();
+        //    var gfx = XGraphics.FromPdfPage(page);
+
+        //    // Название приложения
+        //    DrawAppTitle(gfx, page);
+
+        //    var fontTitle = new XFont("Times New Roman", 18, XFontStyleEx.Bold);
+        //    var fontNormal = new XFont("Times New Roman", 12);
+        //    var fontSmall = new XFont("Times New Roman", 10);
+        //    var fontHeader = new XFont("Times New Roman", 12, XFontStyleEx.Bold);
+
+        //    // Заголовок
+        //    gfx.DrawString("Подробная статистика маршрутов", fontTitle, XBrushes.Black,
+        //        new XRect(0, 50, page.Width, 30), XStringFormats.Center);
+
+        //    double yPos = 100;
+
+        //    // Получаем статистику маршрутов
+        //    var routes = GetRoutesStatistics();
+
+        //    if (routes.Any())
+        //    {
+        //        // Заголовки таблицы
+        //        gfx.DrawString("Цвет", fontHeader, XBrushes.Black, 40, yPos);
+        //        gfx.DrawString("Создатель", fontHeader, XBrushes.Black, 100, yPos);
+        //        gfx.DrawString("Дистанция", fontHeader, XBrushes.Black, 300, yPos);
+        //        gfx.DrawString("Точек", fontHeader, XBrushes.Black, 400, yPos);
+        //        gfx.DrawString("Участник ID", fontHeader, XBrushes.Black, 480, yPos);
+
+        //        yPos += 25;
+        //        gfx.DrawLine(XPens.Black, 40, yPos, page.Width - 40, yPos);
+        //        yPos += 10;
+
+        //        // Данные маршрутов
+        //        foreach (var route in routes)
+        //        {
+        //            if (yPos > page.Height - 50)
+        //            {
+        //                page = document.AddPage();
+        //                gfx = XGraphics.FromPdfPage(page);
+        //                DrawAppTitle(gfx, page);
+        //                yPos = 100;
+
+        //                // Повторяем заголовки на новой странице
+        //                gfx.DrawString("Цвет", fontHeader, XBrushes.Black, 40, yPos);
+        //                gfx.DrawString("Создатель", fontHeader, XBrushes.Black, 100, yPos);
+        //                gfx.DrawString("Дистанция", fontHeader, XBrushes.Black, 300, yPos);
+        //                gfx.DrawString("Точек", fontHeader, XBrushes.Black, 400, yPos);
+        //                gfx.DrawString("Участник ID", fontHeader, XBrushes.Black, 480, yPos);
+
+        //                yPos += 25;
+        //                gfx.DrawLine(XPens.Black, 40, yPos, page.Width - 40, yPos);
+        //                yPos += 10;
+        //            }
+
+        //            // Цвет маршрута
+        //            try
+        //            {
+        //                var color = XColor.FromArgb(255,
+        //                    Convert.ToByte(route.ColorHex.Substring(1, 2), 16),
+        //                    Convert.ToByte(route.ColorHex.Substring(3, 2), 16),
+        //                    Convert.ToByte(route.ColorHex.Substring(5, 2), 16));
+
+        //                gfx.DrawRectangle(new XSolidBrush(color), 40, yPos - 5, 20, 20);
+        //            }
+        //            catch
+        //            {
+        //                gfx.DrawString(route.ColorHex, fontSmall, XBrushes.Black, 40, yPos);
+        //            }
+
+        //            // Остальные данные
+        //            gfx.DrawString(route.CreatorName, fontSmall, XBrushes.Black, 100, yPos);
+        //            gfx.DrawString(route.DistanceStr, fontSmall, XBrushes.Black, 300, yPos);
+        //            gfx.DrawString(route.PointsCount.ToString(), fontSmall, XBrushes.Black, 400, yPos);
+        //            gfx.DrawString(route.ParticipantId.ToString(), fontSmall, XBrushes.Black, 480, yPos);
+
+        //            yPos += 25;
+        //        }
+        //    }
+        //    else
+        //    {
+        //        gfx.DrawString("Нет данных о маршрутах", fontNormal, XBrushes.Gray,
+        //            new XRect(40, 150, page.Width - 80, 100), XStringFormats.Center);
+        //    }
+        //}
 
         // Страница 3: Снаряжение участников (остается как было, но с названием приложения)
         private void AddEquipmentPage(PdfDocument document)
@@ -403,18 +395,18 @@ namespace TrackSync.Functions
             }
         }
 
-        // Страница 4: Продуктовая раскладка (остается как было, но с названием приложения)
+        // Страница 4: Продуктовая раскладка
         private void AddMealPlanPage(PdfDocument document)
         {
             var page = document.AddPage();
             var gfx = XGraphics.FromPdfPage(page);
-
-            // Название приложения
             DrawAppTitle(gfx, page);
 
             var fontTitle = new XFont("Times New Roman", 18, XFontStyleEx.Bold);
             var fontNormal = new XFont("Times New Roman", 12);
+            var fontMedium = new XFont("Times New Roman", 11); // Новый размер шрифта
             var fontSmall = new XFont("Times New Roman", 10);
+            var fontBold = new XFont("Times New Roman", 12, XFontStyleEx.Bold);
 
             // Заголовок
             gfx.DrawString("Продуктовая раскладка", fontTitle, XBrushes.Black,
@@ -422,20 +414,28 @@ namespace TrackSync.Functions
 
             double yPos = 100;
 
-            // Получаем дни похода
+            // Получаем данные комнаты
             var room = _context.HikeRooms.FirstOrDefault(r => r.HikeRoomId == _roomId);
             if (room == null) return;
 
             int totalDays = (room.EndDate.ToDateTime(TimeOnly.MinValue) -
                            room.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1;
 
-            // Получаем рецепты для комнаты
+            // Получаем все рецепты для комнаты с ответственными
             var roomRecipes = _context.HikeRoomsRecipes
                 .Include(hrr => hrr.Recipe)
                     .ThenInclude(r => r.IngredientsRecipes)
                         .ThenInclude(ir => ir.Ingredient)
+                .Include(hrr => hrr.Recipe)
+                    .ThenInclude(r => r.RecipesParticipants)
+                        .ThenInclude(rp => rp.Participant)
+                            .ThenInclude(p => p.User)
                 .Where(hrr => hrr.HikeRoomId == _roomId)
                 .ToList();
+
+            // Получаем количество участников для расчетов
+            int participantsCount = _context.Participants
+                .Count(p => p.HikeRoomId == _roomId);
 
             for (int day = 1; day <= totalDays; day++)
             {
@@ -451,9 +451,9 @@ namespace TrackSync.Functions
                 var dayDate = room.StartDate.AddDays(day - 1);
                 gfx.DrawString($"День {day}: {dayDate:dd.MM.yyyy}",
                     new XFont("Times New Roman", 14, XFontStyleEx.Bold),
-                    XBrushes.Black, 40, yPos);
+                    XBrushes.DarkBlue, 40, yPos);
 
-                yPos += 35;
+                yPos += 25;
 
                 // Получаем рецепты на этот день
                 var dayRecipes = roomRecipes
@@ -463,12 +463,12 @@ namespace TrackSync.Functions
 
                 // Типы приемов пищи
                 var mealTypes = new Dictionary<int, string>
-                {
-                    {1, "Завтрак"},
-                    {2, "Обед"},
-                    {3, "Ужин"},
-                    {4, "Перекус"}
-                };
+        {
+            {1, "Завтрак"},
+            {2, "Обед"},
+            {3, "Ужин"},
+            {4, "Перекус"}
+        };
 
                 foreach (var mealGroup in dayRecipes)
                 {
@@ -485,7 +485,7 @@ namespace TrackSync.Functions
 
                     gfx.DrawString(mealName, new XFont("Times New Roman", 12, XFontStyleEx.Bold),
                         XBrushes.DarkBlue, 50, yPos);
-                    yPos += 25;
+                    yPos += 20;
 
                     foreach (var roomRecipe in mealGroup)
                     {
@@ -493,18 +493,108 @@ namespace TrackSync.Functions
                         if (recipe == null) continue;
 
                         // Название рецепта
-                        gfx.DrawString(recipe.Title, fontSmall, XBrushes.Black, 70, yPos);
+                        gfx.DrawString(recipe.Title, fontBold, XBrushes.Black, 70, yPos);
                         yPos += 20;
 
-                        // Ингредиенты
+                        // Описание рецепта
+                        if (!string.IsNullOrWhiteSpace(recipe.Description))
+                        {
+                            gfx.DrawString($"Описание: {recipe.Description}",
+                                fontSmall, XBrushes.Gray, 90, yPos);
+                            yPos += 15;
+                        }
+
+                        // Время готовки
+                        if (recipe.Time.HasValue)
+                        {
+                            gfx.DrawString($"Время готовки: {recipe.Time} минут",
+                                fontSmall, XBrushes.Gray, 90, yPos);
+                            yPos += 15;
+                        }
+
+                        // Расчет нутриентов и веса
                         if (recipe.IngredientsRecipes != null)
                         {
+                            int totalCalories = 0;
+                            int totalProteins = 0;
+                            int totalFats = 0;
+                            int totalCarbs = 0;
+                            int totalWeight = 0;
+                            int caloriesPerPerson = 0;
+                            int proteinsPerPerson = 0;
+                            int fatsPerPerson = 0;
+                            int carbsPerPerson = 0;
+                            int weightPerPerson = 0;
+
                             foreach (var ingredientRecipe in recipe.IngredientsRecipes)
                             {
                                 if (ingredientRecipe.Ingredient != null)
                                 {
-                                    gfx.DrawString($"  • {ingredientRecipe.Ingredient.Title}: {ingredientRecipe.Weight}г",
-                                        fontSmall, XBrushes.Gray, 90, yPos);
+                                    // Расчет на всех участников
+                                    totalCalories += (ingredientRecipe.Ingredient.Calories * ingredientRecipe.Weight * participantsCount) / 100;
+                                    totalProteins += (ingredientRecipe.Ingredient.Proteins * ingredientRecipe.Weight * participantsCount) / 100;
+                                    totalFats += (ingredientRecipe.Ingredient.Fats * ingredientRecipe.Weight * participantsCount) / 100;
+                                    totalCarbs += (ingredientRecipe.Ingredient.Carbs * ingredientRecipe.Weight * participantsCount) / 100;
+                                    totalWeight += ingredientRecipe.Weight * participantsCount;
+
+                                    // Расчет на одного человека
+                                    caloriesPerPerson += (ingredientRecipe.Ingredient.Calories * ingredientRecipe.Weight) / 100;
+                                    proteinsPerPerson += (ingredientRecipe.Ingredient.Proteins * ingredientRecipe.Weight) / 100;
+                                    fatsPerPerson += (ingredientRecipe.Ingredient.Fats * ingredientRecipe.Weight) / 100;
+                                    carbsPerPerson += (ingredientRecipe.Ingredient.Carbs * ingredientRecipe.Weight) / 100;
+                                    weightPerPerson += ingredientRecipe.Weight;
+                                }
+                            }
+
+                            // Общий вес (ТОЛЬКО общий вес, без веса на человека)
+                            gfx.DrawString($"Общий вес: {totalWeight}г",
+                                fontMedium, XBrushes.Black, 90, yPos);
+                            yPos += 15;
+
+                            // Калории (ТОЛЬКО на человека)
+                            gfx.DrawString($"Калории: {caloriesPerPerson} ккал/чел",
+                                fontMedium, XBrushes.Black, 90, yPos);
+                            yPos += 15;
+
+                            // БЖУ (на человека, увеличенный шрифт)
+                            gfx.DrawString($"Белки: {proteinsPerPerson}г, Жиры: {fatsPerPerson}г, Углеводы: {carbsPerPerson}г",
+                                fontMedium, XBrushes.Black, 90, yPos);
+                            yPos += 15;
+                        }
+
+                        // Ингредиенты
+                        if (recipe.IngredientsRecipes != null)
+                        {
+                            gfx.DrawString("Ингредиенты:",
+                                fontMedium, XBrushes.Black, 90, yPos);
+                            yPos += 15;
+
+                            foreach (var ingredientRecipe in recipe.IngredientsRecipes)
+                            {
+                                if (ingredientRecipe.Ingredient != null)
+                                {
+                                    int totalWeight = ingredientRecipe.Weight * participantsCount;
+                                    // ТОЛЬКО общий вес, без веса на человека
+                                    gfx.DrawString($"  • {ingredientRecipe.Ingredient.Title}: {totalWeight}г",
+                                        fontMedium, XBrushes.Gray, 110, yPos);
+                                    yPos += 15;
+                                }
+                            }
+                        }
+
+                        // Ответственные
+                        if (recipe.RecipesParticipants != null && recipe.RecipesParticipants.Any())
+                        {
+                            gfx.DrawString("Ответственные:",
+                                fontMedium, XBrushes.Black, 90, yPos);
+                            yPos += 15;
+
+                            foreach (var responsible in recipe.RecipesParticipants)
+                            {
+                                if (responsible.Participant?.User != null)
+                                {
+                                    gfx.DrawString($"  • {responsible.Participant.User.Name}",
+                                        fontMedium, XBrushes.Gray, 110, yPos);
                                     yPos += 15;
                                 }
                             }
@@ -517,14 +607,10 @@ namespace TrackSync.Functions
                 // Если нет рецептов на день
                 if (!dayRecipes.Any())
                 {
-                    gfx.DrawString("Нет рецептов", fontSmall, XBrushes.Gray, 50, yPos);
+                    gfx.DrawString("Нет рецептов", fontMedium, XBrushes.Gray, 50, yPos);
                     yPos += 30;
                 }
 
-                yPos += 30;
-
-                // Разделитель между днями
-                gfx.DrawLine(XPens.LightGray, 40, yPos, page.Width - 40, yPos);
                 yPos += 20;
             }
         }
@@ -534,8 +620,6 @@ namespace TrackSync.Functions
         {
             var page = document.AddPage();
             var gfx = XGraphics.FromPdfPage(page);
-
-            // Название приложения
             DrawAppTitle(gfx, page);
 
             var fontTitle = new XFont("Times New Roman", 18, XFontStyleEx.Bold);
@@ -567,13 +651,12 @@ namespace TrackSync.Functions
                 fontNormal, XBrushes.Black, 50, yPos);
             yPos += 25;
 
-            gfx.DrawString($"На одного участника: {costPerPerson:F2} руб.",
+            gfx.DrawString($"Количество участников: {participantsCount}",
                 fontNormal, XBrushes.Black, 50, yPos);
             yPos += 25;
 
-            gfx.DrawString($"Количество участников: {participantsCount}",
+            gfx.DrawString($"Общий вес продуктов: {stats.Sum(s => s.TotalWeight)} г",
                 fontNormal, XBrushes.Black, 50, yPos);
-
             yPos += 40;
 
             // Детализация по ингредиентам
@@ -586,6 +669,7 @@ namespace TrackSync.Functions
             gfx.DrawString("Ингредиент", fontSmall, XBrushes.Black, 40, yPos);
             gfx.DrawString("Вес (г)", fontSmall, XBrushes.Black, 250, yPos);
             gfx.DrawString("Стоимость", fontSmall, XBrushes.Black, 350, yPos);
+            gfx.DrawString("Используется", fontSmall, XBrushes.Black, 450, yPos);
 
             yPos += 20;
             gfx.DrawLine(XPens.Black, 40, yPos, page.Width - 40, yPos);
@@ -605,6 +689,7 @@ namespace TrackSync.Functions
                     gfx.DrawString("Ингредиент", fontSmall, XBrushes.Black, 40, yPos);
                     gfx.DrawString("Вес (г)", fontSmall, XBrushes.Black, 250, yPos);
                     gfx.DrawString("Стоимость", fontSmall, XBrushes.Black, 350, yPos);
+                    gfx.DrawString("Используется", fontSmall, XBrushes.Black, 450, yPos);
 
                     yPos += 20;
                     gfx.DrawLine(XPens.Black, 40, yPos, page.Width - 40, yPos);
@@ -614,10 +699,7 @@ namespace TrackSync.Functions
                 gfx.DrawString(stat.IngredientTitle, fontSmall, XBrushes.Black, 40, yPos);
                 gfx.DrawString(stat.TotalWeight.ToString(), fontSmall, XBrushes.Black, 250, yPos);
                 gfx.DrawString($"{stat.TotalCost:F2} руб.", fontSmall, XBrushes.Black, 350, yPos);
-
-                // Стоимость на человека (меньшим шрифтом)
-                gfx.DrawString($"{stat.CostPerPerson:F2} руб./чел",
-                    new XFont("Times New Roman", 8), XBrushes.Gray, 450, yPos);
+                gfx.DrawString($"{stat.UsedInRecipesCount} рецепт(ов)", fontSmall, XBrushes.Black, 450, yPos);
 
                 yPos += 25;
             }

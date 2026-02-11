@@ -2,7 +2,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Win32;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -10,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Threading;
+using System.Xml.Linq;
 using TrackSync.DataBase;
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Functions;
@@ -27,6 +30,9 @@ namespace TrackSync.Pages
         private string _currentMealTypeTag = "";
         private readonly Dictionary<int, List<EquipmentQuantityItem>> _participantEquipment = new();
         private bool _isLeader = false;
+        private RouteStatItem _editingRouteStat = null;
+        private bool _isEditingRoute = false;
+        private Guid _currentEditingSessionId = Guid.NewGuid();
 
         private bool _canEditMealPlan = false;
         private bool _canEditEquipment = false;
@@ -230,6 +236,7 @@ namespace TrackSync.Pages
             public string DistanceStr => $"{Distance:F2} км";
             public int PointsCount { get; set; }
             public int ParticipantId { get; set; }
+            public Guid EditingSessionId { get; set; } = Guid.Empty;
         }
 
         public class IngredientStatItem
@@ -252,6 +259,15 @@ namespace TrackSync.Pages
             LoadRoomData();
             LoadMealPlan();
             RoomTabControl.SelectionChanged += RoomTabControl_SelectionChanged;
+
+            this.Loaded += (s, e) =>
+            {
+                if (MyRouteBuilder != null)
+                {
+                    MyRouteBuilder.RouteUpdated += MyRouteBuilder_RouteUpdated;
+                    MyRouteBuilder.ColorChanged += MyRouteBuilder_ColorChanged;
+                }
+            };
         }
 
         // Загрузка данных комнаты
@@ -730,15 +746,9 @@ namespace TrackSync.Pages
         // === 1. Маршруты ===
         private void SaveRoute_Click(object sender, RoutedEventArgs e)
         {
-            var points = MyRouteBuilder.RoutePoints;
-            if (points.Count < 2)
-            {
-                MessageBox.Show("Добавьте минимум 2 точки.");
-                return;
-            }
-
             try
             {
+                var points = MyRouteBuilder.RoutePoints;
                 using (var db = new TrackSyncContext())
                 {
                     using (var transaction = db.Database.BeginTransaction())
@@ -769,7 +779,7 @@ namespace TrackSync.Pages
                             {
                                 HikeRoomId = _roomId,
                                 ParticipantId = participant.ParticipantId,
-                                Title = $"Маршрут: {SessionManager.CurrentUser.Name}",
+                                Title = $"Маршрут: {RoomTitleText.Text + " " + SessionManager.CurrentUser.Name}",
                             };
                             db.Tracks.Add(myTrack);
                         }
@@ -809,7 +819,18 @@ namespace TrackSync.Pages
 
                         db.SaveChanges();
                         transaction.Commit();
+
+                        // После сохранения обновляем маршрут без центрирования
+                        MyRouteBuilder.LoadRoute(points, MyRouteBuilder.SelectedColor, centerMap:false);
                         ShowMessage(MapMessage, "Маршрут сохранён", true);
+
+                        // Сбрасываем состояние редактирования
+                        _isEditingRoute = false;
+                        _editingRouteStat = null;
+                        _currentEditingSessionId = Guid.NewGuid();
+
+                        // Обновляем карту и статистику
+                        RefreshMap();
                     }
                 }
             }
@@ -818,6 +839,7 @@ namespace TrackSync.Pages
                 MessageBox.Show($"Ошибка сохранения: {ex.Message}");
             }
         }
+
         private void RefreshMap()
         {
             try
@@ -827,105 +849,329 @@ namespace TrackSync.Pages
                 var usedColors = new List<string>();
                 int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
 
-                // Используем временный список для статистики
-                var stats = new List<RouteStatItem>();
-                var allPoints = new List<GMap.NET.PointLatLng>(); // Собираем ВСЕ точки всех треков
+                var allPoints = new List<GMap.NET.PointLatLng>();
 
+                // Сначала собираем цвета занятые другими пользователями
                 foreach (var track in allTracks)
                 {
                     var points = ExtractPoints(track);
-
-                    // Добавляем точки в общий список для центрирования
                     allPoints.AddRange(points);
-
-                    // Расчет дистанции
-                    double dist = 0;
-                    for (int i = 0; i < points.Count - 1; i++)
-                        dist += GMap.NET.MapProviders.EmptyProvider.Instance.Projection.GetDistance(points[i], points[i + 1]);
-
-                    // Добавляем в статистику
-                    stats.Add(new RouteStatItem
-                    {
-                        CreatorName = track.Participant?.User?.Name ?? "Участник",
-                        ColorHex = track.Color ?? "#FF0000",
-                        Distance = dist,
-                        PointsCount = points.Count,
-                        ParticipantId = track.ParticipantId
-                    });
-
-                    // Отрисовка на карте (только если есть точки)
-                    if (points.Count >= 2)
-                    {
-                        if (track.ParticipantId == myPartId)
-                            MyRouteBuilder.LoadRoute(points, track.Color);
-                        else
-                            MyRouteBuilder.DisplayOtherTrack(points, track.Color);
-                    }
 
                     if (track.ParticipantId != myPartId)
                     {
-                        usedColors.Add(track.Color);
+                        if (points.Count >= 2)
+                        {
+                            MyRouteBuilder.DisplayOtherTrack(points, track.Color);
+                            usedColors.Add(track.Color);
+                        }
+                    }
+                    else
+                    {
+                        if (points.Count >= 2 && !_isEditingRoute)
+                        {
+                            // Явно устанавливаем цвет из базы данных
+                            string trackColor = !string.IsNullOrEmpty(track.Color) ? track.Color : "#FF0000";
+                            MyRouteBuilder.LoadRoute(points, trackColor, centerMap: true);
+
+                            // Обновляем выбранный цвет в панели выбора
+                            MyRouteBuilder.SetColor(trackColor);
+                        }
                     }
                 }
 
+                var hasMyTrack = allTracks.Any(t => t.ParticipantId == myPartId && ExtractPoints(t).Count >= 2);
+                if (!_isEditingRoute && !hasMyTrack)
+                {
+                    string availableColor = MyRouteBuilder.GetFirstAvailableColor(usedColors);
+
+                    if (availableColor == null && usedColors.Count > 0)
+                    {
+                        MyRouteBuilder.DisableEditing();
+                        SaveRouteButton.Visibility = Visibility.Collapsed;
+                        UndoRouteButton.Visibility = Visibility.Collapsed;
+                        ClearRouteButton.Visibility = Visibility.Collapsed;
+                        ShowMessage(MapMessage, "Все цвета маршрутов заняты. Невозможно создать новый маршрут.", false);
+                    }
+                    else if (availableColor != null)
+                    {
+                        MyRouteBuilder.SetColor(availableColor);
+                    }
+                }
+
+                // Отключаем использованные цвета в палитре
                 MyRouteBuilder.DisableUsedColors(usedColors);
 
+                // Центрируем карту
                 if (allPoints.Count > 0)
                 {
                     MyRouteBuilder.CenterMapOnRoutes(allPoints);
                 }
                 else
                 {
-                    // Если нет сохраненных маршрутов, можно центрировать на стандартном месте
-                    // или просто оставить текущие настройки
                     MyRouteBuilder.CenterMapOnPoint(new GMap.NET.PointLatLng(55.7558, 37.6173), 10);
                 }
 
-                RoutesStatisticsList.ItemsSource = null;
-                RoutesStatisticsList.ItemsSource = stats;
+                // Обновляем статистику
+                UpdateRoutesStatistics();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка обновления: {ex.Message}");
             }
         }
-        private List<GMap.NET.PointLatLng> ExtractPoints(Track track)
+
+        private void MyRouteBuilder_RouteUpdated(object sender, (double distance, int points) e)
         {
-            var points = new List<GMap.NET.PointLatLng>();
+            int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
 
-            // Проверяем, что сегменты вообще есть
-            if (track?.Segments == null || !track.Segments.Any()) return points;
-
-            // Сортируем строго по ID, чтобы не было "паутины"
-            var sortedSegments = track.Segments.OrderBy(s => s.SegmentId).ToList();
-
-            // Берем начальную точку первого сегмента
-            var first = sortedSegments.First();
-            if (first.StartWaypoint != null)
+            // Если есть точки
+            if (e.points > 0)
             {
-                points.Add(new GMap.NET.PointLatLng((double)first.StartWaypoint.Latitude, (double)first.StartWaypoint.Longitude));
-            }
-
-            // Добавляем конечные точки всех сегментов по порядку
-            foreach (var s in sortedSegments)
-            {
-                if (s.EndWaypoint != null)
+                if (!_isEditingRoute)
                 {
-                    points.Add(new GMap.NET.PointLatLng((double)s.EndWaypoint.Latitude, (double)s.EndWaypoint.Longitude));
+                    _isEditingRoute = true;
+                    _editingRouteStat = new RouteStatItem
+                    {
+                        CreatorName = SessionManager.CurrentUser?.Name ?? "Вы",
+                        ColorHex = MyRouteBuilder.SelectedColor,
+                        Distance = e.distance,
+                        PointsCount = e.points,
+                        ParticipantId = myPartId,
+                        EditingSessionId = _currentEditingSessionId
+                    };
+                }
+                else if (_editingRouteStat != null)
+                {
+                    _editingRouteStat.Distance = e.distance;
+                    _editingRouteStat.PointsCount = e.points;
+                    _editingRouteStat.ColorHex = MyRouteBuilder.SelectedColor;
                 }
             }
 
-            return points;
+            if (e.points > 0)
+            {
+                UpdateRoutesStatistics();
+            }
         }
+
+        private void MyRouteBuilder_ColorChanged(object sender, string newColor)
+        {
+            if (_isEditingRoute && _editingRouteStat != null)
+            {
+                _editingRouteStat.ColorHex = newColor;
+                UpdateRoutesStatistics();
+            }
+        }
+
+        // Динамическое обновление статистики
+        private void UpdateRoutesStatistics()
+        {
+            try
+            {
+                var stats = new List<RouteStatItem>();
+                int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
+
+                // 1. Если есть редактируемый маршрут И ЕСТЬ ТОЧКИ - добавляем его
+                if (_isEditingRoute && _editingRouteStat != null && _editingRouteStat.PointsCount > 0)
+                {
+                    stats.Add(_editingRouteStat);
+                }
+
+                // 2. Добавляем сохраненные маршруты других пользователей И текущего пользователя, если он НЕ в режиме редактирования
+                var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
+
+                foreach (var track in allTracks)
+                {
+                    // Если это текущий пользователь и он редактирует - пропускаем его сохраненный маршрут
+                    if (track.ParticipantId == myPartId && _isEditingRoute)
+                    {
+                        continue;
+                    }
+
+                    var points = ExtractPoints(track);
+                    if (points.Count >= 2)
+                    {
+                        double dist = 0;
+                        for (int i = 0; i < points.Count - 1; i++)
+                            dist += GMap.NET.MapProviders.EmptyProvider.Instance.Projection.GetDistance(points[i], points[i + 1]);
+
+                        var statItem = new RouteStatItem
+                        {
+                            CreatorName = track.Participant?.User?.Name ?? "Участник",
+                            ColorHex = track.Color ?? "#FF0000",
+                            Distance = dist,
+                            PointsCount = points.Count,
+                            ParticipantId = track.ParticipantId
+                        };
+
+                        stats.Add(statItem);
+                    }
+                }
+
+                // Сортируем по имени
+                stats = stats.OrderBy(s => s.CreatorName).ToList();
+
+                // Обновляем UI
+                RoutesStatisticsList.ItemsSource = null;
+                RoutesStatisticsList.ItemsSource = stats;
+            }
+            catch (Exception ex)
+            {
+                // В случае ошибки просто очищаем статистику
+                RoutesStatisticsList.ItemsSource = null;
+            }
+        }
+
+        //private List<GMap.NET.PointLatLng> ExtractPoints(Track track)
+        //{
+        //    var points = new List<GMap.NET.PointLatLng>();
+
+        //    // Проверяем, что сегменты вообще есть
+        //    if (track?.Segments == null || !track.Segments.Any()) return points;
+
+        //    // Сортируем строго по ID, чтобы не было "паутины"
+        //    var sortedSegments = track.Segments.OrderBy(s => s.SegmentId).ToList();
+
+        //    // Берем начальную точку первого сегмента
+        //    var first = sortedSegments.First();
+        //    if (first.StartWaypoint != null)
+        //    {
+        //        points.Add(new GMap.NET.PointLatLng((double)first.StartWaypoint.Latitude, (double)first.StartWaypoint.Longitude));
+        //    }
+
+        //    // Добавляем конечные точки всех сегментов по порядку
+        //    foreach (var s in sortedSegments)
+        //    {
+        //        if (s.EndWaypoint != null)
+        //        {
+        //            points.Add(new GMap.NET.PointLatLng((double)s.EndWaypoint.Latitude, (double)s.EndWaypoint.Longitude));
+        //        }
+        //    }
+
+        //    return points;
+        //}
+
         private void UndoRouteButton_Click(object sender, RoutedEventArgs e)
         {
-            // Вызываем метод отмены у нашего контроллера карты
+            // Получаем текущее количество точек
+            int pointsBefore = MyRouteBuilder.RoutePoints.Count;
+
+            if (pointsBefore == 0)
+            {
+                return;
+            }
+
+            // Вызываем метод отмены
             MyRouteBuilder.UndoLastPoint();
+
+            // Проверяем, стала ли количество точек равным 0
+            // Делаем это с задержкой, чтобы событие RouteUpdated успело сработать
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (MyRouteBuilder.RoutePoints.Count == 0 && _isEditingRoute)
+                {
+                    // Получаем ID текущего участника
+                    int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
+
+                    // Сбрасываем флаги редактирования для ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
+                    _isEditingRoute = false;
+                    _editingRouteStat = null;
+                    _currentEditingSessionId = Guid.NewGuid();
+
+                    // ОБНОВЛЯЕМ СТАТИСТИКУ БЕЗ перезагрузки маршрутов из БД
+                    var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
+                    var stats = new List<RouteStatItem>();
+
+                    foreach (var track in allTracks)
+                    {
+                        // Пропускаем маршруты текущего пользователя, так как мы их очистили
+                        if (track.ParticipantId != myPartId)
+                        {
+                            var points = ExtractPoints(track);
+                            if (points.Count >= 2)
+                            {
+                                double dist = 0;
+                                for (int i = 0; i < points.Count - 1; i++)
+                                    dist += GMap.NET.MapProviders.EmptyProvider.Instance.Projection.GetDistance(points[i], points[i + 1]);
+
+                                var statItem = new RouteStatItem
+                                {
+                                    CreatorName = track.Participant?.User?.Name ?? "Участник",
+                                    ColorHex = track.Color ?? "#FF0000",
+                                    Distance = dist,
+                                    PointsCount = points.Count,
+                                    ParticipantId = track.ParticipantId
+                                };
+
+                                stats.Add(statItem);
+                            }
+                        }
+                    }
+
+                    // Сортируем и обновляем UI
+                    stats = stats.OrderBy(s => s.CreatorName).ToList();
+                    RoutesStatisticsList.ItemsSource = null;
+                    RoutesStatisticsList.ItemsSource = stats;
+                }
+            }), System.Windows.Threading.DispatcherPriority.Background);
         }
+
         private void ClearRoute_Click(object sender, RoutedEventArgs e)
         {
-            RefreshMap();
-            MyRouteBuilder.Clear();
+            try
+            {
+                // Получаем ID текущего участника
+                int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
+
+                // Очищаем только визуальную часть - точки на карте
+                MyRouteBuilder.Clear();
+
+                // Сбрасываем флаги редактирования для ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
+                _isEditingRoute = false;
+                _editingRouteStat = null;
+
+                // Генерируем новый ID для следующей сессии редактирования
+                _currentEditingSessionId = Guid.NewGuid();
+
+                // ОБНОВЛЯЕМ СТАТИСТИКУ БЕЗ перезагрузки маршрутов из БД
+                var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
+                var stats = new List<RouteStatItem>();
+
+                foreach (var track in allTracks)
+                {
+                    // Пропускаем маршруты текущего пользователя, так как мы их очистили
+                    if (track.ParticipantId != myPartId)
+                    {
+                        var points = ExtractPoints(track);
+                        if (points.Count >= 2)
+                        {
+                            double dist = 0;
+                            for (int i = 0; i < points.Count - 1; i++)
+                                dist += GMap.NET.MapProviders.EmptyProvider.Instance.Projection.GetDistance(points[i], points[i + 1]);
+
+                            var statItem = new RouteStatItem
+                            {
+                                CreatorName = track.Participant?.User?.Name ?? "Участник",
+                                ColorHex = track.Color ?? "#FF0000",
+                                Distance = dist,
+                                PointsCount = points.Count,
+                                ParticipantId = track.ParticipantId
+                            };
+
+                            stats.Add(statItem);
+                        }
+                    }
+                }
+
+                // Сортируем и обновляем UI
+                stats = stats.OrderBy(s => s.CreatorName).ToList();
+                RoutesStatisticsList.ItemsSource = null;
+                RoutesStatisticsList.ItemsSource = stats;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при очистке маршрута: {ex.Message}");
+            }
         }
 
         // === 2. Снаряжение ===
@@ -1258,7 +1504,7 @@ namespace TrackSync.Pages
 
             return null;
         }
-        // Вспомогательный метод для поиска дочернего элемента (без предиката)
+        // Вспомогательный метод для поиска дочернего элемента 
         private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
         {
             if (parent == null) return null;
@@ -1693,12 +1939,10 @@ namespace TrackSync.Pages
         {
             FrameContext.MainWindowFrame.Navigate(new MainPage());
         }
-
         private void InviteUsersButton_Click(object sender, RoutedEventArgs e)
         {
             NavigationService.Navigate(new InviteUsersPage(_roomId));
         }
-
         private void RoomSettingsButton_Click(object sender, RoutedEventArgs e)
         {
             NavigationService.Navigate(new RoomSettingsPage(_roomId));
@@ -1719,40 +1963,31 @@ namespace TrackSync.Pages
             };
             timer.Start();
         }
-
         private RenderTargetBitmap GetMapScreenshot()
         {
             try
             {
-                // Сохраняем оригинальные размеры
-                double originalWidth = MyRouteBuilder.MapControl.ActualWidth;
-                double originalHeight = MyRouteBuilder.MapControl.ActualHeight;
+                // Ждем, чтобы карта полностью отрендерилась
+                MyRouteBuilder.MapControl.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
-                double targetWidth = 3500;  // Ширина для альбомной A4 в пикселях
-                double targetHeight = 2000;  // Высота для альбомной A4 в пикселях
+                // Используем текущий размер карты
+                double actualWidth = MyRouteBuilder.MapControl.ActualWidth;
+                double actualHeight = MyRouteBuilder.MapControl.ActualHeight;
 
-                // Устанавливаем временные размеры для рендеринга
-                MyRouteBuilder.MapControl.Width = targetWidth;
-                MyRouteBuilder.MapControl.Height = targetHeight;
+                //Если размеры не определены, используем значения по умолчанию
+                if (actualWidth <= 0 || actualHeight <= 0)
+                {
+                    actualWidth = 1123;
+                    actualHeight = 793;
+                }
 
-                // Принудительно обновляем layout
-                MyRouteBuilder.MapControl.UpdateLayout();
-
-                // Ждем обновления
-                Dispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Render);
-
-                // Создаем скриншот
+                // Создаем скриншот текущего состояния карты
                 var renderTargetBitmap = new RenderTargetBitmap(
-                    (int)targetWidth,
-                    (int)targetHeight,
+                    (int)actualWidth,
+                    (int)actualHeight,
                     96, 96, PixelFormats.Pbgra32);
 
                 renderTargetBitmap.Render(MyRouteBuilder.MapControl);
-
-                // Восстанавливаем оригинальные размеры
-                MyRouteBuilder.MapControl.Width = double.NaN; // Авто размер
-                MyRouteBuilder.MapControl.Height = double.NaN;
-                MyRouteBuilder.MapControl.UpdateLayout();
 
                 return renderTargetBitmap;
             }
@@ -1768,7 +2003,7 @@ namespace TrackSync.Pages
         {
             try
             {
-                // Получаем скриншот карты с правильными размерами
+                // Получаем скриншот карты
                 var mapScreenshot = GetMapScreenshot();
 
                 if (mapScreenshot == null)
@@ -1778,14 +2013,21 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Создаём генератор
-                var generator = new HikeRoomPdfGenerator(_roomId, mapScreenshot);
+                // Получаем название комнаты для имени файла
+                string roomTitle = RoomTitleText.Text;
+                string safeFileName = RemoveInvalidFileNameChars(roomTitle);
 
-                // Диалог сохранения
+                // Получаем текущий зум карты
+                double mapZoom = MyRouteBuilder.MapControl.Zoom;
+
+                // Создаём генератор с зумом
+                var generator = new HikeRoomPdfGenerator(_roomId, mapScreenshot, mapZoom);
+
+                // Диалог сохранения - только название похода без дат
                 var saveDialog = new SaveFileDialog
                 {
                     Filter = "PDF files (*.pdf)|*.pdf",
-                    FileName = $"Поход_{_roomId}_{DateTime.Now:yyyyMMdd_HHmm}.pdf",
+                    FileName = $"{safeFileName}.pdf", // Только название, без даты
                     DefaultExt = ".pdf"
                 };
 
@@ -1814,6 +2056,253 @@ namespace TrackSync.Pages
                 MessageBox.Show($"Ошибка подготовки PDF:\n{ex.Message}", "Ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        private void DownloadGpxButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Получаем все треки комнаты
+                var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
+
+                if (allTracks == null || !allTracks.Any())
+                {
+                    MessageBox.Show("В комнате нет сохраненных маршрутов для экспорта",
+                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Создаем контекстное меню для выбора
+                var contextMenu = new ContextMenu();
+
+                var allTracksItem = new MenuItem
+                {
+                    Header = "Все маршруты комнаты",
+                    Tag = "all"
+                };
+                allTracksItem.Click += (s, args) => ExportGpx(false);
+
+                var currentTrackItem = new MenuItem
+                {
+                    Header = "Только мой маршрут",
+                    Tag = "current"
+                };
+                currentTrackItem.Click += (s, args) => ExportGpx(true);
+
+                contextMenu.Items.Add(allTracksItem);
+                contextMenu.Items.Add(currentTrackItem);
+
+                contextMenu.PlacementTarget = sender as Button;
+                contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                contextMenu.IsOpen = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте GPX:\n{ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void ExportGpx(bool onlyCurrentUser)
+        {
+            try
+            {
+                var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
+
+                if (allTracks == null || !allTracks.Any())
+                {
+                    MessageBox.Show("Нет маршрутов для экспорта",
+                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                if (onlyCurrentUser)
+                {
+                    int currentParticipantId = TrackSyncManagerList.GetCurrentParticipantId(
+                        SessionManager.CurrentUserId, _roomId);
+                    allTracks = allTracks.Where(t => t.ParticipantId == currentParticipantId).ToList();
+                }
+
+                if (!allTracks.Any())
+                {
+                    MessageBox.Show("Нет маршрутов для экспорта",
+                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Диалог сохранения
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "GPX files (*.gpx)|*.gpx",
+                    FileName = onlyCurrentUser ?
+                        $"Мой_маршрут_{DateTime.Now:yyyy-MM-dd}.gpx" :
+                        $"Маршруты_{RemoveInvalidFileNameChars(RoomTitleText.Text)}_{DateTime.Now:yyyy-MM-dd}.gpx",
+                    DefaultExt = ".gpx"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    try
+                    {
+                        string gpxContent = GenerateGpxContent(allTracks);
+
+                        if (gpxContent == null)
+                        {
+                            MessageBox.Show("Не удалось сгенерировать GPX файл",
+                                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+
+                        File.WriteAllText(saveDialog.FileName, gpxContent, Encoding.UTF8);
+
+                        MessageBox.Show($"GPX файл успешно сохранен!\n{saveDialog.FileName}",
+                            "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка создания GPX файла:\n{ex.Message}",
+                            "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    finally
+                    {
+                        Mouse.OverrideCursor = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте GPX:\n{ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private string GenerateGpxContent(List<Track> tracks)
+        {
+            try
+            {
+                var gpxNs = XNamespace.Get("http://www.topografix.com/GPX/1/1");
+
+                var doc = new XDocument(
+                    new XDeclaration("1.0", "UTF-8", null),
+                    new XElement(gpxNs + "gpx",
+                        new XAttribute("version", "1.1"),
+                        new XAttribute("creator", "TrackSync"),
+                        new XAttribute(XNamespace.Xmlns + "xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+                        new XElement(gpxNs + "metadata",
+                            new XElement(gpxNs + "name", EscapeXml($"Маршруты комнаты: {RoomTitleText.Text}")),
+                            new XElement(gpxNs + "desc", EscapeXml($"Экспортировано из TrackSync {DateTime.Now:yyyy-MM-dd HH:mm}")),
+                            new XElement(gpxNs + "time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))
+                        ),
+                        // Добавляем все треки как отдельные элементы
+                        tracks.Select(track => CreateTrackElement(track, gpxNs)).Where(x => x != null)
+                    )
+                );
+
+                return doc.ToString();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка генерации GPX: {ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+        }
+
+        private XElement CreateTrackElement(Track track, XNamespace gpxNs)
+        {
+            var waypoints = ExtractWaypoints(track);
+            if (waypoints.Count < 2) return null;
+
+            // Создаем уникальное имя для каждого трека
+            string creatorName = track.Participant?.User?.Name ?? "Неизвестно";
+            string trackName = string.IsNullOrWhiteSpace(track.Title)
+                ? $"Маршрут от {creatorName}"
+                : track.Title;
+
+            // Уникальное описание с информацией о создателе
+            string trackDesc = $"Создатель: {creatorName}, Цвет: {track.Color}, Точки: {waypoints.Count}";
+
+            return new XElement(gpxNs + "trk",
+                new XElement(gpxNs + "name", EscapeXml(trackName)),
+                new XElement(gpxNs + "desc", EscapeXml(trackDesc)),
+                new XElement(gpxNs + "type", "Hiking"),
+                // Добавляем расширения для цвета (нестандартное поле, но многие программы его поддерживают)
+                new XElement(gpxNs + "extensions",
+                    new XElement("color", track.Color ?? "#000000"),
+                    new XElement("creator", EscapeXml(creatorName))
+                ),
+                new XElement(gpxNs + "trkseg",
+                    waypoints.Select((wp, index) => CreateTrackPointElement(wp, index, gpxNs))
+                )
+            );
+        }
+
+        private XElement CreateTrackPointElement(Waypoint waypoint, int index, XNamespace gpxNs)
+        {
+            return new XElement(gpxNs + "trkpt",
+                new XAttribute("lat", waypoint.Latitude.ToString(CultureInfo.InvariantCulture)),
+                new XAttribute("lon", waypoint.Longitude.ToString(CultureInfo.InvariantCulture)),
+                new XElement(gpxNs + "ele", waypoint.Height),
+                new XElement(gpxNs + "time", DateTime.UtcNow.AddMinutes(index).ToString("yyyy-MM-ddTHH:mm:ssZ")),
+                new XElement(gpxNs + "name", $"Точка {index + 1}"),
+                new XElement(gpxNs + "desc", $"Высота: {waypoint.Height} м")
+            );
+        }
+
+        private string EscapeXml(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return s
+                .Replace("&", "&amp;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;")
+                .Replace("\"", "&quot;")
+                .Replace("'", "&apos;");
+        }
+
+        private List<Waypoint> ExtractWaypoints(Track track)
+        {
+            var waypoints = new List<Waypoint>();
+
+            // Проверяем, что сегменты вообще есть
+            if (track?.Segments == null || !track.Segments.Any()) return waypoints;
+
+            // Сортируем строго по ID, чтобы не было "паутины"
+            var sortedSegments = track.Segments.OrderBy(s => s.SegmentId).ToList();
+
+            // Берем начальную точку первого сегмента
+            var first = sortedSegments.First();
+            if (first.StartWaypoint != null)
+            {
+                waypoints.Add(first.StartWaypoint);
+            }
+
+            // Добавляем конечные точки всех сегментов по порядку
+            foreach (var s in sortedSegments)
+            {
+                if (s.EndWaypoint != null)
+                {
+                    waypoints.Add(s.EndWaypoint);
+                }
+            }
+
+            return waypoints;
+        }
+
+        // Обновляем существующий метод ExtractPoints, чтобы он использовал ExtractWaypoints
+        private List<GMap.NET.PointLatLng> ExtractPoints(Track track)
+        {
+            var waypoints = ExtractWaypoints(track);
+            return waypoints.Select(wp => new GMap.NET.PointLatLng((double)wp.Latitude, (double)wp.Longitude)).ToList();
+        }
+
+        // Вспомогательный метод для удаления недопустимых символов из имени файла
+        private string RemoveInvalidFileNameChars(string fileName)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            return new string(fileName.Where(ch => !invalidChars.Contains(ch)).ToArray());
         }
 
         private void ToggleDescriptionButton_Click(object sender, RoutedEventArgs e)

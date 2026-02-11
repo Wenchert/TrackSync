@@ -15,6 +15,7 @@
     <None Remove="Images\Icons\bell.png" />
     <None Remove="Images\Icons\calendar.png" />
     <None Remove="Images\Icons\download.png" />
+    <None Remove="Images\Icons\download_gpx.png" />
     <None Remove="Images\Icons\edit.png" />
     <None Remove="Images\Icons\filter.png" />
     <None Remove="Images\Icons\food.png" />
@@ -51,16 +52,15 @@
   <ItemGroup>
     <Resource Include="Images\background.jpg" />
     <Resource Include="Images\Icons\add.png" />
-    <Resource Include="Images\Icons\arrow-right.png" />
     <Resource Include="Images\Icons\backpack.png" />
     <Resource Include="Images\Icons\bell.png" />
     <Resource Include="Images\Icons\calendar.png" />
     <Resource Include="Images\Icons\download.png" />
+    <Resource Include="Images\Icons\download_gpx.png" />
     <Resource Include="Images\Icons\edit.png" />
     <Resource Include="Images\Icons\favicon.png" />
     <Resource Include="Images\Icons\filter.png" />
     <Resource Include="Images\Icons\food.png" />
-    <Resource Include="Images\Icons\home.png" />
     <Resource Include="Images\Icons\menu.png" />
     <Resource Include="Images\Icons\search.png" />
     <Resource Include="Images\Icons\settings.png" />

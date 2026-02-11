@@ -1,15 +1,10 @@
 ﻿using GMap.NET;
 using GMap.NET.WindowsPresentation;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using System.Windows.Threading;
 
 namespace TrackSync.Pages
 {
@@ -19,9 +14,10 @@ namespace TrackSync.Pages
         private List<GMapMarker> _myVisualMarkers = new List<GMapMarker>();
         private string _currentHexColor = "#FF0000";
         private List<PointLatLng> _routePoints = new List<PointLatLng>();
-        private GMapRoute _currentRoute;
         public event EventHandler<string> ColorChanged;
         private bool _canEdit = true;
+        public bool HasPoints => _routePoints.Count > 0;
+        public string SelectedColor => _currentHexColor;
 
         // Событие для обновления статистики в родительском окне
         public event EventHandler<(double distance, int points)> RouteUpdated;
@@ -56,11 +52,9 @@ namespace TrackSync.Pages
             }
         }
 
-
         public void DisableUsedColors(List<string> usedColors)
         {
-            // Проходим по всем кнопкам внутри контейнера палитры (UniformGrid)
-            // Предположим, ваш UniformGrid называется "ColorsGrid"
+            // Проходим по всем кнопкам внутри контейнера палитры
             foreach (var child in ColorsGrid.Children)
             {
                 if (child is Button btn && btn.Tag != null)
@@ -77,19 +71,14 @@ namespace TrackSync.Pages
             }
         }
 
-
-        // Теперь GetSelectedBrush берет цвет из переменной
         private Brush GetSelectedBrush()
         {
             return GetBrushFromString(_currentHexColor);
         }
 
-        // Свойство для сохранения в БД
-        public string SelectedColor => _currentHexColor;
-
-        public void LoadRoute(List<PointLatLng> points, string colorHex)
+        public void LoadRoute(List<PointLatLng> points, string colorHex, bool centerMap = true)
         {
-            // 1. Очищаем только свои маркеры (чтобы не стереть чужие при загрузке)
+            // 1. Очищаем только свои маркеры
             foreach (var marker in _myVisualMarkers)
             {
                 MapControl.Markers.Remove(marker);
@@ -104,7 +93,7 @@ namespace TrackSync.Pages
             {
                 _currentHexColor = colorHex;
 
-                // Обновляем визуальные элементы, которые мы создали в XAML
+                // Обновляем визуальные элементы
                 SelectedColorDisplay.Background = GetBrushFromString(_currentHexColor);
                 ColorHexText.Text = _currentHexColor;
             }
@@ -112,53 +101,38 @@ namespace TrackSync.Pages
             // 4. Отрисовка и статистика
             DrawRoute();
             NotifyUpdate();
+
+            if (centerMap && _routePoints.Count > 0)
+            {
+                CenterMapOnRoutes(_routePoints);
+            }
         }
 
-        // Добавим метод для установки центра и зума на основе всех точек
         public void CenterMapOnRoutes(List<PointLatLng> allPoints)
         {
             if (allPoints == null || allPoints.Count == 0)
             {
-                // Если нет точек, центрируем на Москве (или другом месте по умолчанию)
+                // Если нет точек, центрируем на Москве
                 MapControl.Position = new PointLatLng(55.7558, 37.6173);
                 MapControl.Zoom = 10;
                 return;
             }
 
-            // Вычисляем границы всех точек
-            double minLat = allPoints.Min(p => p.Lat);
-            double maxLat = allPoints.Max(p => p.Lat);
-            double minLng = allPoints.Min(p => p.Lng);
-            double maxLng = allPoints.Max(p => p.Lng);
+            // Создаём прямоугольник, охватывающий все точки
+            RectLatLng rect = RectLatLng.FromLTRB(
+                allPoints.Min(p => p.Lng),
+                allPoints.Max(p => p.Lat),
+                allPoints.Max(p => p.Lng),
+                allPoints.Min(p => p.Lat)
+            );
 
-            // Вычисляем центр
-            double centerLat = (minLat + maxLat) / 2;
-            double centerLng = (minLng + maxLng) / 2;
+            // Увеличиваем прямоугольник на 10% для отступов
+            rect.Inflate(0.1, 0.1);
 
-            // Устанавливаем центр карты
-            MapControl.Position = new PointLatLng(centerLat, centerLng);
-
-            // Вычисляем приблизительный зум, чтобы охватить все точки
-            double latDiff = maxLat - minLat;
-            double lngDiff = maxLng - minLng;
-            double maxDiff = Math.Max(latDiff, lngDiff);
-
-            // Эмпирическая формула для определения зума
-            int zoom = 15; // По умолчанию
-            if (maxDiff > 10) zoom = 8;
-            else if (maxDiff > 5) zoom = 9;
-            else if (maxDiff > 2) zoom = 10;
-            else if (maxDiff > 1) zoom = 11;
-            else if (maxDiff > 0.5) zoom = 12;
-            else if (maxDiff > 0.2) zoom = 13;
-            else if (maxDiff > 0.1) zoom = 14;
-            else if (maxDiff > 0.05) zoom = 15;
-            else zoom = 16;
-
-            MapControl.Zoom = zoom;
+            // Автоматически подбираем зум и центр, чтобы всё поместилось
+            MapControl.SetZoomToFitRect(rect);
         }
 
-        // Также добавим метод для центрирования на конкретную точку
         public void CenterMapOnPoint(PointLatLng point, int zoom = 15)
         {
             MapControl.Position = point;
@@ -223,7 +197,6 @@ namespace TrackSync.Pages
             MapControl.MouseEnter += (s, e) => MapControl.Focus();
         }
 
-
         private void MapControl_MouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (!_canEdit)
@@ -240,7 +213,7 @@ namespace TrackSync.Pages
 
         private void DrawRoute()
         {
-            // ОЧИСТКА: Удаляем только свои визуальные элементы
+            // Очищаем только свои визуальные элементы
             foreach (var marker in _myVisualMarkers)
             {
                 MapControl.Markers.Remove(marker);
@@ -279,7 +252,7 @@ namespace TrackSync.Pages
                     {
                         Width = 10,
                         Height = 10,
-                        Fill = currentBrush, // Используем актуальную кисть
+                        Fill = currentBrush,
                         Stroke = Brushes.White,
                         StrokeThickness = 2
                     },
@@ -303,6 +276,8 @@ namespace TrackSync.Pages
             _myVisualMarkers.Clear();
 
             _routePoints.Clear();
+
+            NotifyUpdate();
         }
 
         public void UndoLastPoint()
@@ -310,20 +285,78 @@ namespace TrackSync.Pages
             if (_routePoints.Count > 0)
             {
                 _routePoints.RemoveAt(_routePoints.Count - 1);
-
                 DrawRoute();
-
                 NotifyUpdate();
             }
         }
 
         private void NotifyUpdate()
         {
-            double dist = 0;
-            for (int i = 0; i < _routePoints.Count - 1; i++)
-                dist += GMap.NET.MapProviders.EmptyProvider.Instance.Projection.GetDistance(_routePoints[i], _routePoints[i + 1]);
+            var stats = GetCurrentRouteStats();
 
-            RouteUpdated?.Invoke(this, (dist, _routePoints.Count));
+            RouteUpdated?.Invoke(this, stats);
+        }
+
+        public (double distance, int points) GetCurrentRouteStats()
+        {
+            double distance = 0;
+
+            if (_routePoints.Count >= 2)
+            {
+                for (int i = 0; i < _routePoints.Count - 1; i++)
+                {
+                    distance += GMap.NET.MapProviders.EmptyProvider.Instance.Projection
+                        .GetDistance(_routePoints[i], _routePoints[i + 1]);
+                }
+            }
+
+            return (distance, _routePoints.Count);
+        }
+
+        public string GetFirstAvailableColor(List<string> usedColors)
+        {
+            var defaultColors = new List<string>
+        {
+            "#3498DB", // Синий
+            "#2ECC71", // Зеленый
+            "#F1C40F", // Желтый
+            "#9B59B6", // Фиолетовый
+            "#E74C3C", // Красный
+            "#1ABC9C", // Бирюзовый
+            "#E67E22", // Оранжевый
+            "#34495E"  // Темно-синий
+        };
+
+            // Ищем первый свободный цвет
+            foreach (var color in defaultColors)
+            {
+                if (!usedColors.Contains(color))
+                    return color;
+            }
+
+            // Если все цвета заняты, возвращаем null
+            return null;
+        }
+
+        public void SetColor(string colorHex)
+        {
+            if (!string.IsNullOrEmpty(colorHex))
+            {
+                _currentHexColor = colorHex;
+
+                // Обновляем визуальные элементы
+                SelectedColorDisplay.Background = GetBrushFromString(_currentHexColor);
+                ColorHexText.Text = _currentHexColor;
+            }
+        }
+
+        public void DisableEditing()
+        {
+            _canEdit = false;
+            ColorPickerPanel.Visibility = Visibility.Collapsed;
+
+            // Отключаем обработчик кликов по карте
+            MapControl.MouseRightButtonDown -= MapControl_MouseRightButtonDown;
         }
     }
 }
