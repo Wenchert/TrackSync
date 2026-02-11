@@ -1,12 +1,14 @@
 ﻿using GMap.NET;
 using GMap.NET.WindowsPresentation;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 
-namespace TrackSync.Pages
+namespace TrackSync.Controls
 {
     public partial class RouteBuilderControl : UserControl
     {
@@ -16,7 +18,6 @@ namespace TrackSync.Pages
         private List<PointLatLng> _routePoints = new List<PointLatLng>();
         public event EventHandler<string> ColorChanged;
         private bool _canEdit = true;
-        public bool HasPoints => _routePoints.Count > 0;
         public string SelectedColor => _currentHexColor;
 
         // Событие для обновления статистики в родительском окне
@@ -178,6 +179,9 @@ namespace TrackSync.Pages
             MapControl.MapProvider = GMap.NET.MapProviders.GoogleMapProvider.Instance;
             GMaps.Instance.Mode = AccessMode.ServerAndCache;
 
+            // Отключаем отображение позиции мыши
+            MapControl.ShowCenter = false;
+
             // 1. Границы зума
             MapControl.MinZoom = 2;
             MapControl.MaxZoom = 20;
@@ -316,7 +320,7 @@ namespace TrackSync.Pages
         public string GetFirstAvailableColor(List<string> usedColors)
         {
             var defaultColors = new List<string>
-        {
+            {
             "#3498DB", // Синий
             "#2ECC71", // Зеленый
             "#F1C40F", // Желтый
@@ -325,7 +329,7 @@ namespace TrackSync.Pages
             "#1ABC9C", // Бирюзовый
             "#E67E22", // Оранжевый
             "#34495E"  // Темно-синий
-        };
+            };
 
             // Ищем первый свободный цвет
             foreach (var color in defaultColors)
@@ -357,6 +361,74 @@ namespace TrackSync.Pages
 
             // Отключаем обработчик кликов по карте
             MapControl.MouseRightButtonDown -= MapControl_MouseRightButtonDown;
+        }
+
+        public void HideAllMarkers()
+        {
+            try
+            {
+                // Скрываем только маркеры-точки, но оставляем линии
+                foreach (var marker in MapControl.Markers)
+                {
+                    // Проверяем, является ли маркер точкой (эллипсом)
+                    if (marker.Shape is Ellipse)
+                    {
+                        if (marker.Shape is UIElement shape)
+                        {
+                            shape.Visibility = Visibility.Collapsed;
+                        }
+                    }
+                }
+
+                // Также скрываем точки из _myVisualMarkers
+                foreach (var marker in _myVisualMarkers)
+                {
+                    if (marker.Shape is Ellipse)
+                    {
+                        if (marker.Shape is UIElement shape)
+                        {
+                            shape.Visibility = Visibility.Collapsed;
+                        }
+                    }
+                }
+
+                // Принудительное обновление отрисовки
+                MapControl.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при скрытии маркеров: {ex.Message}");
+            }
+        }
+
+        public void ShowAllMarkers()
+        {
+            try
+            {
+                // Показываем все маркеры
+                foreach (var marker in MapControl.Markers)
+                {
+                    if (marker.Shape is UIElement shape)
+                    {
+                        shape.Visibility = Visibility.Visible;
+                    }
+                }
+
+                foreach (var marker in _myVisualMarkers)
+                {
+                    if (marker.Shape is UIElement shape)
+                    {
+                        shape.Visibility = Visibility.Visible;
+                    }
+                }
+
+                // Принудительное обновление отрисовки
+                MapControl.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Ошибка при показе маркеров: {ex.Message}");
+            }
         }
     }
 }

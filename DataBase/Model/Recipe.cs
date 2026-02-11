@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace TrackSync{
+namespace TrackSync.DataBase.Model{
     public partial class Recipe
     {
         public Recipe()

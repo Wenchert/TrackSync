@@ -7,16 +7,18 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Navigation;
 using TrackSync.DataBase;
-using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Pages;
 using Microsoft.EntityFrameworkCore;
+using TrackSync.DataBase.Model;
+using TrackSync.DataBase.WorkWithDB;
+using TrackSync.Functions;
 
 namespace TrackSync.Windows
 {
     public partial class MainWindow : Window
     {
         private bool isSidebarOpen = false;
-        private List<HikeRoom> _allRooms; // Кэш всех комнат для поиска
+        private List<HikeRoom> _allRooms;
         private int? _passwordRoomId = null;
 
         public MainWindow()
@@ -113,12 +115,11 @@ namespace TrackSync.Windows
         }
 
         // Показать поле ввода пароля под комнатой
-        // Показать поле ввода пароля под комнатой
         private void ShowPasswordPanel(int roomId)
         {
             HidePasswordPanel();
 
-            // КРИТИЧЕСКИ ВАЖНО: обновляем макет, чтобы все контейнеры сгенерировались
+            // Обновляем макет, чтобы все контейнеры сгенерировались
             SidebarRoomsListBox.UpdateLayout();
 
             var passwordPanel = FindPasswordPanelForRoom(roomId);
@@ -162,7 +163,7 @@ namespace TrackSync.Windows
                 // Проверяем, что контейнер содержит нужную комнату
                 if (container.Content is HikeRoom room && room.HikeRoomId == roomId)
                 {
-                    // Ищем панель пароля РЕКУРСИВНО внутри контейнера
+                    // Ищем панель пароля внутри контейнера
                     return FindChild<StackPanel>(container, "PasswordPanel");
                 }
             }
@@ -282,27 +283,6 @@ namespace TrackSync.Windows
             }
         }
 
-
-        //private bool VerifyRoomPassword(int roomId, string password)
-        //{
-        //    try
-        //    {
-        //        using var ctx = new TrackSyncContext();
-        //        var room = ctx.HikeRooms.Find(roomId);
-
-        //        if (room == null || string.IsNullOrWhiteSpace(room.Password))
-        //            return false;
-
-        //        // Сравниваем пароль (можно добавить хеширование позже)
-        //        return BCrypt.Net.BCrypt.Verify(password, room.Password);
-        //    }
-        //    catch (Exception)
-        //    {
-        //        return false;
-        //    }
-        //}
-
-        // Прямое добавление пользователя в комнату (для приватных комнат с верным паролем)
         private bool AddUserToRoomDirectly(int roomId)
         {
             try

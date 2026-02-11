@@ -1,4 +1,4 @@
-﻿
+﻿using TrackSync.DataBase.Model;
 
 namespace TrackSync.Interface
 {

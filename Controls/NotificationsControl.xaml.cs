@@ -1,10 +1,10 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
-using TrackSync.DataBase;
 using TrackSync.DataBase.WorkWithDB;
-using TrackSync.Windows;
+using TrackSync.DataBase.Model;
+using TrackSync.Functions;
 
-namespace TrackSync.Pages
+namespace TrackSync.Controls
 {
     public partial class NotificationsPanel : UserControl
     {

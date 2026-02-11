@@ -161,28 +161,8 @@
                                                     </StackPanel>
 
                                                     <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,5,0,0">
-                                                        <Border CornerRadius="4" Padding="4,1">
-                                                            <Border.Style>
-                                                                <Style TargetType="Border">
-                                                                    <Setter Property="Background" Value="#95A5A6"/>
-                                                                    <Style.Triggers>
-                                                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="1">
-                                                                            <Setter Property="Background" Value="#3498DB"/>
-                                                                        </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="2">
-                                                                            <Setter Property="Background" Value="#2ECC71"/>
-                                                                        </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="3">
-                                                                            <Setter Property="Background" Value="#95A5A6"/>
-                                                                        </DataTrigger>
-                                                                        <DataTrigger Binding="{Binding Status.StatusId}" Value="4">
-                                                                            <Setter Property="Background" Value="#E74C3C"/>
-                                                                        </DataTrigger>
-                                                                    </Style.Triggers>
-                                                                </Style>
-                                                            </Border.Style>
-                                                            <TextBlock Text="{Binding Status.Title}" Foreground="White" FontSize="10"/>
-                                                        </Border>
+                                                        <TextBlock Style="{StaticResource TitleText}" Foreground="#7F8C8D" FontSize="13"
+                                                            Text="{Binding Leader.Name}"/>
                                                         <StackPanel Orientation="Horizontal">
                                                             <TextBlock Text="{Binding Participants.Count}" 
                                                                 Style="{StaticResource BodyText}" Foreground="#7F8C8D" Margin="8,0,0,0" FontSize="13"/>
@@ -208,15 +188,15 @@
                                                         Margin="0,0,0,10"/>
                                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                                         <Button Style="{StaticResource TextButton}" 
-                Content="Отменить" 
-                Click="CancelPassword_Click"
-                Tag="{Binding HikeRoomId}"/>
+                                                            Content="Отменить" 
+                                                            Click="CancelPassword_Click"
+                                                            Tag="{Binding HikeRoomId}"/>
                                                         <Button Style="{StaticResource MainButton}" 
-                Content="Отправить" 
-                Click="SubmitPassword_Click"
-                Tag="{Binding HikeRoomId}"
-                Margin="10,0,0,0"
-                Padding="20,8"/>
+                                                            Content="Отправить" 
+                                                            Click="SubmitPassword_Click"
+                                                            Tag="{Binding HikeRoomId}"
+                                                            Margin="10,0,0,0"
+                                                            Padding="20,8"/>
                                                     </StackPanel>
                                             </StackPanel>
                                         </StackPanel>

@@ -7,9 +7,9 @@ using PdfSharp.Pdf;
 using MigraDoc.DocumentObjectModel;
 using MigraDoc.DocumentObjectModel.Tables;
 using MigraDoc.Rendering;
-using TrackSync.DataBase;
 using Microsoft.EntityFrameworkCore;
 using PdfSharp.Fonts;
+using TrackSync.DataBase.WorkWithDB;
 
 namespace TrackSync.Functions
 {

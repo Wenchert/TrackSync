@@ -3,10 +3,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using TrackSync.DataBase;
-
+using TrackSync.DataBase.Model;
 using TrackSync.DataBase.WorkWithDB;
+using TrackSync.Functions;
 using TrackSync.Interfaces;
-using TrackSync.Windows;
 
 namespace TrackSync.Pages
 {

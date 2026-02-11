@@ -8,8 +8,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using TrackSync.DataBase;
+using TrackSync.DataBase.WorkWithDB;
+using TrackSync.DataBase.Model;
 using TrackSync.Windows;
+using TrackSync.Functions;
 
 namespace TrackSync.Pages
 {

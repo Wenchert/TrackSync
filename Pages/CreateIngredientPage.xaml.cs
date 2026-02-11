@@ -3,8 +3,11 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+
 using TrackSync.DataBase;
+using TrackSync.DataBase.Model;
 using TrackSync.DataBase.WorkWithDB;
+using TrackSync.Functions;
 using TrackSync.Windows;
 
 namespace TrackSync.Pages

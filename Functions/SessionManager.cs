@@ -1,6 +1,6 @@
-﻿//
+﻿using TrackSync.DataBase.Model;
 
-namespace TrackSync.Windows
+namespace TrackSync.Functions
 {
 
     /// Управление сессией текущего пользователя

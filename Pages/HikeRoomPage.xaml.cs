@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using TrackSync.DataBase;
+using TrackSync.DataBase.Model;
 using TrackSync.DataBase.WorkWithDB;
 using TrackSync.Functions;
 using TrackSync.Interfaces;
@@ -1021,36 +1022,6 @@ namespace TrackSync.Pages
                 RoutesStatisticsList.ItemsSource = null;
             }
         }
-
-        //private List<GMap.NET.PointLatLng> ExtractPoints(Track track)
-        //{
-        //    var points = new List<GMap.NET.PointLatLng>();
-
-        //    // Проверяем, что сегменты вообще есть
-        //    if (track?.Segments == null || !track.Segments.Any()) return points;
-
-        //    // Сортируем строго по ID, чтобы не было "паутины"
-        //    var sortedSegments = track.Segments.OrderBy(s => s.SegmentId).ToList();
-
-        //    // Берем начальную точку первого сегмента
-        //    var first = sortedSegments.First();
-        //    if (first.StartWaypoint != null)
-        //    {
-        //        points.Add(new GMap.NET.PointLatLng((double)first.StartWaypoint.Latitude, (double)first.StartWaypoint.Longitude));
-        //    }
-
-        //    // Добавляем конечные точки всех сегментов по порядку
-        //    foreach (var s in sortedSegments)
-        //    {
-        //        if (s.EndWaypoint != null)
-        //        {
-        //            points.Add(new GMap.NET.PointLatLng((double)s.EndWaypoint.Latitude, (double)s.EndWaypoint.Longitude));
-        //        }
-        //    }
-
-        //    return points;
-        //}
-
         private void UndoRouteButton_Click(object sender, RoutedEventArgs e)
         {
             // Получаем текущее количество точек
@@ -1115,7 +1086,6 @@ namespace TrackSync.Pages
                 }
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
-
         private void ClearRoute_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -1965,31 +1935,51 @@ namespace TrackSync.Pages
         }
         private RenderTargetBitmap GetMapScreenshot()
         {
+            RenderTargetBitmap result = null;
+
             try
             {
-                // Ждем, чтобы карта полностью отрендерилась
-                MyRouteBuilder.MapControl.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
-
-                // Используем текущий размер карты
-                double actualWidth = MyRouteBuilder.MapControl.ActualWidth;
-                double actualHeight = MyRouteBuilder.MapControl.ActualHeight;
-
-                //Если размеры не определены, используем значения по умолчанию
-                if (actualWidth <= 0 || actualHeight <= 0)
+                // Вызываем в UI потоке
+                MyRouteBuilder.MapControl.Dispatcher.Invoke(() =>
                 {
-                    actualWidth = 1123;
-                    actualHeight = 793;
-                }
+                    try
+                    {
+                        // ВРЕМЕННО СКРЫВАЕМ МАРКЕРЫ ПЕРЕД СКРИНШОТОМ
+                        MyRouteBuilder.HideAllMarkers();
 
-                // Создаем скриншот текущего состояния карты
-                var renderTargetBitmap = new RenderTargetBitmap(
-                    (int)actualWidth,
-                    (int)actualHeight,
-                    96, 96, PixelFormats.Pbgra32);
+                        // Ждем, чтобы изменения применились
+                        MyRouteBuilder.MapControl.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
-                renderTargetBitmap.Render(MyRouteBuilder.MapControl);
+                        // Используем текущий размер карты
+                        double actualWidth = MyRouteBuilder.MapControl.ActualWidth;
+                        double actualHeight = MyRouteBuilder.MapControl.ActualHeight;
 
-                return renderTargetBitmap;
+                        // Если размеры не определены, используем значения по умолчанию
+                        if (actualWidth <= 0 || actualHeight <= 0)
+                        {
+                            actualWidth = 1123;
+                            actualHeight = 793;
+                        }
+
+                        // Создаем скриншот текущего состояния карты (без маркеров)
+                        result = new RenderTargetBitmap(
+                            (int)actualWidth,
+                            (int)actualHeight,
+                            96, 96, PixelFormats.Pbgra32);
+
+                        result.Render(MyRouteBuilder.MapControl);
+
+                        MyRouteBuilder.ShowAllMarkers();
+                    }
+                    catch (Exception ex)
+                    {
+                        // В случае ошибки все равно пытаемся восстановить маркеры
+                        MyRouteBuilder.ShowAllMarkers();
+                        throw;
+                    }
+                }, DispatcherPriority.Render);
+
+                return result;
             }
             catch (Exception ex)
             {
@@ -1998,8 +1988,320 @@ namespace TrackSync.Pages
                 return null;
             }
         }
+        private void DownloadButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // Создаем контекстное меню с тремя опциями
+                var contextMenu = new ContextMenu();
 
-        private void DownloadPdfButton_Click(object sender, RoutedEventArgs e)
+                // Опция 1: Скачать в PDF
+                var pdfItem = new MenuItem
+                {
+                    Header = "Скачать в PDF",
+                    Tag = "pdf"
+                };
+                pdfItem.Click += (s, args) => ExportToPdf();
+                contextMenu.Items.Add(pdfItem);
+
+                // Опция 2: Скачать в GPX свой маршрут
+                var gpxMyItem = new MenuItem
+                {
+                    Header = "Скачать в GPX свой маршрут",
+                    Tag = "gpx_my"
+                };
+                gpxMyItem.Click += (s, args) => ExportCurrentUserTrack();
+                contextMenu.Items.Add(gpxMyItem);
+
+                // Опция 3: Скачать в GPX все маршруты (отдельные файлы)
+                var gpxAllItem = new MenuItem
+                {
+                    Header = "Скачать в GPX все маршруты (отдельные файлы)",
+                    Tag = "gpx_all"
+                };
+                gpxAllItem.Click += (s, args) => ExportAllTracksAsSeparateFiles();
+                contextMenu.Items.Add(gpxAllItem);
+
+                // Показываем меню под кнопкой
+                contextMenu.PlacementTarget = sender as Button;
+                contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+                contextMenu.IsOpen = true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при отображении меню скачивания:\n{ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private string GenerateSingleTrackGpx(Track track, List<Waypoint> waypoints)
+        {
+            try
+            {
+                var gpxNs = XNamespace.Get("http://www.topografix.com/GPX/1/1");
+
+                string creatorName = track.Participant?.User?.Name ?? "Неизвестно";
+                string trackName = string.IsNullOrWhiteSpace(track.Title)
+                    ? $"Маршрут от {creatorName}"
+                    : track.Title;
+
+                var doc = new XDocument(
+                    new XDeclaration("1.0", "UTF-8", null),
+                    new XElement(gpxNs + "gpx",
+                        new XAttribute("version", "1.1"),
+                        new XAttribute("creator", "TrackSync"),
+                        new XAttribute(XNamespace.Xmlns + "xsi", "http://www.w3.org/2001/XMLSchema-instance"),
+                        new XElement(gpxNs + "metadata",
+                            new XElement(gpxNs + "name", EscapeXml(trackName)),
+                            new XElement(gpxNs + "desc", EscapeXml($"Экспортировано из TrackSync {DateTime.Now:yyyy-MM-dd HH:mm}")),
+                            new XElement(gpxNs + "time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")),
+                            new XElement(gpxNs + "keywords", $"маршрут, поход, {creatorName}"),
+                            new XElement(gpxNs + "author",
+                                new XElement(gpxNs + "name", EscapeXml(creatorName))
+                            )
+                        ),
+                        new XElement(gpxNs + "trk",
+                            new XElement(gpxNs + "name", EscapeXml(trackName)),
+                            new XElement(gpxNs + "desc", EscapeXml($"Создатель: {creatorName}, Точки: {waypoints.Count}, Цвет: {track.Color}")),
+                            new XElement(gpxNs + "type", "Hiking"),
+                            new XElement(gpxNs + "extensions",
+                                new XElement("color", track.Color ?? "#000000"),
+                                new XElement("creator_id", track.ParticipantId),
+                                new XElement("room_id", _roomId)
+                            ),
+                            new XElement(gpxNs + "trkseg",
+                                waypoints.Select((wp, index) => CreateTrackPointElement(wp, index, gpxNs))
+                            )
+                        )
+                    )
+                );
+
+                return doc.ToString();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка генерации GPX для трека {track.TrackId}: {ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                return null;
+            }
+        }
+        private XElement CreateTrackPointElement(Waypoint waypoint, int index, XNamespace gpxNs)
+        {
+            // Используем последовательное время с интервалом в 1 минуту
+            DateTime pointTime = DateTime.UtcNow.AddMinutes(index);
+
+            return new XElement(gpxNs + "trkpt",
+                new XAttribute("lat", waypoint.Latitude.ToString(CultureInfo.InvariantCulture)),
+                new XAttribute("lon", waypoint.Longitude.ToString(CultureInfo.InvariantCulture)),
+                new XElement(gpxNs + "ele", waypoint.Height),
+                new XElement(gpxNs + "time", pointTime.ToString("yyyy-MM-ddTHH:mm:ssZ")),
+                new XElement(gpxNs + "name", $"Точка {index + 1}"),
+                new XElement(gpxNs + "desc", $"Высота: {waypoint.Height} м")
+            );
+        }
+        private void ExportAllTracksAsSeparateFiles()
+        {
+            try
+            {
+                var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
+
+                if (allTracks == null || !allTracks.Any())
+                {
+                    MessageBox.Show("Нет маршрутов для экспорта",
+                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Используем SaveFileDialog для выбора папки и базового имени
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "GPX files (*.gpx)|*.gpx",
+                    FileName = $"Маршруты_{RemoveInvalidFileNameChars(RoomTitleText.Text)}",
+                    DefaultExt = ".gpx",
+                    Title = "Выберите папку и базовое имя для маршрутов"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    try
+                    {
+                        // Получаем путь к папке и базовое имя файла
+                        string selectedPath = Path.GetDirectoryName(saveDialog.FileName);
+                        string baseFileName = Path.GetFileNameWithoutExtension(saveDialog.FileName);
+
+                        if (string.IsNullOrEmpty(selectedPath) || string.IsNullOrEmpty(baseFileName))
+                        {
+                            MessageBox.Show("Неверно выбран путь для сохранения",
+                                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                            return;
+                        }
+
+                        int savedCount = 0;
+                        int skippedCount = 0;
+                        List<string> savedFiles = new List<string>();
+
+                        foreach (var track in allTracks)
+                        {
+                            var waypoints = ExtractWaypoints(track);
+                            if (waypoints.Count < 2)
+                            {
+                                skippedCount++;
+                                continue;
+                            }
+
+                            string creatorName = track.Participant?.User?.Name ?? "Неизвестно";
+                            string safeCreatorName = RemoveInvalidFileNameChars(creatorName);
+                            string safeTrackName = RemoveInvalidFileNameChars(track.Title ?? $"Маршрут_{safeCreatorName}");
+
+                            // Создаем уникальное имя файла
+                            string fileName = $"{baseFileName}_{safeTrackName}_{track.TrackId}.gpx";
+                            string filePath = Path.Combine(selectedPath, fileName);
+
+                            // Проверяем, нет ли уже файла с таким именем
+                            int counter = 1;
+                            while (File.Exists(filePath))
+                            {
+                                fileName = $"{baseFileName}_{safeTrackName}_{track.TrackId}_{counter}.gpx";
+                                filePath = Path.Combine(selectedPath, fileName);
+                                counter++;
+                            }
+
+                            // Создаем GPX файл для отдельного трека
+                            string gpxContent = GenerateSingleTrackGpx(track, waypoints);
+                            File.WriteAllText(filePath, gpxContent, Encoding.UTF8);
+                            savedCount++;
+                            savedFiles.Add(filePath);
+                        }
+
+                        string message;
+                        if (savedCount > 0)
+                        {
+                            message = $"Сохранено {savedCount} маршрутов в папку:\n{selectedPath}";
+                            if (skippedCount > 0)
+                            {
+                                message += $"\nПропущено {skippedCount} маршрутов (слишком мало точек)";
+                            }
+
+                            // Открываем папку в проводнике
+                            try
+                            {
+                                Process.Start("explorer.exe", selectedPath);
+                            }
+                            catch
+                            {
+                                // Игнорируем ошибку, если не удалось открыть проводник
+                            }
+                        }
+                        else
+                        {
+                            message = "Не удалось сохранить ни одного маршрута.";
+                        }
+
+                        MessageBox.Show(message,
+                            savedCount > 0 ? "Успех" : "Информация",
+                            MessageBoxButton.OK,
+                            savedCount > 0 ? MessageBoxImage.Information : MessageBoxImage.Warning);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка создания файлов:\n{ex.Message}",
+                            "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    finally
+                    {
+                        Mouse.OverrideCursor = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте GPX:\n{ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private void ExportCurrentUserTrack()
+        {
+            try
+            {
+                var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
+
+                if (allTracks == null || !allTracks.Any())
+                {
+                    MessageBox.Show("Нет маршрутов для экспорта",
+                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Находим ID текущего участника
+                int currentParticipantId = TrackSyncManagerList.GetCurrentParticipantId(
+                    SessionManager.CurrentUserId, _roomId);
+
+                // Ищем трек текущего пользователя
+                var currentUserTrack = allTracks.FirstOrDefault(t => t.ParticipantId == currentParticipantId);
+
+                if (currentUserTrack == null)
+                {
+                    MessageBox.Show("У вас нет сохраненного маршрута в этой комнате",
+                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                var waypoints = ExtractWaypoints(currentUserTrack);
+                if (waypoints.Count < 2)
+                {
+                    MessageBox.Show("Ваш маршрут содержит слишком мало точек для экспорта",
+                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
+                    return;
+                }
+
+                // Диалог сохранения
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "GPX files (*.gpx)|*.gpx",
+                    FileName = $"{RemoveInvalidFileNameChars(currentUserTrack.Title ?? "Мой_маршрут")}_{DateTime.Now:yyyyMMdd}.gpx",
+                    DefaultExt = ".gpx"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    try
+                    {
+                        string gpxContent = GenerateSingleTrackGpx(currentUserTrack, waypoints);
+                        File.WriteAllText(saveDialog.FileName, gpxContent, Encoding.UTF8);
+
+                        MessageBox.Show($"GPX файл успешно сохранен!\n{saveDialog.FileName}",
+                            "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка создания GPX файла:\n{ex.Message}",
+                            "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    finally
+                    {
+                        Mouse.OverrideCursor = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка при экспорте GPX:\n{ex.Message}",
+                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+        private string EscapeXml(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s;
+
+            return s
+                .Replace("&", "&amp;")
+                .Replace("<", "&lt;")
+                .Replace(">", "&gt;")
+                .Replace("\"", "&quot;")
+                .Replace("'", "&apos;");
+        }
+        private void ExportToPdf()
         {
             try
             {
@@ -2023,11 +2325,11 @@ namespace TrackSync.Pages
                 // Создаём генератор с зумом
                 var generator = new HikeRoomPdfGenerator(_roomId, mapScreenshot, mapZoom);
 
-                // Диалог сохранения - только название похода без дат
+                // Диалог сохранения
                 var saveDialog = new SaveFileDialog
                 {
                     Filter = "PDF files (*.pdf)|*.pdf",
-                    FileName = $"{safeFileName}.pdf", // Только название, без даты
+                    FileName = $"{safeFileName}.pdf",
                     DefaultExt = ".pdf"
                 };
 
@@ -2056,210 +2358,6 @@ namespace TrackSync.Pages
                 MessageBox.Show($"Ошибка подготовки PDF:\n{ex.Message}", "Ошибка",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-
-        private void DownloadGpxButton_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                // Получаем все треки комнаты
-                var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
-
-                if (allTracks == null || !allTracks.Any())
-                {
-                    MessageBox.Show("В комнате нет сохраненных маршрутов для экспорта",
-                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                // Создаем контекстное меню для выбора
-                var contextMenu = new ContextMenu();
-
-                var allTracksItem = new MenuItem
-                {
-                    Header = "Все маршруты комнаты",
-                    Tag = "all"
-                };
-                allTracksItem.Click += (s, args) => ExportGpx(false);
-
-                var currentTrackItem = new MenuItem
-                {
-                    Header = "Только мой маршрут",
-                    Tag = "current"
-                };
-                currentTrackItem.Click += (s, args) => ExportGpx(true);
-
-                contextMenu.Items.Add(allTracksItem);
-                contextMenu.Items.Add(currentTrackItem);
-
-                contextMenu.PlacementTarget = sender as Button;
-                contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
-                contextMenu.IsOpen = true;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при экспорте GPX:\n{ex.Message}",
-                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ExportGpx(bool onlyCurrentUser)
-        {
-            try
-            {
-                var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
-
-                if (allTracks == null || !allTracks.Any())
-                {
-                    MessageBox.Show("Нет маршрутов для экспорта",
-                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                if (onlyCurrentUser)
-                {
-                    int currentParticipantId = TrackSyncManagerList.GetCurrentParticipantId(
-                        SessionManager.CurrentUserId, _roomId);
-                    allTracks = allTracks.Where(t => t.ParticipantId == currentParticipantId).ToList();
-                }
-
-                if (!allTracks.Any())
-                {
-                    MessageBox.Show("Нет маршрутов для экспорта",
-                        "Информация", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                // Диалог сохранения
-                var saveDialog = new SaveFileDialog
-                {
-                    Filter = "GPX files (*.gpx)|*.gpx",
-                    FileName = onlyCurrentUser ?
-                        $"Мой_маршрут_{DateTime.Now:yyyy-MM-dd}.gpx" :
-                        $"Маршруты_{RemoveInvalidFileNameChars(RoomTitleText.Text)}_{DateTime.Now:yyyy-MM-dd}.gpx",
-                    DefaultExt = ".gpx"
-                };
-
-                if (saveDialog.ShowDialog() == true)
-                {
-                    Mouse.OverrideCursor = Cursors.Wait;
-                    try
-                    {
-                        string gpxContent = GenerateGpxContent(allTracks);
-
-                        if (gpxContent == null)
-                        {
-                            MessageBox.Show("Не удалось сгенерировать GPX файл",
-                                "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                            return;
-                        }
-
-                        File.WriteAllText(saveDialog.FileName, gpxContent, Encoding.UTF8);
-
-                        MessageBox.Show($"GPX файл успешно сохранен!\n{saveDialog.FileName}",
-                            "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Ошибка создания GPX файла:\n{ex.Message}",
-                            "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    finally
-                    {
-                        Mouse.OverrideCursor = null;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка при экспорте GPX:\n{ex.Message}",
-                    "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private string GenerateGpxContent(List<Track> tracks)
-        {
-            try
-            {
-                var gpxNs = XNamespace.Get("http://www.topografix.com/GPX/1/1");
-
-                var doc = new XDocument(
-                    new XDeclaration("1.0", "UTF-8", null),
-                    new XElement(gpxNs + "gpx",
-                        new XAttribute("version", "1.1"),
-                        new XAttribute("creator", "TrackSync"),
-                        new XAttribute(XNamespace.Xmlns + "xsi", "http://www.w3.org/2001/XMLSchema-instance"),
-                        new XElement(gpxNs + "metadata",
-                            new XElement(gpxNs + "name", EscapeXml($"Маршруты комнаты: {RoomTitleText.Text}")),
-                            new XElement(gpxNs + "desc", EscapeXml($"Экспортировано из TrackSync {DateTime.Now:yyyy-MM-dd HH:mm}")),
-                            new XElement(gpxNs + "time", DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"))
-                        ),
-                        // Добавляем все треки как отдельные элементы
-                        tracks.Select(track => CreateTrackElement(track, gpxNs)).Where(x => x != null)
-                    )
-                );
-
-                return doc.ToString();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка генерации GPX: {ex.Message}", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-                return null;
-            }
-        }
-
-        private XElement CreateTrackElement(Track track, XNamespace gpxNs)
-        {
-            var waypoints = ExtractWaypoints(track);
-            if (waypoints.Count < 2) return null;
-
-            // Создаем уникальное имя для каждого трека
-            string creatorName = track.Participant?.User?.Name ?? "Неизвестно";
-            string trackName = string.IsNullOrWhiteSpace(track.Title)
-                ? $"Маршрут от {creatorName}"
-                : track.Title;
-
-            // Уникальное описание с информацией о создателе
-            string trackDesc = $"Создатель: {creatorName}, Цвет: {track.Color}, Точки: {waypoints.Count}";
-
-            return new XElement(gpxNs + "trk",
-                new XElement(gpxNs + "name", EscapeXml(trackName)),
-                new XElement(gpxNs + "desc", EscapeXml(trackDesc)),
-                new XElement(gpxNs + "type", "Hiking"),
-                // Добавляем расширения для цвета (нестандартное поле, но многие программы его поддерживают)
-                new XElement(gpxNs + "extensions",
-                    new XElement("color", track.Color ?? "#000000"),
-                    new XElement("creator", EscapeXml(creatorName))
-                ),
-                new XElement(gpxNs + "trkseg",
-                    waypoints.Select((wp, index) => CreateTrackPointElement(wp, index, gpxNs))
-                )
-            );
-        }
-
-        private XElement CreateTrackPointElement(Waypoint waypoint, int index, XNamespace gpxNs)
-        {
-            return new XElement(gpxNs + "trkpt",
-                new XAttribute("lat", waypoint.Latitude.ToString(CultureInfo.InvariantCulture)),
-                new XAttribute("lon", waypoint.Longitude.ToString(CultureInfo.InvariantCulture)),
-                new XElement(gpxNs + "ele", waypoint.Height),
-                new XElement(gpxNs + "time", DateTime.UtcNow.AddMinutes(index).ToString("yyyy-MM-ddTHH:mm:ssZ")),
-                new XElement(gpxNs + "name", $"Точка {index + 1}"),
-                new XElement(gpxNs + "desc", $"Высота: {waypoint.Height} м")
-            );
-        }
-
-        private string EscapeXml(string s)
-        {
-            if (string.IsNullOrEmpty(s)) return s;
-
-            return s
-                .Replace("&", "&amp;")
-                .Replace("<", "&lt;")
-                .Replace(">", "&gt;")
-                .Replace("\"", "&quot;")
-                .Replace("'", "&apos;");
         }
 
         private List<Waypoint> ExtractWaypoints(Track track)
@@ -2301,8 +2399,27 @@ namespace TrackSync.Pages
         // Вспомогательный метод для удаления недопустимых символов из имени файла
         private string RemoveInvalidFileNameChars(string fileName)
         {
+            if (string.IsNullOrEmpty(fileName)) return fileName;
+
             var invalidChars = Path.GetInvalidFileNameChars();
-            return new string(fileName.Where(ch => !invalidChars.Contains(ch)).ToArray());
+            var result = new string(fileName.Where(ch => !invalidChars.Contains(ch)).ToArray());
+
+            // Также удаляем пробелы в начале и конце
+            result = result.Trim();
+
+            // Если после очистки строка пустая, возвращаем дефолтное значение
+            if (string.IsNullOrEmpty(result))
+            {
+                return "Маршрут";
+            }
+
+            // Ограничиваем длину имени файла
+            if (result.Length > 100)
+            {
+                result = result.Substring(0, 100);
+            }
+
+            return result;
         }
 
         private void ToggleDescriptionButton_Click(object sender, RoutedEventArgs e)

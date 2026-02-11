@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace TrackSync
+namespace TrackSync.DataBase.Model
 {
     public partial class Waypoint
     {

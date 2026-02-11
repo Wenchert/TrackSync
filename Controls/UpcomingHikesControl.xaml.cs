@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using TrackSync.DataBase.Model;
 using TrackSync.DataBase.WorkWithDB;
-using TrackSync.Windows;
+using TrackSync.Functions;
 
-namespace TrackSync.Pages
+namespace TrackSync.Controls
 {
     public partial class UpcomingHikesPanel : UserControl
     {

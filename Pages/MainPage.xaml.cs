@@ -1,6 +1,8 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using TrackSync.Controls;
 using TrackSync.DataBase.WorkWithDB;
+using TrackSync.Functions;
 using TrackSync.Windows;
 
 namespace TrackSync.Pages

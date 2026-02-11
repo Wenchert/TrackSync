@@ -8,7 +8,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using TrackSync.DataBase;
+using TrackSync.DataBase.Model;
 using TrackSync.DataBase.WorkWithDB;
+using TrackSync.Functions;
 using TrackSync.Interface;
 using TrackSync.Windows;
 

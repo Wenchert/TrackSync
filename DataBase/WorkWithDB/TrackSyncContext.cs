@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using TrackSync.DataBase.Model;
 
-namespace TrackSync.DataBase
+namespace TrackSync.DataBase.WorkWithDB
 {
     public partial class TrackSyncContext : DbContext
     {

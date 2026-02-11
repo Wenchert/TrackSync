@@ -3,7 +3,7 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:local="clr-namespace:TrackSync.Pages"
+      xmlns:control="clr-namespace:TrackSync.Controls"
       mc:Ignorable="d" 
       d:DesignHeight="700" d:DesignWidth="1200"
       Title="TrackSync - Комната похода"
@@ -110,18 +110,11 @@
                         <Image Source="/Images/Icons/settings.png" Width="20" Height="20"/>
                     </Button>
                     <Button Style="{StaticResource IconButton}"
-                        x:Name="DownloadPdfButton"
-                        Click="DownloadPdfButton_Click"
-                        ToolTip="Скачать статистику (PDF)" Height="25"
-                        Margin="0,0,10,0">
-                        <Image Source="/Images/Icons/download.png" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource IconButton}"
-                        x:Name="DownloadGpxButton"
-                        Click="DownloadGpxButton_Click"
-                        ToolTip="Скачать маршруты (GPX)"
+                        x:Name="DownloadButton"
+                        Click="DownloadButton_Click"
+                        ToolTip="Скачать отчеты и маршруты"
                         Height="25">
-                        <Image Source="/Images/Icons/download_gpx.png" Width="20" Height="20"/>
+                        <Image Source="/Images/Icons/download.png" Width="20" Height="20"/>
                     </Button>
                 </StackPanel>
             </Grid>
@@ -136,7 +129,7 @@
                         <Border Grid.Row="0" Background="#ECF0F1" CornerRadius="8" BorderBrush="#BDC3C7" BorderThickness="1">
                             <Grid>
                                 <!-- Вставляем наш новый контроллер карты -->
-                                <local:RouteBuilderControl x:Name="MyRouteBuilder"/>
+                                <control:RouteBuilderControl x:Name="MyRouteBuilder"/>
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
                                     <Button x:Name="UndoRouteButton" Content="Отменить действие" Click="UndoRouteButton_Click"  Margin="0,0,10,0" Style="{StaticResource TextButton}"/>
                                     <Button x:Name="SaveRouteButton" Content="Очистить" Click="ClearRoute_Click" Margin="0,0,10,0" Style="{StaticResource MainButton}"/>

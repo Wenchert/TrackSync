@@ -3,10 +3,10 @@
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-      xmlns:pages="clr-namespace:TrackSync.Pages"  
+      xmlns:controls="clr-namespace:TrackSync.Controls"  
       mc:Ignorable="d" 
       d:DesignHeight="700" d:DesignWidth="1200"
-      Title="TrackSync - Главная"
+      Title="TrackSync"
       Background="#F8F9FA"
       Loaded="Page_Loaded">
 
@@ -47,7 +47,7 @@
                     <ScrollViewer Grid.Row="1" 
                                   VerticalScrollBarVisibility="Auto" 
                                   MaxHeight="400">
-                        <pages:NotificationsPanel x:Name="NotificationsControl" Margin="0,0,0,20"/>
+                        <controls:NotificationsPanel x:Name="NotificationsControl" Margin="0,0,0,20"/>
                     </ScrollViewer>
                 </Grid>
             </Border>
@@ -69,7 +69,7 @@
                     <ScrollViewer Grid.Row="1" 
                                   VerticalScrollBarVisibility="Auto" 
                                   MaxHeight="400">
-                        <pages:UpcomingHikesPanel x:Name="UpcomingHikesControl"
+                        <controls:UpcomingHikesPanel x:Name="UpcomingHikesControl"
                                                   RoomSelected="UpcomingHikesControl_RoomSelected"/>
                     </ScrollViewer>
                 </Grid>

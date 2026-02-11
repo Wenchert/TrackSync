@@ -70,7 +70,4 @@
     <Resource Include="Images\Icons\user_plus.png" />
     <Resource Include="Images\Icons\vk.png" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Fonts\" />
-  </ItemGroup>
 </Project>

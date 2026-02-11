@@ -1,5 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Windows;
+using TrackSync.Controls;
+using TrackSync.DataBase.Model;
 using TrackSync.Pages;
 
 
@@ -356,7 +358,7 @@ namespace TrackSync.DataBase.WorkWithDB
                 {
                     var availableRooms = ctx.HikeRooms
                         .AsNoTracking() // Отключаем трекинг, так как данные только для чтения
-                        .Include(r => r.Status) // Загружаем статус (если нужен для отображения)
+                        .Include(r => r.Leader) // Загружаем Лидера
                         .Include(r => r.Participants) // Не загружаем .Include(r => r.Participants), если не нужны данные участников
                         .Where(r => r.StatusId == 1) // Активные комнаты
                         .Where(r => !ctx.Participants.Any(p => p.UserId == userId && p.HikeRoomId == r.HikeRoomId)) // Пользователь не участник
@@ -935,7 +937,7 @@ namespace TrackSync.DataBase.WorkWithDB
                     var searchLower = searchText.ToLower();
                     var usersList = ctx.Users
                         .Where(u => !excludedUserIds.Contains(u.UserId) &&
-                                    (u.Email != null && u.Email.ToLower().Contains(searchLower)))
+                                    u.Email != null && u.Email.ToLower().Contains(searchLower))
                         .ToList();
 
                     return usersList;
@@ -1214,7 +1216,7 @@ namespace TrackSync.DataBase.WorkWithDB
                             };
 
                             // Ищем рецепт для этого приёма пищи в этот день
-                            var key = new { MealDate = date, TypeMealId = mealType.TypeMealId };
+                            var key = new { MealDate = date, mealType.TypeMealId };
                             if (allRecipeEntries.TryGetValue(key, out var recipeEntry) && recipeEntry != null)
                             {
                                 meal.Recipe = recipeEntry.Recipe;
