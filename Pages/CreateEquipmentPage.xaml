@@ -55,25 +55,6 @@
                                    Text="Укажите вес в граммах (только целое число)"/>
                     </StackPanel>
 
-                    <StackPanel Margin="0,0,0,25">
-                        <TextBlock Style="{StaticResource BodyText}" 
-                                   FontWeight="SemiBold" 
-                                   Text="Описание" 
-                                   Margin="0,0,0,8"/>
-                        <TextBox Style="{StaticResource InputField}" 
-                                 x:Name="DescriptionTextBox"
-                                 AcceptsReturn="True"
-                                 TextWrapping="Wrap"
-                                 VerticalScrollBarVisibility="Auto"
-                                 MinHeight="120"
-                                 MaxHeight="300"/>
-                        <TextBlock Style="{StaticResource BodyText}" 
-                                   Foreground="#7F8C8D" 
-                                   FontSize="12"
-                                   Margin="0,5,0,0"
-                                   Text="Добавьте описание"/>
-                    </StackPanel>
-
                     <TextBlock x:Name="ErrorMessage" Style="{StaticResource BodyText}" 
                                Foreground="#E74C3C" TextWrapping="Wrap" 
                                Visibility="Collapsed" Margin="0,0,0,15"

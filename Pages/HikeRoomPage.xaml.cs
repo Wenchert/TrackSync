@@ -11,6 +11,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Xml.Linq;
 using TrackSync.DataBase;
@@ -34,6 +35,8 @@ namespace TrackSync.Pages
         private RouteStatItem _editingRouteStat = null;
         private bool _isEditingRoute = false;
         private Guid _currentEditingSessionId = Guid.NewGuid();
+
+        const double EquatorMetersPerPixel = 156543.03392;
 
         private bool _canEditMealPlan = false;
         private bool _canEditEquipment = false;
@@ -822,7 +825,7 @@ namespace TrackSync.Pages
                         transaction.Commit();
 
                         // После сохранения обновляем маршрут без центрирования
-                        MyRouteBuilder.LoadRoute(points, MyRouteBuilder.SelectedColor, centerMap:false);
+                        MyRouteBuilder.LoadRoute(points, MyRouteBuilder.SelectedColor, centerMap: false);
                         ShowMessage(MapMessage, "Маршрут сохранён", true);
 
                         // Сбрасываем состояние редактирования
@@ -1022,6 +1025,36 @@ namespace TrackSync.Pages
                 RoutesStatisticsList.ItemsSource = null;
             }
         }
+
+        //private List<GMap.NET.PointLatLng> ExtractPoints(Track track)
+        //{
+        //    var points = new List<GMap.NET.PointLatLng>();
+
+        //    // Проверяем, что сегменты вообще есть
+        //    if (track?.Segments == null || !track.Segments.Any()) return points;
+
+        //    // Сортируем строго по ID, чтобы не было "паутины"
+        //    var sortedSegments = track.Segments.OrderBy(s => s.SegmentId).ToList();
+
+        //    // Берем начальную точку первого сегмента
+        //    var first = sortedSegments.First();
+        //    if (first.StartWaypoint != null)
+        //    {
+        //        points.Add(new GMap.NET.PointLatLng((double)first.StartWaypoint.Latitude, (double)first.StartWaypoint.Longitude));
+        //    }
+
+        //    // Добавляем конечные точки всех сегментов по порядку
+        //    foreach (var s in sortedSegments)
+        //    {
+        //        if (s.EndWaypoint != null)
+        //        {
+        //            points.Add(new GMap.NET.PointLatLng((double)s.EndWaypoint.Latitude, (double)s.EndWaypoint.Longitude));
+        //        }
+        //    }
+
+        //    return points;
+        //}
+
         private void UndoRouteButton_Click(object sender, RoutedEventArgs e)
         {
             // Получаем текущее количество точек
@@ -1086,6 +1119,7 @@ namespace TrackSync.Pages
                 }
             }), System.Windows.Threading.DispatcherPriority.Background);
         }
+
         private void ClearRoute_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -2033,6 +2067,69 @@ namespace TrackSync.Pages
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+        private void ExportToPdf()
+        {
+            try
+            {
+                // Получаем скриншот карты
+                var mapScreenshot = GetMapScreenshot();
+
+                if (mapScreenshot == null)
+                {
+                    MessageBox.Show("Не удалось создать скриншот карты",
+                        "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                    return;
+                }
+
+                // Получаем название комнаты для имени файла
+                string roomTitle = RoomTitleText.Text;
+                string safeFileName = RemoveInvalidFileNameChars(roomTitle);
+
+                // Получаем текущий зум карты
+                double zoom = MyRouteBuilder.MapControl.Zoom;
+                double lat = MyRouteBuilder.MapControl.Position.Lat;
+                double metersPerPixel = EquatorMetersPerPixel * Math.Cos(lat * Math.PI / 180) / Math.Pow(2, zoom);
+                double screenDpi = 72;
+                double realScale = metersPerPixel * (screenDpi / 0.0254);
+                double roundedScale = Math.Round(realScale / 10000) * 10000;
+
+                // Создаём генератор с зумом
+                var generator = new HikeRoomPdfGenerator(_roomId, mapScreenshot, roundedScale);
+
+                // Диалог сохранения
+                var saveDialog = new SaveFileDialog
+                {
+                    Filter = "PDF files (*.pdf)|*.pdf",
+                    FileName = $"{safeFileName}.pdf",
+                    DefaultExt = ".pdf"
+                };
+
+                if (saveDialog.ShowDialog() == true)
+                {
+                    Mouse.OverrideCursor = Cursors.Wait;
+                    try
+                    {
+                        generator.GeneratePdf(saveDialog.FileName);
+                        MessageBox.Show($"PDF успешно создан!\nФайл сохранен: {saveDialog.FileName}",
+                            "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Ошибка генерации PDF:\n{ex.Message}", "Ошибка",
+                            MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    finally
+                    {
+                        Mouse.OverrideCursor = null;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Ошибка подготовки PDF:\n{ex.Message}", "Ошибка",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
         private string GenerateSingleTrackGpx(Track track, List<Waypoint> waypoints)
         {
             try
@@ -2084,6 +2181,7 @@ namespace TrackSync.Pages
                 return null;
             }
         }
+
         private XElement CreateTrackPointElement(Waypoint waypoint, int index, XNamespace gpxNs)
         {
             // Используем последовательное время с интервалом в 1 минуту
@@ -2098,6 +2196,7 @@ namespace TrackSync.Pages
                 new XElement(gpxNs + "desc", $"Высота: {waypoint.Height} м")
             );
         }
+
         private void ExportAllTracksAsSeparateFiles()
         {
             try
@@ -2126,8 +2225,8 @@ namespace TrackSync.Pages
                     try
                     {
                         // Получаем путь к папке и базовое имя файла
-                        string selectedPath = Path.GetDirectoryName(saveDialog.FileName);
-                        string baseFileName = Path.GetFileNameWithoutExtension(saveDialog.FileName);
+                        string selectedPath = System.IO.Path.GetDirectoryName(saveDialog.FileName);
+                        string baseFileName = System.IO.Path.GetFileNameWithoutExtension(saveDialog.FileName);
 
                         if (string.IsNullOrEmpty(selectedPath) || string.IsNullOrEmpty(baseFileName))
                         {
@@ -2155,14 +2254,14 @@ namespace TrackSync.Pages
 
                             // Создаем уникальное имя файла
                             string fileName = $"{baseFileName}_{safeTrackName}_{track.TrackId}.gpx";
-                            string filePath = Path.Combine(selectedPath, fileName);
+                            string filePath = System.IO.Path.Combine(selectedPath, fileName);
 
                             // Проверяем, нет ли уже файла с таким именем
                             int counter = 1;
                             while (File.Exists(filePath))
                             {
                                 fileName = $"{baseFileName}_{safeTrackName}_{track.TrackId}_{counter}.gpx";
-                                filePath = Path.Combine(selectedPath, fileName);
+                                filePath = System.IO.Path.Combine(selectedPath, fileName);
                                 counter++;
                             }
 
@@ -2219,6 +2318,7 @@ namespace TrackSync.Pages
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
         private void ExportCurrentUserTrack()
         {
             try
@@ -2290,6 +2390,7 @@ namespace TrackSync.Pages
                     "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
         private string EscapeXml(string s)
         {
             if (string.IsNullOrEmpty(s)) return s;
@@ -2300,64 +2401,6 @@ namespace TrackSync.Pages
                 .Replace(">", "&gt;")
                 .Replace("\"", "&quot;")
                 .Replace("'", "&apos;");
-        }
-        private void ExportToPdf()
-        {
-            try
-            {
-                // Получаем скриншот карты
-                var mapScreenshot = GetMapScreenshot();
-
-                if (mapScreenshot == null)
-                {
-                    MessageBox.Show("Не удалось создать скриншот карты",
-                        "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-                    return;
-                }
-
-                // Получаем название комнаты для имени файла
-                string roomTitle = RoomTitleText.Text;
-                string safeFileName = RemoveInvalidFileNameChars(roomTitle);
-
-                // Получаем текущий зум карты
-                double mapZoom = MyRouteBuilder.MapControl.Zoom;
-
-                // Создаём генератор с зумом
-                var generator = new HikeRoomPdfGenerator(_roomId, mapScreenshot, mapZoom);
-
-                // Диалог сохранения
-                var saveDialog = new SaveFileDialog
-                {
-                    Filter = "PDF files (*.pdf)|*.pdf",
-                    FileName = $"{safeFileName}.pdf",
-                    DefaultExt = ".pdf"
-                };
-
-                if (saveDialog.ShowDialog() == true)
-                {
-                    Mouse.OverrideCursor = Cursors.Wait;
-                    try
-                    {
-                        generator.GeneratePdf(saveDialog.FileName);
-                        MessageBox.Show($"PDF успешно создан!\nФайл сохранен: {saveDialog.FileName}",
-                            "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Ошибка генерации PDF:\n{ex.Message}", "Ошибка",
-                            MessageBoxButton.OK, MessageBoxImage.Error);
-                    }
-                    finally
-                    {
-                        Mouse.OverrideCursor = null;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Ошибка подготовки PDF:\n{ex.Message}", "Ошибка",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            }
         }
 
         private List<Waypoint> ExtractWaypoints(Track track)
@@ -2401,7 +2444,7 @@ namespace TrackSync.Pages
         {
             if (string.IsNullOrEmpty(fileName)) return fileName;
 
-            var invalidChars = Path.GetInvalidFileNameChars();
+            var invalidChars = System.IO.Path.GetInvalidFileNameChars();
             var result = new string(fileName.Where(ch => !invalidChars.Contains(ch)).ToArray());
 
             // Также удаляем пробелы в начале и конце

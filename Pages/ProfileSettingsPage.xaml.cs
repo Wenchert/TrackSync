@@ -306,7 +306,8 @@ namespace TrackSync.Pages
         // Отмена изменений
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
-            FrameContext.MainWindowFrame.Navigate(new MainPage());
+            if (NavigationService.CanGoBack)
+                NavigationService.GoBack();
         }
 
         // Универсальные методы для работы с сообщениями

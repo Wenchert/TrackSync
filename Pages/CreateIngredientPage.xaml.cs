@@ -213,9 +213,9 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            if (TitleTextBox.Text.Length > 256)
+            if (TitleTextBox.Text.Length > 50)
             {
-                ErrorMessageVisible("*Название не должно превышать 256 символов");
+                ErrorMessageVisible("*Название не должно превышать 50 символов");
                 return false;
             }
 
@@ -226,7 +226,13 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            if (!int.TryParse(CaloriesTextBox.Text, out int calories) || calories < 0)
+            if(!int.TryParse(CaloriesTextBox.Text, out int calories))
+            {
+                ErrorMessageVisible("*Слишком большое число для поля калорийности");
+                return false;
+            }
+
+            if (calories < 0)
             {
                 ErrorMessageVisible("*Калорийность должна быть неотрицательным целым числом");
                 return false;
@@ -239,7 +245,13 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            if (!int.TryParse(ProteinsTextBox.Text, out int proteins) || proteins < 0)
+            if(!int.TryParse(ProteinsTextBox.Text, out int proteins))
+            {
+                ErrorMessageVisible("*Слишком большое число для поля белков");
+                return false;
+            }
+
+            if (proteins < 0)
             {
                 ErrorMessageVisible("*Белки должны быть неотрицательным целым числом");
                 return false;
@@ -252,7 +264,13 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            if (!int.TryParse(FatsTextBox.Text, out int fats) || fats < 0)
+            if (!int.TryParse(ProteinsTextBox.Text, out int fats))
+            {
+                ErrorMessageVisible("*Слишком большое число для поля жиров");
+                return false;
+            }
+
+            if (fats < 0)
             {
                 ErrorMessageVisible("*Жиры должны быть неотрицательным целым числом");
                 return false;
@@ -265,7 +283,13 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            if (!int.TryParse(CarbsTextBox.Text, out int carbs) || carbs < 0)
+            if (!int.TryParse(ProteinsTextBox.Text, out int carbs))
+            {
+                ErrorMessageVisible("*Слишком большое число для поля углеводов");
+                return false;
+            }
+
+            if (carbs < 0)
             {
                 ErrorMessageVisible("*Углеводы должны быть неотрицательным целым числом");
                 return false;
@@ -278,9 +302,15 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            if (!int.TryParse(PriceTextBox.Text, out int price) || price < 0)
+            if (!int.TryParse(ProteinsTextBox.Text, out int price))
             {
-                ErrorMessageVisible("*Цена должна быть неотрицательным целым числом");
+                ErrorMessageVisible("*Слишком большое число для поля цены");
+                return false;
+            }
+
+            if (price < 0)
+            {
+                ErrorMessageVisible("*Пожалуйста, введите корректную цену");
                 return false;
             }
 

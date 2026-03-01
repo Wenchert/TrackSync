@@ -378,16 +378,21 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            if (TitleTextBox.Text.Length > 256)
+            if (TitleTextBox.Text.Length > 50)
             {
-                ErrorMessageVisible("*Название не должно превышать 256 символов");
+                ErrorMessageVisible("*Название не должно превышать 50 символов");
                 return false;
             }
 
-            if (string.IsNullOrWhiteSpace(TimeTextBox?.Text) ||
-                !int.TryParse(TimeTextBox.Text, out int time) || time <= 0)
+            if (string.IsNullOrWhiteSpace(TimeTextBox?.Text))
             {
                 ErrorMessageVisible("*Пожалуйста, введите корректное время готовки (положительное число)");
+                return false;
+            }
+
+            if (!int.TryParse(TimeTextBox.Text, out int time) || time <= 0) 
+            {
+                ErrorMessageVisible("*Слишком большое число для времени");
                 return false;
             }
 
@@ -402,6 +407,12 @@ namespace TrackSync.Pages
                 if (item.Quantity <= 0)
                 {
                     ErrorMessageVisible($"*Пожалуйста, введите корректное количество для ингредиента \"{item.Ingredient.Title}\"");
+                    return false;
+                }
+
+                if (item.Quantity >= int.MaxValue)
+                {
+                    ErrorMessageVisible($"*Слишком большое количество ингредиента \"{item.Ingredient.Title}\"");
                     return false;
                 }
             }

@@ -49,9 +49,6 @@ namespace TrackSync.Pages
                 LoadEquipment();
                 UpdateFilterButtons();
             };
-
-            LoadEquipment();
-            UpdateFilterButtons();
         }
 
         /// Загрузка снаряжений из базы данных с учётом фильтрации
@@ -197,8 +194,9 @@ namespace TrackSync.Pages
                 return;
             }
 
+
             // Передаём выбранное снаряжение через коллбэк
-            _callback?.OnEquipmentSelected(selected.Select(eq => eq.Equipment).ToList());
+            _callback.OnEquipmentSelected(selected.Select(eq => eq.Equipment).ToList());
 
             // Возвращаемся назад
             if (NavigationService.CanGoBack)

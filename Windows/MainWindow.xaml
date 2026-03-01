@@ -6,7 +6,7 @@
         xmlns:pages="clr-namespace:TrackSync.Pages"
         mc:Ignorable="d"
         Title="TrackSync" Height="700" Width="1200"
-        Icon="/Images/Icons/favicon.png"
+        Icon="/Images/Icons/favicon.jpg"
         Background="#F8F9FA">
 
     <Grid>

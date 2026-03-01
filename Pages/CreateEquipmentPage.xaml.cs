@@ -86,7 +86,6 @@ namespace TrackSync.Pages
                 {
                     NameTextBox.Text = _editingEquipment.Title;
                     WeightTextBox.Text = _editingEquipment.Weight.ToString();
-                    DescriptionTextBox.Text = _editingEquipment.Description ?? string.Empty;
                 }
             }
             else
@@ -172,10 +171,7 @@ namespace TrackSync.Pages
 
                             // Обновляем данные
                             equipmentToUpdate.Title = NameTextBox.Text.Trim();
-                        equipmentToUpdate.Weight = int.Parse(WeightTextBox.Text);
-                        equipmentToUpdate.Description = string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
-                            ? null
-                            : DescriptionTextBox.Text.Trim();
+                            equipmentToUpdate.Weight = int.Parse(WeightTextBox.Text);
 
                         ctx.SaveChanges();
                     }
@@ -185,10 +181,7 @@ namespace TrackSync.Pages
                         var newEquipment = new Equipment(
                             title: NameTextBox.Text.Trim(),
                             weight: int.Parse(WeightTextBox.Text),
-                            creatorUserId: SessionManager.CurrentUserId,
-                            description: string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
-                                ? null
-                                : DescriptionTextBox.Text.Trim()
+                            creatorUserId: SessionManager.CurrentUserId
                         );
 
                         ctx.Equipments.Add(newEquipment);
@@ -240,7 +233,7 @@ namespace TrackSync.Pages
 
             if (!int.TryParse(WeightTextBox.Text, out int weight))
             {
-                ErrorMessageVisible("*Вес должен быть целым числом");
+                ErrorMessageVisible("*Слишком большоё вес снаряжения");
                 return false;
             }
 
@@ -249,14 +242,6 @@ namespace TrackSync.Pages
                 ErrorMessageVisible("*Вес должен быть положительным числом");
                 return false;
             }
-
-            // Проверка описания (необязательное поле)
-            if (!string.IsNullOrWhiteSpace(DescriptionTextBox?.Text) && DescriptionTextBox.Text.Length > 1000)
-            {
-                ErrorMessageVisible("*Описание не должно превышать 1000 символов");
-                return false;
-            }
-
             return true;
         }
     }
