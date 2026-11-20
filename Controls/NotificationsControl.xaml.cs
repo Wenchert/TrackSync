@@ -8,10 +8,8 @@ namespace TrackSync.Controls
 {
     public partial class NotificationsPanel : UserControl
     {
-        // Тип уведомления
         public enum NotificationType { Invitation, Bid }
 
-        // Базовый класс для отображения уведомлений
         public class NotificationDisplayItem
         {
             public int Id { get; set; }
@@ -19,9 +17,8 @@ namespace TrackSync.Controls
             public string Title { get; set; }
             public string DateRange { get; set; }
             public string Description { get; set; }
-            public string Email { get; set; } // Только для заявок
+            public string Email { get; set; }
 
-            // Вспомогательные свойства для управления видимостью
             public Visibility DescriptionVisibility =>
                 NotificationType == NotificationType.Invitation && !string.IsNullOrWhiteSpace(Description)
                     ? Visibility.Visible : Visibility.Collapsed;
@@ -39,16 +36,12 @@ namespace TrackSync.Controls
             LoadNotifications();
         }
 
-        /// <summary>
-        /// Загрузка всех уведомлений: приглашений и заявок
-        /// </summary>
         public void LoadNotifications()
         {
             try
             {
                 var allNotifications = new List<NotificationDisplayItem>();
 
-                // 1. Загружаем приглашения пользователя
                 var invitations = TrackSyncManagerList.GetUserInvitations(SessionManager.CurrentUserId);
                 if (invitations != null)
                 {
@@ -65,7 +58,6 @@ namespace TrackSync.Controls
                     }
                 }
 
-                // 2. Загружаем заявки (только если пользователь является лидером хотя бы одной комнаты)
                 var bids = TrackSyncManagerList.GetUserBids(SessionManager.CurrentUserId);
                 if (bids != null)
                 {
@@ -77,12 +69,11 @@ namespace TrackSync.Controls
                             NotificationType = NotificationType.Bid,
                             Title = bid.HikeRoom.Title,
                             DateRange = $"{bid.HikeRoom.StartDate:dd.MM.yyyy} - {bid.HikeRoom.EndDate:dd.MM.yyyy}",
-                            Email = bid.User.Name // Отображаем email заявителя
+                            Email = bid.User.Name 
                         });
                     }
                 }
 
-                // Обновляем интерфейс
                 if (allNotifications.Count == 0)
                 {
                     EmptyState.Visibility = Visibility.Visible;
@@ -107,7 +98,6 @@ namespace TrackSync.Controls
         {
             if (sender is Button button && button.Tag is int id)
             {
-                // Определяем тип уведомления по контексту данных кнопки
                 var container = ItemsControl.ContainerFromElement(NotificationsList, button) as FrameworkElement;
                 if (container?.DataContext is NotificationDisplayItem item)
                 {
@@ -116,7 +106,7 @@ namespace TrackSync.Controls
                     {
                         success = TrackSyncManagerList.AcceptInvitation(id, SessionManager.CurrentUserId);
                     }
-                    else // Bid
+                    else
                     {
                         success = TrackSyncManagerList.AcceptBid(id, SessionManager.CurrentUserId);
                     }
@@ -141,7 +131,7 @@ namespace TrackSync.Controls
                     {
                         success = TrackSyncManagerList.RejectInvitation(id, SessionManager.CurrentUserId);
                     }
-                    else // Bid
+                    else
                     {
                         success = TrackSyncManagerList.RejectBid(id);
                     }
@@ -154,7 +144,6 @@ namespace TrackSync.Controls
             }
         }
 
-        // Проверка, что пользователь уже есть в комнате
         public static bool IsUserAlreadyParticipant(int userId, int roomId)
         {
             try
@@ -171,7 +160,6 @@ namespace TrackSync.Controls
             }
         }
 
-        // Добавление участника в комнату (права отсутствуют)
         public static bool AddParticipantSafely(int userId, int roomId, bool
             editMealPlan = false, bool editTrack = false, bool editEquipment = false)
         {
@@ -179,13 +167,11 @@ namespace TrackSync.Controls
             {
                 using (var ctx = new TrackSyncContext())
                 {
-                    // Проверяем, не является ли пользователь уже участником
                     if (ctx.Participants.Any(p => p.UserId == userId && p.HikeRoomId == roomId))
                     {
-                        return true; // Уже участник, считаем успехом
+                        return true;
                     }
 
-                    // Создаем нового участника
                     var participant = new Participant(
                         userId: userId,
                         hikeRoomId: roomId,
@@ -201,7 +187,6 @@ namespace TrackSync.Controls
             }
             catch (Exception ex)
             {
-                // Проверяем, не является ли ошибка нарушением уникальности
                 if (ex.InnerException?.Message?.Contains("duplicate key") == true ||
                     ex.Message.Contains("duplicate key"))
                 {

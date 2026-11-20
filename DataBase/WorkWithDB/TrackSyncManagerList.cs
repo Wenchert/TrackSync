@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 using System.Windows;
 using TrackSync.Controls;
 using TrackSync.DataBase.Model;
@@ -9,9 +10,6 @@ namespace TrackSync.DataBase.WorkWithDB
 {
     public static class TrackSyncManagerList
     {
-        /// <summary>
-        /// Получить все снаряжение из базы данных
-        /// </summary>
         public static List<Equipment> GetAllEquipmentForUser(int userId)
         {
             try
@@ -36,9 +34,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить только снаряжение, созданное пользователем
-        /// </summary>
         public static List<Equipment> GetUserEquipment(int userId)
         {
             try
@@ -63,9 +58,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Поиск снаряжения по названию
-        /// </summary>
         public static List<Equipment> SearchEquipment(string searchText, int userId)
         {
             try
@@ -96,9 +88,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить снаряжение по ID
-        /// </summary>
         public static Equipment GetEquipmentById(int id)
         {
             try
@@ -129,9 +118,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить все ингредиенты из базы данных
-        /// </summary>
         public static List<Ingredient> GetAllIngredients()
         {
             try
@@ -154,9 +140,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Поиск ингредиентов по названию
-        /// </summary>
         public static List<Ingredient> SearchIngredients(string searchText)
         {
             try
@@ -187,9 +170,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить все рецепты из базы данных
-        /// </summary>
         public static List<Recipe> GetAllRecipes()
         {
             try
@@ -215,9 +195,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Поиск рецептов по названию
-        /// </summary>
         public static List<Recipe> SearchRecipes(string searchText)
         {
             try
@@ -253,9 +230,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить рецепт по ID
-        /// </summary>
         public static Recipe GetRecipeById(int id)
         {
             try
@@ -289,9 +263,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Расчёт калорийности рецепта
-        /// </summary>
         public static int CalculateRecipeCalories(Recipe recipe)
         {
             if (recipe?.IngredientsRecipes == null)
@@ -302,16 +273,12 @@ namespace TrackSync.DataBase.WorkWithDB
             {
                 if (ir.Ingredient != null)
                 {
-                    // Калории на 100г * вес в граммах / 100
                     totalCalories += (int)(ir.Ingredient.Calories * ir.Weight / 100.0);
                 }
             }
             return totalCalories;
         }
 
-        /// <summary>
-        /// Расчёт общего веса рецепта
-        /// </summary>
         public static int CalculateRecipeWeight(Recipe recipe)
         {
             if (recipe?.IngredientsRecipes == null)
@@ -320,22 +287,17 @@ namespace TrackSync.DataBase.WorkWithDB
             return recipe.IngredientsRecipes.Sum(ir => ir.Weight);
         }
 
-        /// <summary>
-        /// Получить комнаты, в которых участвует пользователь
-        /// </summary>
         public static List<HikeRoom> GetUserRooms(int userId)
         {
             try
             {
                 using var ctx = new TrackSyncContext();
 
-                // Сначала получаем список ID комнат пользователя
                 var roomIds = ctx.Participants
                     .Where(p => p.UserId == userId)
                     .Select(p => p.HikeRoomId)
                     .ToList();
 
-                // Затем загружаем комнаты с включением связанных сущностей
                 return ctx.HikeRooms
                     .Where(r => roomIds.Contains(r.HikeRoomId))
                     .Include(r => r.Status)
@@ -357,11 +319,11 @@ namespace TrackSync.DataBase.WorkWithDB
                 using (var ctx = new TrackSyncContext())
                 {
                     var availableRooms = ctx.HikeRooms
-                        .AsNoTracking() // Отключаем трекинг, так как данные только для чтения
-                        .Include(r => r.Leader) // Загружаем Лидера
-                        .Include(r => r.Participants) // Не загружаем .Include(r => r.Participants), если не нужны данные участников
-                        .Where(r => r.StatusId == 1) // Активные комнаты
-                        .Where(r => !ctx.Participants.Any(p => p.UserId == userId && p.HikeRoomId == r.HikeRoomId)) // Пользователь не участник
+                        .AsNoTracking() 
+                        .Include(r => r.Leader) 
+                        .Include(r => r.Participants) 
+                        .Where(r => r.StatusId == 1) 
+                        .Where(r => !ctx.Participants.Any(p => p.UserId == userId && p.HikeRoomId == r.HikeRoomId)) 
                         .ToList();
 
                     return availableRooms;
@@ -370,13 +332,10 @@ namespace TrackSync.DataBase.WorkWithDB
             catch (Exception ex)
             {
                 MessageBox.Show($"Ошибка при получении доступных комнат:\n{ex.Message}", "Ошибка");
-                return new List<HikeRoom>(); // Возвращаем пустой список вместо null для безопасности
+                return new List<HikeRoom>(); 
             }
         }
 
-        /// <summary>
-        /// Получить всех участников комнаты по её ID
-        /// </summary>
         public static List<Participant> GetParticipantsByRoomId(int roomId)
         {
             try
@@ -390,8 +349,8 @@ namespace TrackSync.DataBase.WorkWithDB
                     }
 
                     return ctx.Participants
-                        .Include(p => p.User) // Загружаем связанного пользователя
-                        .Where(p => p.HikeRoomId == roomId) // Сортируем по email
+                        .Include(p => p.User)
+                        .Where(p => p.HikeRoomId == roomId) 
                         .ToList();
                 }
             }
@@ -402,9 +361,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить снаряжение участника комнаты
-        /// </summary>
         public static List<HikeRoomsEquipment> GetEquipmentByParticipantId(int participantId)
         {
             try
@@ -430,12 +386,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить всех участников комнаты с их снаряжением
-        /// </summary>
-        /// <summary>
-        /// Получить всех участников комнаты с их снаряжением
-        /// </summary>
         public static List<Participant> GetParticipantsWithEquipment(int roomId)
         {
             try
@@ -448,7 +398,6 @@ namespace TrackSync.DataBase.WorkWithDB
                         return null;
                     }
 
-                    // Загружаем участников комнаты ВМЕСТЕ со всем их снаряжением из таблицы HikeRoomsEquipments
                     return ctx.Participants
                         .Include(p => p.User)
                         .Include(p => p.HikeRoomsEquipments)          
@@ -463,9 +412,7 @@ namespace TrackSync.DataBase.WorkWithDB
                 return null;
             }
         }
-        /// <summary>
-        /// Получить ингредиент по ID
-        /// </summary>
+
         public static Ingredient GetIngredientById(int id)
         {
             try
@@ -495,9 +442,7 @@ namespace TrackSync.DataBase.WorkWithDB
                 return null;
             }
         }
-        /// <summary>
-        /// Получить все ингредиенты для конкретного пользователя (системные + свои)
-        /// </summary>
+
         public static List<Ingredient> GetAllIngredientsForUser(int userId)
         {
             try
@@ -522,9 +467,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить только ингредиенты, созданные пользователем
-        /// </summary>
         public static List<Ingredient> GetUserIngredients(int userId)
         {
             try
@@ -548,9 +490,7 @@ namespace TrackSync.DataBase.WorkWithDB
                 return null;
             }
         }
-        /// <summary>
-        /// Получить все рецепты для конкретного пользователя (системные + свои)
-        /// </summary>
+
         public static List<Recipe> GetAllRecipesForUser(int userId)
         {
             try
@@ -577,9 +517,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить только рецепты, созданные пользователем
-        /// </summary>
         public static List<Recipe> GetUserRecipes(int userId)
         {
             try
@@ -605,9 +542,7 @@ namespace TrackSync.DataBase.WorkWithDB
                 return null;
             }
         }
-        /// <summary>
-        /// Получить рецепт по ID с полной загрузкой ингредиентов
-        /// </summary>
+
         public static Recipe GetRecipeByIdFull(int id)
         {
             try
@@ -641,9 +576,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить комнату похода по её ID с загрузкой связанных сущностей
-        /// </summary>
         public static HikeRoom GetHikeRoomById(int roomId)
         {
             try
@@ -670,9 +602,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить все приглашения пользователя
-        /// </summary>
         public static List<Invitation> GetUserInvitations(int userId)
         {
             try
@@ -699,9 +628,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Принять приглашение - добавить пользователя в комнату как участника
-        /// </summary>
         public static bool AcceptInvitation(int invitationId, int userId)
         {
             try
@@ -714,7 +640,6 @@ namespace TrackSync.DataBase.WorkWithDB
                         return false;
                     }
 
-                    // Находим приглашение
                     var invitation = ctx.Invitations
                         .Include(i => i.HikeRoom)
                         .FirstOrDefault(i => i.InvitationId == invitationId && i.UserId == userId);
@@ -725,15 +650,13 @@ namespace TrackSync.DataBase.WorkWithDB
                         return false;
                     }
 
-                    // Проверяем, не является ли пользователь уже участником комнаты
                     if (NotificationsPanel.IsUserAlreadyParticipant(userId, invitation.HikeRoomId))
                     {
                         ctx.Invitations.Remove(invitation);
                         ctx.SaveChanges();
-                        return true; // Уже участник, считаем успехом
+                        return true; 
                     }
 
-                    // Используем безопасное добавление
                     var success = NotificationsPanel.AddParticipantSafely(
                         userId: userId,
                         roomId: invitation.HikeRoomId,
@@ -744,10 +667,8 @@ namespace TrackSync.DataBase.WorkWithDB
 
                     if (success)
                     {
-                        // Удаляем приглашение
                         ctx.Invitations.Remove(invitation);
 
-                        // Также удаляем все заявки этого пользователя в эту комнату
                         var bidsToRemove = ctx.Bids
                             .Where(b => b.UserId == userId && b.HikeRoomId == invitation.HikeRoomId)
                             .ToList();
@@ -770,9 +691,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Отклонить приглашение - удалить из базы данных
-        /// </summary>
         public static bool RejectInvitation(int invitationId, int userId)
         {
             try
@@ -809,9 +727,7 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получить количество непрочитанных приглашений пользователя
-        /// </summary>
+
         public static int GetInvitationsCount(int userId)
         {
             try
@@ -832,9 +748,7 @@ namespace TrackSync.DataBase.WorkWithDB
                 return 0;
             }
         }
-        /// <summary>
-        /// Получить всех пользователей для приглашения в комнату (исключая текущего пользователя, участников, приглашенных и отправивших заявки)
-        /// </summary>
+
         public static List<User> GetUsersForInvitation(int currentRoomId, int currentUserId)
         {
             try
@@ -847,30 +761,23 @@ namespace TrackSync.DataBase.WorkWithDB
                         return null;
                     }
 
-                    // Получаем все ID пользователей, которых нужно исключить:
-
-                    // 1. Участники текущей комнаты
                     var participantUserIds = ctx.Participants
                         .Where(p => p.HikeRoomId == currentRoomId)
                         .Select(p => p.UserId)
                         .ToList();
 
-                    // 2. Пользователи с приглашениями в эту комнату
                     var invitedUserIds = ctx.Invitations
                         .Where(i => i.HikeRoomId == currentRoomId)
                         .Select(i => i.UserId)
                         .ToList();
 
-                    // 3. Пользователи с заявками (bids) в эту комнату
                     var bidUserIds = ctx.Bids
                         .Where(b => b.HikeRoomId == currentRoomId)
                         .Select(b => b.UserId)
                         .ToList();
 
-                    // 4. Текущий пользователь
                     var currentUserIds = new List<int> { currentUserId };
 
-                    // Объединяем все ID для исключения
                     var excludedUserIds = participantUserIds
                         .Concat(invitedUserIds)
                         .Concat(bidUserIds)
@@ -878,10 +785,11 @@ namespace TrackSync.DataBase.WorkWithDB
                         .Distinct()
                         .ToList();
 
-                    // Получаем всех пользователей, кроме исключенных
                     var usersList = ctx.Users
                         .Where(u => !excludedUserIds.Contains(u.UserId))
                         .ToList();
+
+                    var totalUsers = ctx.Users.Count();
 
                     return usersList;
                 }
@@ -893,9 +801,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Поиск пользователей для приглашения по email
-        /// </summary>
         public static List<User> SearchUsersForInvitation(string searchText, int currentRoomId, int currentUserId)
         {
             try
@@ -908,7 +813,6 @@ namespace TrackSync.DataBase.WorkWithDB
                         return null;
                     }
 
-                    // Получаем исключенные ID (так же как в методе выше)
                     var participantUserIds = ctx.Participants
                         .Where(p => p.HikeRoomId == currentRoomId)
                         .Select(p => p.UserId)
@@ -933,11 +837,11 @@ namespace TrackSync.DataBase.WorkWithDB
                         .Distinct()
                         .ToList();
 
-                    // Поиск по имени или email
                     var searchLower = searchText.ToLower();
                     var usersList = ctx.Users
                         .Where(u => !excludedUserIds.Contains(u.UserId) &&
-                                    u.Email != null && u.Email.ToLower().Contains(searchLower))
+                                    (u.Email.ToLower().Contains(searchLower) ||
+                                     u.Name.ToLower().Contains(searchLower)))
                         .ToList();
 
                     return usersList;
@@ -950,9 +854,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Отправить приглашения выбранным пользователям в комнату
-        /// </summary>
         public static bool SendInvitations(List<int> userIds, int roomId, out int invitationsCreated, out int invitationsSkipped)
         {
             invitationsCreated = 0;
@@ -970,7 +871,6 @@ namespace TrackSync.DataBase.WorkWithDB
 
                     foreach (var userId in userIds)
                     {
-                        // Проверяем, можно ли отправить приглашение
                         bool canInvite = !ctx.Participants.Any(p => p.HikeRoomId == roomId && p.UserId == userId) &&
                                         !ctx.Invitations.Any(i => i.HikeRoomId == roomId && i.UserId == userId) &&
                                         !ctx.Bids.Any(b => b.HikeRoomId == roomId && b.UserId == userId);
@@ -1006,20 +906,15 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Получение заявок в комнаты, где текущий пользователь является лидером
-        /// </summary>
         public static List<Bid> GetUserBids(int userId)
         {
             using (var context = new TrackSyncContext())
             {
-                // Находим комнаты, где пользователь является лидером
                 var leaderRoomIds = context.HikeRooms
                     .Where(r => r.LeaderId == userId)
                     .Select(r => r.HikeRoomId)
                     .ToList();
 
-                // Загружаем заявки в эти комнаты с навигационными свойствами
                 return context.Bids
                     .Include(b => b.HikeRoom)
                     .Include(b => b.User)
@@ -1028,9 +923,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Принять заявку пользователя — добавить его в участники похода
-        /// </summary>
         public static bool AcceptBid(int bidId, int currentUserId)
         {
             using (var context = new TrackSyncContext())
@@ -1042,15 +934,13 @@ namespace TrackSync.DataBase.WorkWithDB
                 if (bid == null || bid.HikeRoom.LeaderId != currentUserId)
                     return false;
 
-                // Проверяем, не является ли пользователь уже участником комнаты
                 if (NotificationsPanel.IsUserAlreadyParticipant(bid.UserId, bid.HikeRoomId))
                 {
                     context.Bids.Remove(bid);
                     context.SaveChanges();
-                    return true; // Уже участник, считаем успехом
+                    return true; 
                 }
 
-                // Используем безопасное добавление
                 var success = NotificationsPanel.AddParticipantSafely(
                     userId: bid.UserId,
                     roomId: bid.HikeRoomId,
@@ -1061,10 +951,8 @@ namespace TrackSync.DataBase.WorkWithDB
 
                 if (success)
                 {
-                    // Удаляем заявку
                     context.Bids.Remove(bid);
 
-                    // Также удаляем все приглашения этого пользователя в эту комнату
                     var invitationsToRemove = context.Invitations
                         .Where(i => i.UserId == bid.UserId && i.HikeRoomId == bid.HikeRoomId)
                         .ToList();
@@ -1081,9 +969,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Отклонить заявку — просто удаляем её
-        /// </summary>
         public static bool RejectBid(int bidId)
         {
             using (var context = new TrackSyncContext())
@@ -1106,9 +991,6 @@ namespace TrackSync.DataBase.WorkWithDB
             }
         }
 
-        /// <summary>
-        /// Класс для хранения данных о дне раскладки
-        /// </summary>
         public class MealPlanDay
         {
             public int DayNumber { get; set; }
@@ -1116,9 +998,6 @@ namespace TrackSync.DataBase.WorkWithDB
             public List<MealPlanMeal> Meals { get; set; } = new List<MealPlanMeal>();
         }
 
-        /// <summary>
-        /// Класс для хранения данных о приёме пищи
-        /// </summary>
         public class MealPlanMeal
         {
             public int TypeMealId { get; set; }
@@ -1126,9 +1005,6 @@ namespace TrackSync.DataBase.WorkWithDB
             public List<RecipesParticipant> ResponsibleParticipants { get; set; } = new List<RecipesParticipant>();
         }
 
-        /// <summary>
-        /// Получить раскладку питания для комнаты
-        /// </summary>
         public static List<MealPlanDay> GetMealPlanForRoom(int roomId)
         {
             try
@@ -1141,24 +1017,20 @@ namespace TrackSync.DataBase.WorkWithDB
                         return null;
                     }
 
-                    // Получаем комнату
                     var room = ctx.HikeRooms.Find(roomId);
                     if (room == null)
                         return new List<MealPlanDay>();
 
-                    // Вычисляем количество дней
                     int totalDays = (room.EndDate.ToDateTime(TimeOnly.MinValue) -
                                     room.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1;
 
                     var result = new List<MealPlanDay>();
 
-                    // Получаем всех участников комнаты
                     var participantIdsInRoom = ctx.Participants
                         .Where(p => p.HikeRoomId == roomId)
                         .Select(p => p.ParticipantId)
                         .ToList();
 
-                    // Получаем все рецепты для комнаты
                     var allRecipeEntries = ctx.HikeRoomsRecipes
                         .Where(hrr => hrr.HikeRoomId == roomId)
                         .Include(hrr => hrr.Recipe)
@@ -1171,7 +1043,6 @@ namespace TrackSync.DataBase.WorkWithDB
                             g => g.FirstOrDefault()
                         );
 
-                    // Получаем всех ответственных для рецептов в этой комнате
                     var allResponsibleParticipants = new Dictionary<int, List<RecipesParticipant>>();
 
                     foreach (var recipeEntry in allRecipeEntries.Values)
@@ -1189,7 +1060,6 @@ namespace TrackSync.DataBase.WorkWithDB
                         }
                     }
 
-                    // Создаём дни
                     for (int i = 0; i < totalDays; i++)
                     {
                         var date = room.StartDate.AddDays(i);
@@ -1199,7 +1069,6 @@ namespace TrackSync.DataBase.WorkWithDB
                             Date = date
                         };
 
-                        // Создаём приёмы пищи
                         var mealTypes = new[]
                         {
                     new { TypeMealId = 1, MealName = "Завтрак", Tag = $"breakfast_day{i + 1}" },
@@ -1215,13 +1084,11 @@ namespace TrackSync.DataBase.WorkWithDB
                                 TypeMealId = mealType.TypeMealId
                             };
 
-                            // Ищем рецепт для этого приёма пищи в этот день
                             var key = new { MealDate = date, mealType.TypeMealId };
                             if (allRecipeEntries.TryGetValue(key, out var recipeEntry) && recipeEntry != null)
                             {
                                 meal.Recipe = recipeEntry.Recipe;
 
-                                // Получаем ответственных для этого рецепта
                                 if (allResponsibleParticipants.TryGetValue(recipeEntry.RecipeId, out var responsible))
                                 {
                                     meal.ResponsibleParticipants = responsible;
@@ -1273,8 +1140,8 @@ namespace TrackSync.DataBase.WorkWithDB
                     return ctx.Tracks
                         .AsNoTracking()
                         .Where(t => t.HikeRoomId == roomId)
-                        .Include(t => t.Participant)          // Загружаем участника
-                            .ThenInclude(p => p.User)         // Внутри участника загружаем пользователя
+                        .Include(t => t.Participant)         
+                            .ThenInclude(p => p.User)         
                         .Include(t => t.Segments)
                             .ThenInclude(s => s.StartWaypoint)
                         .Include(t => t.Segments)
@@ -1294,17 +1161,15 @@ namespace TrackSync.DataBase.WorkWithDB
             {
                 using (var ctx = new TrackSyncContext())
                 {
-                    // Отключаем отслеживание и ленивую загрузку для этого запроса
                     return ctx.Participants
                         .AsNoTracking()
                         .Where(p => p.UserId == userId && p.HikeRoomId == roomId)
-                        .Select(p => p.ParticipantId) // Берем только ID, не загружая весь объект
+                        .Select(p => p.ParticipantId) 
                         .FirstOrDefault();
                 }
             }
             catch (Exception ex)
             {
-                // Логируем в консоль, чтобы не спамить месседжбоксами при частых вызовах
                 Console.WriteLine($"Ошибка при поиске участника: {ex.Message}");
                 return 0;
             }

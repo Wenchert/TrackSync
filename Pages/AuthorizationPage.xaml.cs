@@ -68,21 +68,16 @@ namespace TrackSync.Pages
         {
             _isLoginMode = isLogin;
 
-            // Обновление цветов заголовков
             LoginTitle.Foreground = isLogin ? new SolidColorBrush(Color.FromRgb(52, 152, 219)) : new SolidColorBrush(Color.FromRgb(149, 165, 166));
             RegisterTitle.Foreground = isLogin ? new SolidColorBrush(Color.FromRgb(149, 165, 166)) : new SolidColorBrush(Color.FromRgb(52, 152, 219));
 
-            // Показ/скрытие дополнительных полей
             NamePanel.Visibility = isLogin ? Visibility.Collapsed : Visibility.Visible;
             HeightWeightPanel.Visibility = isLogin ? Visibility.Collapsed : Visibility.Visible;
 
-            // Обновление текста кнопки
             AuthButton.Content = isLogin ? "Войти" : "Зарегистрироваться";
 
-            // Очистка сообщений об ошибках при переключении
             ErrorMessage.Visibility = Visibility.Collapsed;
 
-            // Если панель блокировки видна, скрываем поля ввода
             if (IpBlockPanel.Visibility == Visibility.Visible)
             {
                 LoginPanel.Visibility = Visibility.Collapsed;
@@ -107,7 +102,7 @@ namespace TrackSync.Pages
             }
         }
 
-        // Ввод - только цифры
+        // Ввод только цифры
         private void NumberPreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             foreach (char c in e.Text)
@@ -137,21 +132,20 @@ namespace TrackSync.Pages
 
             if (_isLoginMode)
             {
-                // ЛОГИНИЗАЦИЯ
+                // Авторизация
                 if (ValidateLoginFields())
                 {
                     string ipAddress = await NetworkHelper.GetExternalIpAddressAsync();
 
                     using var ctx = new TrackSyncContext();
 
-                    // Чистим старые записи
                     CleanOldLoginAttempts(ctx, ipAddress);
 
                     BlockUser(ctx, ipAddress);
 
                     var user = ctx.Users.FirstOrDefault(u => u.Email == LoginText.Text);
 
-                    // Проверяем пароль через BCrypt и существование логина в БД
+                    // Проверяем пароль
                     if (user != null && BCrypt.Net.BCrypt.Verify(PasswordText.Password, user.Password))
                     {
                         // Успешный вход
@@ -175,7 +169,7 @@ namespace TrackSync.Pages
             }
             else
             {
-                // РЕГИСТРАЦИЯ 
+                // Регистрация
                 if (!ValidateLoginFields() || !ValidateSignUpFields())
                     return;
 
@@ -190,8 +184,8 @@ namespace TrackSync.Pages
                 // Создаём нового пользователя
                 var newUser = new User(
                     password: PasswordText.Password,
-                    name: NameText.Text,           // Имя/ФИО
-                    email: LoginText.Text,         // Почта
+                    name: NameText.Text,           
+                    email: LoginText.Text,        
                     weight: int.Parse(WeightText.Text),
                     height: int.Parse(HeightText.Text)
                 );
@@ -202,7 +196,6 @@ namespace TrackSync.Pages
                 // Создание сессии
                 SessionManager.CurrentUser = newUser;
 
-                // Успешная регистрация — переход на главную
                 FrameContext.MainWindowFrame.Navigate(new MainPage());
             }
         }
@@ -254,10 +247,9 @@ namespace TrackSync.Pages
                 .Where(a => a.IpAddress == currentUserIp)
                 .Max(a => (DateTime?)a.AttemptTime);
 
-            // Если последняя попытка была более 15 минут назад (или её не было)
             if (lastAttemptTime == null || lastAttemptTime < cutoffDate)
             {
-                // Удаляем ВСЕ записи для этого IP
+                // Удаляем все записи для этого IP
                 var attemptsToDelete = ctx.Loginattempts
                     .Where(a => a.IpAddress == currentUserIp);
 

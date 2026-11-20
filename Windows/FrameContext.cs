@@ -6,7 +6,6 @@ namespace TrackSync.Windows
     {
         public static Frame MainWindowFrame { get; set; }
 
-        // Утилитный метод для навигации на авторизацию
         public static void NavigateToAuthorization()
         {
             if (MainWindowFrame?.Parent is MainWindow mainWindow)
@@ -15,7 +14,6 @@ namespace TrackSync.Windows
             }
         }
 
-        // Утилитный метод для навигации на главную
         public static void NavigateToMainPage()
         {
             if (MainWindowFrame?.Parent is MainWindow mainWindow)

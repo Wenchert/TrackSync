@@ -78,7 +78,7 @@
                     <TextBlock Grid.Column="1" 
                                Style="{StaticResource BodyText}" 
                                FontWeight="SemiBold"
-                               Text="Email пользователя"/>
+                               Text="Пользователи"/>
                 </Grid>
 
                 <!-- Разделитель -->
@@ -88,13 +88,13 @@
 
                 <!-- Динамический список пользователей -->
                 <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-                    <ItemsControl x:Name="UsersListBox" MaxHeight="300">
+                    <ItemsControl x:Name="UsersListBox">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border x:Name="UserBorder"
                                         Style="{StaticResource NotificationItemStyle}" 
                                         Margin="0,0,0,8"
-                                        Height="50"
+                                        MinHeight="60"
                                         MouseLeftButtonDown="UserItem_MouseLeftButtonDown"
                                         Tag="{Binding}">
                                     <Grid>
@@ -109,11 +109,19 @@
                                                   VerticalAlignment="Center"
                                                   HorizontalAlignment="Center"
                                                   Click="UserCheckBox_Click"/>
-
-                                        <TextBlock Grid.Column="1" 
+                                        
+                                        <StackPanel Grid.Column="1" >
+                                            <TextBlock 
                                                    Style="{StaticResource BodyText}" 
                                                    VerticalAlignment="Center"
-                                                   Text="{Binding User.Email}"/>
+                                                   Text="{Binding User.Name}"/>
+                                            <TextBlock 
+                                                   Style="{StaticResource BodyText}" 
+                                                   VerticalAlignment="Center"
+                                                   Text="{Binding User.Email}"
+                                                   Foreground="#7F8C8D"
+                                                   FontSize="13"/>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                                 <DataTemplate.Triggers>

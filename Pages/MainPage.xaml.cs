@@ -18,7 +18,6 @@ namespace TrackSync.Pages
         {
             LoadUserName();
 
-            // Подписываемся на событие изменения уведомлений
             if (NotificationsControl != null)
             {
                 NotificationsControl.InvitationsChanged += NotificationsControl_InvitationsChanged;
@@ -27,55 +26,39 @@ namespace TrackSync.Pages
 
         private void NotificationsControl_InvitationsChanged(object sender, EventArgs e)
         {
-            // Обновляем список предстоящих походов
             if (UpcomingHikesControl != null)
             {
                 UpcomingHikesControl.LoadRooms();
             }
         }
 
-        /// <summary>
-        /// Загружает имя пользователя из сессии и обновляет приветствие
-        /// </summary>
         private void LoadUserName()
         {
             try
             {
-                // Получаем текущего пользователя из сессии
                 var currentUser = SessionManager.CurrentUser;
 
                 if (currentUser != null && !string.IsNullOrWhiteSpace(currentUser.Name))
                 {
-                    // Формируем приветствие с именем пользователя
                     WelcomeTextBlock.Text = $"Добро пожаловать, {currentUser.Name}";
                 }
             }
             catch (System.Exception ex)
             {
-                // В случае ошибки показываем стандартное приветствие
                 WelcomeTextBlock.Text = "Добро пожаловать!";
             }
         }
 
-        /// <summary>
-        /// Обработчик клика по элементу комнаты
-        /// </summary>
         private void RoomItem_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             OpenRoomFromSender(sender);
         }
 
-        /// <summary>
-        /// Обработчик клика по кнопке открытия комнаты
-        /// </summary>
         private void OpenRoomButton_Click(object sender, RoutedEventArgs e)
         {
             OpenRoomFromSender(sender);
         }
 
-        /// <summary>
-        /// Общий метод для открытия комнаты
-        /// </summary>
         private void OpenRoomFromSender(object sender)
         {
             int roomId = 0;
@@ -89,13 +72,14 @@ namespace TrackSync.Pages
                 FrameContext.MainWindowFrame.Navigate(new HikeRoomPage(roomId));
         }
 
-        /// <summary>
-        /// Обработчик выбора комнаты
-        /// </summary>
         private void UpcomingHikesControl_RoomSelected(object sender, HikeRoomEventArgs e)
         {
-            // Переход на страницу деталей похода
             NavigationService?.Navigate(new HikeRoomPage(e.RoomId));
+        }
+
+        private void NotificationsControl_Loaded(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

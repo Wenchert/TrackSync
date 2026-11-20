@@ -53,12 +53,10 @@ namespace TrackSync.Windows
 
                 if (string.IsNullOrWhiteSpace(searchText))
                 {
-                    // Показываем все комнаты
                     SidebarRoomsListBox.ItemsSource = _allRooms;
                 }
                 else
                 {
-                    // Фильтруем по названию
                     var filteredRooms = _allRooms
                         .Where(room => room.Title?.ToLower().Contains(searchText) == true)
                         .ToList();
@@ -91,7 +89,6 @@ namespace TrackSync.Windows
                     .Include(r => r.Status)
                     .FirstOrDefault(r => r.HikeRoomId == roomId);
 
-                // КРИТИЧЕСКИ ВАЖНО: проверка на null
                 if (room == null)
                 {
                     MessageBox.Show("Комната не найдена", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -119,7 +116,6 @@ namespace TrackSync.Windows
         {
             HidePasswordPanel();
 
-            // Обновляем макет, чтобы все контейнеры сгенерировались
             SidebarRoomsListBox.UpdateLayout();
 
             var passwordPanel = FindPasswordPanelForRoom(roomId);
@@ -128,7 +124,6 @@ namespace TrackSync.Windows
                 passwordPanel.Visibility = Visibility.Visible;
                 _passwordRoomId = roomId;
 
-                // Фокус на поле ввода пароля
                 var passwordBox = FindChild<PasswordBox>(passwordPanel, "RoomPasswordBox");
                 passwordBox?.Focus();
             }
@@ -150,20 +145,16 @@ namespace TrackSync.Windows
             }
         }
 
-        // Найти панель пароля для конкретной комнаты (ИСПРАВЛЕННЫЙ МЕТОД)
+        // Найти панель пароля для конкретной комнаты
         private StackPanel FindPasswordPanelForRoom(int roomId)
         {
-            // Перебираем ВСЕ контейнеры в списке
             for (int i = 0; i < SidebarRoomsListBox.Items.Count; i++)
             {
-                // Получаем контейнер элемента списка
                 var container = SidebarRoomsListBox.ItemContainerGenerator.ContainerFromIndex(i) as ListBoxItem;
                 if (container == null) continue;
 
-                // Проверяем, что контейнер содержит нужную комнату
                 if (container.Content is HikeRoom room && room.HikeRoomId == roomId)
                 {
-                    // Ищем панель пароля внутри контейнера
                     return FindChild<StackPanel>(container, "PasswordPanel");
                 }
             }
@@ -223,18 +214,15 @@ namespace TrackSync.Windows
                     return;
                 }
 
-                // Проверяем пароль
                 if (VerifyRoomPassword(roomId, password))
                 {
-                    // Пароль верный - присоединяемся к комнате
                     if (AddUserToRoomDirectly(roomId))
                     {
-                        // Успешное присоединение - скрываем панель и переходим в комнату
                         HidePasswordPanel();
                         isSidebarOpen = false;
                         SidebarPanel.Visibility = Visibility.Collapsed;
                         mainWindow.Navigate(new HikeRoomPage(roomId));
-                        LoadSidebarRooms(); // Обновляем список комнат
+                        LoadSidebarRooms();
                     }
                     else
                     {
@@ -270,7 +258,6 @@ namespace TrackSync.Windows
                     return false;
                 }
 
-                // Удаляем пробелы в начале и конце
                 string trimmedPassword = password.Trim();
 
                 bool result = BCrypt.Net.BCrypt.EnhancedVerify(trimmedPassword, room.Password);
@@ -283,6 +270,7 @@ namespace TrackSync.Windows
             }
         }
 
+        // Добавление участников
         private bool AddUserToRoomDirectly(int roomId)
         {
             try
@@ -309,6 +297,7 @@ namespace TrackSync.Windows
             }
         }
 
+         // Отправка заявки на вступление в комнату
         private void SendJoinRequest(HikeRoom room)
         {
             try
@@ -336,7 +325,6 @@ namespace TrackSync.Windows
                               $"Ожидайте подтверждения от администратора.",
                               "Заявка отправлена", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                // Обновляем список комнат
                 LoadSidebarRooms();
             }
             catch (Exception ex)
@@ -346,7 +334,7 @@ namespace TrackSync.Windows
             }
         }
 
-        // Проверка наличия ожидающей заявки
+        // Проверка наличия заявки
         private bool HasPendingRequest(int roomId)
         {
             try
@@ -386,7 +374,7 @@ namespace TrackSync.Windows
             LoadSidebarRooms(); // Обновляем список комнат
         }
 
-        // === ЛОГИКА БОКОВОЙ ПАНЕЛИ ===
+        // Логика для боковой панели
         private void SidebarToggleBtn_Click(object sender, RoutedEventArgs e)
         {
             LoadSidebarRooms();
@@ -394,7 +382,7 @@ namespace TrackSync.Windows
             SidebarPanel.Visibility = isSidebarOpen ? Visibility.Visible : Visibility.Collapsed;
         }
 
-        // === ОБРАБОТЧИКИ СОБЫТИЙ САЙДБАРА ===
+        // Логика создания комнаты
         private void CreateRoomMenuBtn_Click(object sender, RoutedEventArgs e)
         {
             isSidebarOpen = false;
@@ -402,6 +390,7 @@ namespace TrackSync.Windows
             mainWindow.Navigate(new CreateRoomPage());
         }
 
+        // Логика для рецептов
         private void RecipesCatalogBtn_Click(object sender, RoutedEventArgs e)
         {
             isSidebarOpen = false;
@@ -409,6 +398,7 @@ namespace TrackSync.Windows
             FrameContext.MainWindowFrame.Navigate(new CreateRecipePage());
         }
 
+        // Логика для снаряжения
         private void EquipmentCatalogBtn_Click(object sender, RoutedEventArgs e)
         {
             isSidebarOpen = false;
@@ -416,14 +406,13 @@ namespace TrackSync.Windows
             FrameContext.MainWindowFrame.Navigate(new CreateEquipmentPage());
         }
 
-        // === ОБРАБОТЧИКИ ХЕДЕРА ===
-
+        //  Навигация на профиль
         private void ProfileBtn_Click(object sender, RoutedEventArgs e)
         {
             FrameContext.MainWindowFrame.Navigate(new ProfileSettingsPage());
         }
 
-        // === ОБРАБОТЧИКИ ФУТЕРА ===
+        // Обработка ссылок на VK и Telegram
         private void VkBtn_Click(object sender, RoutedEventArgs e)
         {
             try

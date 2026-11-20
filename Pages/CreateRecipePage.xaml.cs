@@ -18,13 +18,10 @@ namespace TrackSync.Pages
 {
     public partial class CreateRecipePage : Page, IRecipeIngredientCallback
     {
-        private readonly int? _editingRecipeId; // ID редактируемого рецепта
-        private readonly bool _isEditMode; // Флаг режима редактирования
+        private readonly int? _editingRecipeId;
+        private readonly bool _isEditMode; 
         private readonly List<IngredientQuantityItem> _selectedIngredients = new();
 
-        /// <summary>
-        /// Конструктор для создания НОВОГО рецепта
-        /// </summary>
         public CreateRecipePage()
         {
             InitializeComponent();
@@ -32,9 +29,6 @@ namespace TrackSync.Pages
             InitializePage();
         }
 
-        /// <summary>
-        /// Конструктор для РЕДАКТИРОВАНИЯ существующего рецепта
-        /// </summary>
         public CreateRecipePage(Recipe recipe)
         {
             InitializeComponent();
@@ -42,25 +36,19 @@ namespace TrackSync.Pages
             _isEditMode = true;
             InitializePage();
 
-            // Загружаем данные для редактирования
             LoadRecipeData();
         }
 
-        /// <summary>
-        /// Инициализация страницы (заголовок и кнопка)
-        /// </summary>
         private void InitializePage()
         {
             if (_isEditMode)
             {
-                // Изменяем заголовок страницы
                 var titleBlock = this.FindName("PageTitle") as TextBlock;
                 if (titleBlock != null)
                 {
                     titleBlock.Text = "Редактирование рецепта";
                 }
 
-                // Меняем текст кнопки
                 var createButtonContent = CreateButton.Content as TextBlock;
                 if (createButtonContent != null)
                 {
@@ -69,9 +57,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Загрузка данных рецепта из БД с ингредиентами
-        /// </summary>
         private void LoadRecipeData()
         {
             try
@@ -89,12 +74,10 @@ namespace TrackSync.Pages
                         return;
                     }
 
-                    // Заполняем основные поля
                     TitleTextBox.Text = recipe.Title;
                     TimeTextBox.Text = recipe.Time.ToString();
                     DescriptionTextBox.Text = recipe.Description ?? string.Empty;
 
-                    // Загружаем ингредиенты
                     _selectedIngredients.Clear();
                     foreach (var ir in recipe.IngredientsRecipes)
                     {
@@ -108,7 +91,6 @@ namespace TrackSync.Pages
                             });
                         }
                     }
-                    // Обновляем интерфейс
                     UpdateIngredientsUI();
                 }
             }
@@ -118,7 +100,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Реализация интерфейса для получения выбранных ингредиентов
         public void OnIngredientsSelected(List<Ingredient> ingredients)
         {
             if (ingredients == null || ingredients.Count == 0)
@@ -229,14 +210,13 @@ namespace TrackSync.Pages
         {
             if (sender is TextBox textBox && textBox.Tag is IngredientQuantityItem item)
             {
-                // Если поле пустое, устанавливаем 0
                 if (string.IsNullOrWhiteSpace(textBox.Text))
                 {
                     item.Quantity = 0;
-                    return;  // Выходим раньше, не заменяем текст
+                    return; 
                 }
 
-                if (int.TryParse(textBox.Text, out int quantity) && quantity >= 0)  // Разрешаем 0
+                if (int.TryParse(textBox.Text, out int quantity) && quantity >= 0)
                 {
                     item.Quantity = quantity;
                 }
@@ -292,7 +272,6 @@ namespace TrackSync.Pages
                 {
                     if (_isEditMode)
                     {
-                        // ===== РЕДАКТИРОВАНИЕ =====
                         var recipeToUpdate = ctx.Recipes
                             .Include(r => r.IngredientsRecipes)
                             .FirstOrDefault(r => r.RecipeId == _editingRecipeId);
@@ -303,21 +282,18 @@ namespace TrackSync.Pages
                             return;
                         }
 
-                        // Обновляем основные поля
                         recipeToUpdate.Title = TitleTextBox.Text.Trim();
                         recipeToUpdate.Time = int.Parse(TimeTextBox.Text);
                         recipeToUpdate.Description = string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
                             ? null
                             : DescriptionTextBox.Text.Trim();
 
-                        // Удаляем старые связи ингредиентов
                         var existingLinks = ctx.IngredientsRecipes
                             .Where(ir => ir.RecipeId == _editingRecipeId)
                             .ToList();
 
                         ctx.IngredientsRecipes.RemoveRange(existingLinks);
 
-                        // Добавляем новые связи
                         foreach (var item in _selectedIngredients)
                         {
                             ctx.IngredientsRecipes.Add(new IngredientsRecipe
@@ -332,7 +308,6 @@ namespace TrackSync.Pages
                     }
                     else
                     {
-                        // ===== СОЗДАНИЕ =====
                         var newRecipe = new Recipe
                         {
                             Title = TitleTextBox.Text.Trim(),
@@ -346,7 +321,6 @@ namespace TrackSync.Pages
                         ctx.Recipes.Add(newRecipe);
                         ctx.SaveChanges();
 
-                        // Сохраняем ингредиенты
                         foreach (var item in _selectedIngredients)
                         {
                             ctx.IngredientsRecipes.Add(new IngredientsRecipe
@@ -431,12 +405,11 @@ namespace TrackSync.Pages
             ErrorMessage.Visibility = Visibility.Collapsed;
         }
 
-        // Улучшенный вспомогательный класс с поддержкой ID связи для редактирования
         private class IngredientQuantityItem
         {
             public Ingredient Ingredient { get; set; }
             public int Quantity { get; set; }
-            public int? OriginalRecipeIngredientId { get; set; } // ID существующей связи (для редактирования)
+            public int? OriginalRecipeIngredientId { get; set; }
         }
     }
 }

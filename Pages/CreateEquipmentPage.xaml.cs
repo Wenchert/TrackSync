@@ -13,12 +13,9 @@ namespace TrackSync.Pages
 {
     public partial class CreateEquipmentPage : Page
     {
-        private readonly Equipment _editingEquipment; // Снаряжение для редактирования (если есть)
-        private readonly bool _isEditMode; // Флаг режима редактирования
+        private readonly Equipment _editingEquipment; 
+        private readonly bool _isEditMode; 
 
-        /// <summary>
-        /// Конструктор для создания НОВОГО снаряжения
-        /// </summary>
         public CreateEquipmentPage()
         {
             InitializeComponent();
@@ -26,9 +23,6 @@ namespace TrackSync.Pages
             InitializePage();
         }
 
-        /// <summary>
-        /// Конструктор для РЕДАКТИРОВАНИЯ существующего снаряжения
-        /// </summary>
         public CreateEquipmentPage(Equipment equipment)
         {
             InitializeComponent();
@@ -37,15 +31,10 @@ namespace TrackSync.Pages
             InitializePage();
         }
 
-        /// <summary>
-        /// Инициализация страницы (заголовок и поля)
-        /// </summary>
         private void InitializePage()
         {
             if (_isEditMode)
             {
-                // Режим РЕДАКТИРОВАНИЯ
-                // Изменяем заголовок страницы
                 var titleBlock = this.FindName("TitleText") as TextBlock;
                 if (titleBlock != null)
                 {
@@ -90,13 +79,11 @@ namespace TrackSync.Pages
             }
             else
             {
-                // Режим СОЗДАНИЯ - всё по умолчанию
+
             }
         }
 
-        /// <summary>
-        /// Вспомогательный метод для поиска дочерних элементов
-        /// </summary>
+
         private static System.Collections.Generic.IEnumerable<T> FindVisualChildren<T>(DependencyObject depObj) where T : DependencyObject
         {
             if (depObj != null)
@@ -117,7 +104,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Методы для работы с сообщением об ошибке
         private void ErrorMessageVisible(string message)
         {
             if (ErrorMessage != null)
@@ -135,7 +121,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Ввод - только цифры для поля веса
         private void WeightTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             foreach (char c in e.Text)
@@ -149,7 +134,6 @@ namespace TrackSync.Pages
             ErrorMessageHide();
         }
 
-        // Сохранение снаряжения (создание или редактирование)
         private void CreateButton_Click(object sender, RoutedEventArgs e)
         {
             ErrorMessageHide();
@@ -163,7 +147,6 @@ namespace TrackSync.Pages
                 {
                     if (_isEditMode)
                     {
-                        // ===== РЕДАКТИРОВАНИЕ =====
                         var equipmentToUpdate = ctx.Equipments
                             .FirstOrDefault(e => e.EquipmentId == _editingEquipment.EquipmentId);
 
@@ -177,7 +160,6 @@ namespace TrackSync.Pages
                     }
                     else
                     {
-                        // ===== СОЗДАНИЕ =====
                         var newEquipment = new Equipment(
                             title: NameTextBox.Text.Trim(),
                             weight: int.Parse(WeightTextBox.Text),

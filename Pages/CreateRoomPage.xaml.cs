@@ -14,7 +14,6 @@ namespace TrackSync.Pages
         {
             InitializeComponent();
 
-            // Устанавливаем начальные значения инициализации компонентов
             InitializeDefaultValues();
         }
 
@@ -25,13 +24,11 @@ namespace TrackSync.Pages
             StartDatePicker.SelectedDate = DateTime.Today;
             EndDatePicker.SelectedDate = DateTime.Today.AddDays(7);
 
-            // Устанавливаем публичный тип комнаты по умолчанию
             if (PublicRoomRadio != null)
             {
                 PublicRoomRadio.IsChecked = true;
             }
 
-            // Скрываем панель пароля
             if (PasswordPanel != null)
             {
                 PasswordPanel.Visibility = Visibility.Collapsed;
@@ -41,7 +38,6 @@ namespace TrackSync.Pages
         // Обработчик изменения типа комнаты
         private void RoomTypeRadio_Checked(object sender, RoutedEventArgs e)
         {
-            // Проверяем, что элементы инициализированы
             if (PrivateRoomRadio == null || PublicRoomRadio == null || PasswordPanel == null)
                 return;
 
@@ -52,7 +48,6 @@ namespace TrackSync.Pages
             ErrorMessageHide();
         }
 
-        // Обработчики для скрытия ошибок при вводе
         private void TitleTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             ErrorMessageHide();
@@ -110,10 +105,9 @@ namespace TrackSync.Pages
                     passwordHash = BCrypt.Net.BCrypt.EnhancedHashPassword(PasswordBox.Password);
                 }
 
-                // Создаем новую комнату (статус "Планирование" = ID 1)
                 var newRoom = new HikeRoom(
-                    statusId: 1, // "Планирование" из таблицы Statuses
-                    accessType: PublicRoomRadio.IsChecked.Value, // true = публичная
+                    statusId: 1,
+                    accessType: PublicRoomRadio.IsChecked.Value,
                     title: TitleTextBox.Text.Trim(),
                     startDate: DateOnly.FromDateTime(StartDatePicker.SelectedDate.Value.Date),
                     endDate: DateOnly.FromDateTime(EndDatePicker.SelectedDate.Value.Date),
@@ -127,7 +121,6 @@ namespace TrackSync.Pages
                 ctx.HikeRooms.Add(newRoom);
                 ctx.SaveChanges();
 
-                // Автоматически добавляем создателя как лидера с полными правами
                 var participant = new Participant(
                     userId: SessionManager.CurrentUserId,
                     hikeRoomId: newRoom.HikeRoomId,
@@ -139,7 +132,6 @@ namespace TrackSync.Pages
                 ctx.Participants.Add(participant);
                 ctx.SaveChanges();
 
-                // Переходим на страницу созданной комнаты
                 FrameContext.MainWindowFrame.Navigate(new HikeRoomPage(newRoom.HikeRoomId));
             }
             catch (Exception ex)
@@ -164,7 +156,6 @@ namespace TrackSync.Pages
         // Валидация формы
         private bool ValidateForm()
         {
-            // Проверка названия
             if (string.IsNullOrWhiteSpace(TitleTextBox?.Text))
             {
                 ErrorMessageVisible("*Пожалуйста, введите название комнаты");
@@ -204,7 +195,7 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка пароля для приватной комнаты (минимум 8 символов!)
+            // Проверка пароля для приватной комнаты
             if (PrivateRoomRadio?.IsChecked == true)
             {
                 if (string.IsNullOrWhiteSpace(PasswordBox?.Password))

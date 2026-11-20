@@ -15,9 +15,6 @@ using System.Windows.Shapes;
 
 namespace TrackSync.Controls
 {
-    /// <summary>
-    /// Логика взаимодействия для MealPlanControl.xaml
-    /// </summary>
     public partial class MealPlanControl : UserControl
     {
         public MealPlanControl()

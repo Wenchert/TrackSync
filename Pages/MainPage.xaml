@@ -47,7 +47,7 @@
                     <ScrollViewer Grid.Row="1" 
                                   VerticalScrollBarVisibility="Auto" 
                                   MaxHeight="400">
-                        <controls:NotificationsPanel x:Name="NotificationsControl" Margin="0,0,0,20"/>
+                        <controls:NotificationsPanel x:Name="NotificationsControl" Margin="0,0,0,20" Loaded="NotificationsControl_Loaded"/>
                     </ScrollViewer>
                 </Grid>
             </Border>

@@ -15,9 +15,6 @@ using System.Windows.Shapes;
 
 namespace TrackSync.Controls
 {
-    /// <summary>
-    /// Логика взаимодействия для IngredientsStatisticsControl.xaml
-    /// </summary>
     public partial class IngredientsStatisticsControl : UserControl
     {
         public IngredientsStatisticsControl()

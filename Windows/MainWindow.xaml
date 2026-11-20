@@ -122,7 +122,7 @@
 
                             <Border Height="1" Background="#E9ECEF" Margin="20,15,20,15"/>
 
-                            <TextBlock Text="Ваши комнаты" Style="{StaticResource BodyText}" 
+                            <TextBlock Text="Общедоступные комнаты" Style="{StaticResource BodyText}" 
                                        FontWeight="SemiBold" Margin="20,0,20,15"/>
                             <ListBox x:Name="SidebarRoomsListBox" 
                                      BorderThickness="0" 

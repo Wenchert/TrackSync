@@ -65,9 +65,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Загрузка ингредиентов из базы данных с учётом фильтрации
-        /// </summary>
         private void LoadIngredients()
         {
             List<Ingredient> ingredientList;
@@ -101,9 +98,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Обработка клика по кнопке "Все"
-        /// </summary>
         private void AllButton_Click(object sender, RoutedEventArgs e)
         {
             _showOnlyMyItems = false;
@@ -111,9 +105,6 @@ namespace TrackSync.Pages
             LoadIngredients();
         }
 
-        /// <summary>
-        /// Обработка клика по кнопке "Мои"
-        /// </summary>
         private void MyButton_Click(object sender, RoutedEventArgs e)
         {
             _showOnlyMyItems = true;
@@ -121,9 +112,6 @@ namespace TrackSync.Pages
             LoadIngredients();
         }
 
-        /// <summary>
-        /// Обновление состояния кнопок фильтрации
-        /// </summary>
         private void UpdateFilterButtons()
         {
             if (AllButton != null && MyButton != null)
@@ -155,9 +143,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Обработка поиска
-        /// </summary>
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_ingredientItems == null)
@@ -179,9 +164,6 @@ namespace TrackSync.Pages
             ErrorMessageHide();
         }
 
-        /// <summary>
-        /// Обработка клика по элементу ингредиента
-        /// </summary>
         private void IngredientItem_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (sender is Border border && border.Tag is IngredientWithSelection item)
@@ -224,9 +206,6 @@ namespace TrackSync.Pages
                 NavigationService.GoBack();
         }
 
-        /// <summary>
-        /// Обработка клика по кнопке редактирования
-        /// </summary>
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is IngredientWithSelection item)
@@ -235,9 +214,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Обработка клика по кнопке удаления
-        /// </summary>
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is IngredientWithSelection item)
@@ -246,9 +222,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Удаление ингредиента
-        /// </summary>
         private void DeleteIngredient(Ingredient ingredient)
         {
             try

@@ -42,7 +42,6 @@ namespace TrackSync.Pages
         private bool _canEditEquipment = false;
         private bool _canEditTrack = false;
 
-        // Вспомогательный класс для хранения снаряжения с количеством
         private class EquipmentQuantityItem
         {
             public Equipment Equipment { get; set; }
@@ -100,7 +99,6 @@ namespace TrackSync.Pages
                     .Select(rp => rp.Participant.User.Name)
                     .ToList() ?? new List<string>();
 
-            // Существующие свойства для общего количества (на всех участников)
             public int TotalCalories => Recipe != null ? CalculateTotalNutrients().Calories : 0;
             public int TotalProteins => Recipe != null ? CalculateTotalNutrients().Proteins : 0;
             public int TotalFats => Recipe != null ? CalculateTotalNutrients().Fats : 0;
@@ -108,13 +106,11 @@ namespace TrackSync.Pages
             public int TotalWeight => Recipe != null ? CalculateTotalWeight() : 0;
             public int WeightPerPerson => Recipe != null ? CalculateWeightPerPerson() : 0;
 
-            // Новые свойства для одного человека
             public int CaloriesPerPerson => Recipe != null ? CalculatePerPersonNutrients().Calories : 0;
             public int ProteinsPerPerson => Recipe != null ? CalculatePerPersonNutrients().Proteins : 0;
             public int FatsPerPerson => Recipe != null ? CalculatePerPersonNutrients().Fats : 0;
             public int CarbsPerPerson => Recipe != null ? CalculatePerPersonNutrients().Carbs : 0;
 
-            // Форматированные текстовые свойства (для привязки в XAML)
             public string WeightPerPersonText => Recipe != null ?
                 $"{TotalWeight}г ({WeightPerPerson}г/чел)" : string.Empty;
 
@@ -148,7 +144,6 @@ namespace TrackSync.Pages
                 {
                     if (ir.Ingredient != null)
                     {
-                        // Расчет на одного человека (без умножения на количество участников)
                         calories += (ir.Ingredient.Calories * ir.Weight) / 100;
                         proteins += (ir.Ingredient.Proteins * ir.Weight) / 100;
                         fats += (ir.Ingredient.Fats * ir.Weight) / 100;
@@ -159,7 +154,6 @@ namespace TrackSync.Pages
                 return (calories, proteins, fats, carbs);
             }
 
-            // Рассчитываем нутриенты для всех участников
             private (int Calories, int Proteins, int Fats, int Carbs) CalculateTotalNutrients()
             {
                 if (Recipe == null || Recipe.IngredientsRecipes == null)
@@ -176,7 +170,6 @@ namespace TrackSync.Pages
                 {
                     if (ir.Ingredient != null)
                     {
-                        // Расчет на всех участников
                         calories += (ir.Ingredient.Calories * ir.Weight * participantCount) / 100;
                         proteins += (ir.Ingredient.Proteins * ir.Weight * participantCount) / 100;
                         fats += (ir.Ingredient.Fats * ir.Weight * participantCount) / 100;
@@ -227,7 +220,6 @@ namespace TrackSync.Pages
                 }
             }
 
-            // Также добавьте свойство для отображения описания
             public string RecipeDescription => Recipe?.Description;
         }
 
@@ -301,7 +293,6 @@ namespace TrackSync.Pages
             LoadParticipants();
             LoadMealPlan();
 
-            // Сначала загружаем карту, потом обновляем
             RefreshMap();
 
             Dispatcher.BeginInvoke(() =>
@@ -326,21 +317,17 @@ namespace TrackSync.Pages
         {
             var (canEditMealPlan, canEditEquipment, canEditTrack) = GetCurrentUserPermissions();
 
-            // Сохраняем права в полях класса для использования в других методах
             _canEditMealPlan = canEditMealPlan;
             _canEditEquipment = canEditEquipment;
             _canEditTrack = canEditTrack;
 
-            // 1. Кнопки управления маршрутом
             SaveRouteButton.Visibility = canEditTrack ? Visibility.Visible : Visibility.Collapsed;
             UndoRouteButton.Visibility = canEditTrack ? Visibility.Visible : Visibility.Collapsed;
             ClearRouteButton.Visibility = canEditTrack ? Visibility.Visible : Visibility.Collapsed;
             MyRouteBuilder.SetPermissions(canEditTrack);
 
-            // 2. Кнопка "Сохранить изменения" снаряжения
             SaveChangesButton.Visibility = canEditEquipment ? Visibility.Visible : Visibility.Collapsed;
 
-            // 3. Кнопки "Добавить снаряжение" для каждого участника
             if (ParticipantsItemsControl.IsLoaded)
             {
                 foreach (var item in ParticipantsItemsControl.Items)
@@ -358,10 +345,8 @@ namespace TrackSync.Pages
                 }
             }
 
-            // 4. Обновляем права для снаряжения
             UpdateEquipmentPermissions(canEditEquipment);
 
-            // 5. Обновляем права для раскладки
             UpdateMealPlanPermissions(canEditMealPlan);
         }
 
@@ -378,7 +363,6 @@ namespace TrackSync.Pages
                 return;
             }
 
-            // Правильно вычисляем количество дней
             int totalDays = (room.EndDate.ToDateTime(TimeOnly.MinValue) -
                            room.StartDate.ToDateTime(TimeOnly.MinValue)).Days + 1;
 
@@ -386,7 +370,6 @@ namespace TrackSync.Pages
 
             if (mealPlanData == null || !mealPlanData.Any())
             {
-                // Создаем базовую структуру
                 _allDays = new List<DayViewModel>();
 
                 for (int i = 0; i < totalDays; i++)
@@ -429,7 +412,6 @@ namespace TrackSync.Pages
             }
             else
             {
-                // Преобразуем данные в DayViewModel
                 _allDays = new List<DayViewModel>();
 
                 foreach (var dayData in mealPlanData)
@@ -478,10 +460,8 @@ namespace TrackSync.Pages
                     _allDays.Add(day);
                 }
 
-                // Проверяем, что все дни из диапазона присутствуют
                 if (_allDays.Count < totalDays)
                 {
-                    // Дополняем недостающие дни
                     for (int dayNum = 1; dayNum <= totalDays; dayNum++)
                     {
                         if (!_allDays.Any(d => d.DayNumber == dayNum))
@@ -523,7 +503,6 @@ namespace TrackSync.Pages
                         }
                     }
 
-                    // Сортируем дни по номеру
                     _allDays = _allDays.OrderBy(d => d.DayNumber).ToList();
                 }
 
@@ -534,8 +513,7 @@ namespace TrackSync.Pages
 
             }
 
-            // Кнопки дней: показываем ВСЕ дни
-            DaysButtonsControl.ItemsSource = null; // Сначала очищаем
+            DaysButtonsControl.ItemsSource = null;
             DaysButtonsControl.ItemsSource = _allDays;
 
             Dispatcher.BeginInvoke(() =>
@@ -543,26 +521,21 @@ namespace TrackSync.Pages
                 ApplyPermissions();
             }, System.Windows.Threading.DispatcherPriority.Render);
 
-            // Контент: показываем первый день
             ShowCurrentDay(1);
 
-            // Принудительно обновляем интерфейс
             Dispatcher.BeginInvoke(() =>
             {
                 ActivateDayButton(1);
             }, System.Windows.Threading.DispatcherPriority.Render);
         }
-        // Загрузка участников комнаты со снаряжением
         private void LoadParticipants()
         {
             var participants = TrackSyncManagerList.GetParticipantsWithEquipment(_roomId);
 
             if (participants != null && participants.Any())
             {
-                // Очищаем словарь перед загрузкой новых данных
                 _participantEquipment.Clear();
 
-                // Загружаем снаряжение для каждого участника из БД
                 foreach (var participant in participants)
                 {
                     var equipmentList = new List<EquipmentQuantityItem>();
@@ -578,19 +551,15 @@ namespace TrackSync.Pages
                         }
                     }
 
-                    // Сохраняем список снаряжения для участника в словарь
                     _participantEquipment[participant.ParticipantId] = equipmentList;
                 }
 
-                // Устанавливаем источник данных для отображения участников
                 ParticipantsItemsControl.ItemsSource = participants;
 
-                // Подписываемся на событие загрузки контейнера для отложенного обновления интерфейса
                 ParticipantsItemsControl.Loaded += (s, e) =>
                 {
                     Dispatcher.BeginInvoke(new Action(() =>
                     {
-                        // Дожидаемся полной загрузки ВСЕХ визуальных контейнеров
                         int attempts = 0;
                         var timer = new System.Windows.Threading.DispatcherTimer
                         {
@@ -601,7 +570,6 @@ namespace TrackSync.Pages
                         {
                             attempts++;
 
-                            // Проверяем, созданы ли контейнеры для всех участников
                             bool allContainersReady = true;
                             foreach (var item in participants)
                             {
@@ -613,12 +581,10 @@ namespace TrackSync.Pages
                                 }
                             }
 
-                            // Если все контейнеры готовы или превышено время ожидания (1 секунда)
                             if (allContainersReady || attempts > 20)
                             {
                                 timer.Stop();
 
-                                // Обновляем интерфейс снаряжения для КАЖДОГО участника
                                 foreach (var participant in participants)
                                 {
                                     UpdateEquipmentUI(participant.ParticipantId);
@@ -632,22 +598,19 @@ namespace TrackSync.Pages
                 };
             }
         }
-        // Загрузка ингредиентов для статистики
+
         private void LoadIngredientsStatistics()
         {
             try
             {
                 using var ctx = new TrackSyncContext();
 
-                // Получаем количество участников
                 int participantsCount = ctx.Participants
                     .Count(p => p.HikeRoomId == _roomId);
 
-                // Обновляем отображение количества участников
                 if (ParticipantsCountRun != null)
                     ParticipantsCountRun.Text = participantsCount.ToString();
 
-                // Получаем все рецепты, используемые в этой комнате
                 var roomRecipes = ctx.HikeRoomsRecipes
                     .Include(hrr => hrr.Recipe)
                         .ThenInclude(r => r.IngredientsRecipes)
@@ -655,7 +618,6 @@ namespace TrackSync.Pages
                     .Where(hrr => hrr.HikeRoomId == _roomId)
                     .ToList();
 
-                // Если нет рецептов, показываем сообщение
                 if (!roomRecipes.Any())
                 {
                     NoIngredientsText.Visibility = Visibility.Visible;
@@ -667,7 +629,6 @@ namespace TrackSync.Pages
 
                 NoIngredientsText.Visibility = Visibility.Collapsed;
 
-                // Собираем статистику по ингредиентам
                 var ingredientStats = new Dictionary<int, IngredientStatItem>();
                 var recipeUsageCount = new Dictionary<int, int>();
 
@@ -683,18 +644,13 @@ namespace TrackSync.Pages
                         var ingredient = ingredientRecipe.Ingredient;
                         if (ingredient == null) continue;
 
-                        // Рассчитываем общий вес для всех участников
-                        // ingredientRecipe.Weight - вес на одного человека в граммах
                         int totalWeightForAllParticipants = ingredientRecipe.Weight * participantsCount;
 
-                        // Рассчитываем стоимость
-                        // Предполагаем, что Price в модели Ingredient - это цена за 100 грамм
                         decimal costPer100g = ingredient.Price;
                         decimal costForIngredient = (costPer100g * totalWeightForAllParticipants) / 100;
 
                         if (ingredientStats.ContainsKey(ingredient.IngredientId))
                         {
-                            // Обновляем существующую запись
                             var existing = ingredientStats[ingredient.IngredientId];
                             existing.TotalWeight += totalWeightForAllParticipants;
                             existing.TotalCost += costForIngredient;
@@ -702,7 +658,6 @@ namespace TrackSync.Pages
                         }
                         else
                         {
-                            // Создаем новую запись
                             ingredientStats[ingredient.IngredientId] = new IngredientStatItem
                             {
                                 IngredientId = ingredient.IngredientId,
@@ -716,27 +671,22 @@ namespace TrackSync.Pages
                     }
                 }
 
-                // Обновляем счетчик использования в рецептах
                 foreach (var stat in ingredientStats.Values)
                 {
                     stat.UsedInRecipesCount = recipeUsageCount[stat.IngredientId];
-                    // Рассчитываем стоимость на одного человека
+
                     stat.CostPerPerson = participantsCount > 0 ? stat.TotalCost / participantsCount : 0;
                 }
 
-                // Сортируем по стоимости (от большего к меньшему)
                 var sortedStats = ingredientStats.Values
                     .OrderByDescending(i => i.TotalCost)
                     .ToList();
 
-                // Устанавливаем источник данных
                 IngredientsStatisticsList.ItemsSource = sortedStats;
 
-                // Рассчитываем общие суммы
                 decimal totalCost = sortedStats.Sum(i => i.TotalCost);
                 decimal costPerPerson = participantsCount > 0 ? totalCost / participantsCount : 0;
 
-                // Обновляем отображение
                 TotalCostText.Text = $"{totalCost:F2} руб.";
                 CostPerPersonText.Text = $"{costPerPerson:F2} руб.";
             }
@@ -747,7 +697,7 @@ namespace TrackSync.Pages
             }
         }
 
-        // === 1. Маршруты ===
+        //  1. Маршруты
         private void SaveRoute_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -824,16 +774,13 @@ namespace TrackSync.Pages
                         db.SaveChanges();
                         transaction.Commit();
 
-                        // После сохранения обновляем маршрут без центрирования
                         MyRouteBuilder.LoadRoute(points, MyRouteBuilder.SelectedColor, centerMap: false);
                         ShowMessage(MapMessage, "Маршрут сохранён", true);
 
-                        // Сбрасываем состояние редактирования
                         _isEditingRoute = false;
                         _editingRouteStat = null;
                         _currentEditingSessionId = Guid.NewGuid();
 
-                        // Обновляем карту и статистику
                         RefreshMap();
                     }
                 }
@@ -873,11 +820,9 @@ namespace TrackSync.Pages
                     {
                         if (points.Count >= 2 && !_isEditingRoute)
                         {
-                            // Явно устанавливаем цвет из базы данных
                             string trackColor = !string.IsNullOrEmpty(track.Color) ? track.Color : "#FF0000";
                             MyRouteBuilder.LoadRoute(points, trackColor, centerMap: true);
 
-                            // Обновляем выбранный цвет в панели выбора
                             MyRouteBuilder.SetColor(trackColor);
                         }
                     }
@@ -902,10 +847,8 @@ namespace TrackSync.Pages
                     }
                 }
 
-                // Отключаем использованные цвета в палитре
                 MyRouteBuilder.DisableUsedColors(usedColors);
 
-                // Центрируем карту
                 if (allPoints.Count > 0)
                 {
                     MyRouteBuilder.CenterMapOnRoutes(allPoints);
@@ -915,7 +858,6 @@ namespace TrackSync.Pages
                     MyRouteBuilder.CenterMapOnPoint(new GMap.NET.PointLatLng(55.7558, 37.6173), 10);
                 }
 
-                // Обновляем статистику
                 UpdateRoutesStatistics();
             }
             catch (Exception ex)
@@ -928,7 +870,6 @@ namespace TrackSync.Pages
         {
             int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
 
-            // Если есть точки
             if (e.points > 0)
             {
                 if (!_isEditingRoute)
@@ -967,7 +908,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Динамическое обновление статистики
         private void UpdateRoutesStatistics()
         {
             try
@@ -975,18 +915,15 @@ namespace TrackSync.Pages
                 var stats = new List<RouteStatItem>();
                 int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
 
-                // 1. Если есть редактируемый маршрут И ЕСТЬ ТОЧКИ - добавляем его
                 if (_isEditingRoute && _editingRouteStat != null && _editingRouteStat.PointsCount > 0)
                 {
                     stats.Add(_editingRouteStat);
                 }
 
-                // 2. Добавляем сохраненные маршруты других пользователей И текущего пользователя, если он НЕ в режиме редактирования
                 var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
 
                 foreach (var track in allTracks)
                 {
-                    // Если это текущий пользователь и он редактирует - пропускаем его сохраненный маршрут
                     if (track.ParticipantId == myPartId && _isEditingRoute)
                     {
                         continue;
@@ -1012,52 +949,19 @@ namespace TrackSync.Pages
                     }
                 }
 
-                // Сортируем по имени
                 stats = stats.OrderBy(s => s.CreatorName).ToList();
 
-                // Обновляем UI
                 RoutesStatisticsList.ItemsSource = null;
                 RoutesStatisticsList.ItemsSource = stats;
             }
             catch (Exception ex)
             {
-                // В случае ошибки просто очищаем статистику
                 RoutesStatisticsList.ItemsSource = null;
             }
         }
 
-        //private List<GMap.NET.PointLatLng> ExtractPoints(Track track)
-        //{
-        //    var points = new List<GMap.NET.PointLatLng>();
-
-        //    // Проверяем, что сегменты вообще есть
-        //    if (track?.Segments == null || !track.Segments.Any()) return points;
-
-        //    // Сортируем строго по ID, чтобы не было "паутины"
-        //    var sortedSegments = track.Segments.OrderBy(s => s.SegmentId).ToList();
-
-        //    // Берем начальную точку первого сегмента
-        //    var first = sortedSegments.First();
-        //    if (first.StartWaypoint != null)
-        //    {
-        //        points.Add(new GMap.NET.PointLatLng((double)first.StartWaypoint.Latitude, (double)first.StartWaypoint.Longitude));
-        //    }
-
-        //    // Добавляем конечные точки всех сегментов по порядку
-        //    foreach (var s in sortedSegments)
-        //    {
-        //        if (s.EndWaypoint != null)
-        //        {
-        //            points.Add(new GMap.NET.PointLatLng((double)s.EndWaypoint.Latitude, (double)s.EndWaypoint.Longitude));
-        //        }
-        //    }
-
-        //    return points;
-        //}
-
         private void UndoRouteButton_Click(object sender, RoutedEventArgs e)
         {
-            // Получаем текущее количество точек
             int pointsBefore = MyRouteBuilder.RoutePoints.Count;
 
             if (pointsBefore == 0)
@@ -1065,11 +969,8 @@ namespace TrackSync.Pages
                 return;
             }
 
-            // Вызываем метод отмены
             MyRouteBuilder.UndoLastPoint();
 
-            // Проверяем, стала ли количество точек равным 0
-            // Делаем это с задержкой, чтобы событие RouteUpdated успело сработать
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 if (MyRouteBuilder.RoutePoints.Count == 0 && _isEditingRoute)
@@ -1077,18 +978,15 @@ namespace TrackSync.Pages
                     // Получаем ID текущего участника
                     int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
 
-                    // Сбрасываем флаги редактирования для ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
                     _isEditingRoute = false;
                     _editingRouteStat = null;
                     _currentEditingSessionId = Guid.NewGuid();
 
-                    // ОБНОВЛЯЕМ СТАТИСТИКУ БЕЗ перезагрузки маршрутов из БД
                     var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
                     var stats = new List<RouteStatItem>();
 
                     foreach (var track in allTracks)
                     {
-                        // Пропускаем маршруты текущего пользователя, так как мы их очистили
                         if (track.ParticipantId != myPartId)
                         {
                             var points = ExtractPoints(track);
@@ -1112,7 +1010,6 @@ namespace TrackSync.Pages
                         }
                     }
 
-                    // Сортируем и обновляем UI
                     stats = stats.OrderBy(s => s.CreatorName).ToList();
                     RoutesStatisticsList.ItemsSource = null;
                     RoutesStatisticsList.ItemsSource = stats;
@@ -1124,26 +1021,20 @@ namespace TrackSync.Pages
         {
             try
             {
-                // Получаем ID текущего участника
                 int myPartId = TrackSyncManagerList.GetCurrentParticipantId(SessionManager.CurrentUserId, _roomId);
 
-                // Очищаем только визуальную часть - точки на карте
                 MyRouteBuilder.Clear();
 
-                // Сбрасываем флаги редактирования для ТЕКУЩЕГО ПОЛЬЗОВАТЕЛЯ
                 _isEditingRoute = false;
                 _editingRouteStat = null;
 
-                // Генерируем новый ID для следующей сессии редактирования
                 _currentEditingSessionId = Guid.NewGuid();
 
-                // ОБНОВЛЯЕМ СТАТИСТИКУ БЕЗ перезагрузки маршрутов из БД
                 var allTracks = TrackSyncManagerList.GetAllTracksForRoom(_roomId);
                 var stats = new List<RouteStatItem>();
 
                 foreach (var track in allTracks)
                 {
-                    // Пропускаем маршруты текущего пользователя, так как мы их очистили
                     if (track.ParticipantId != myPartId)
                     {
                         var points = ExtractPoints(track);
@@ -1167,7 +1058,6 @@ namespace TrackSync.Pages
                     }
                 }
 
-                // Сортируем и обновляем UI
                 stats = stats.OrderBy(s => s.CreatorName).ToList();
                 RoutesStatisticsList.ItemsSource = null;
                 RoutesStatisticsList.ItemsSource = stats;
@@ -1178,21 +1068,18 @@ namespace TrackSync.Pages
             }
         }
 
-        // === 2. Снаряжение ===
-        // Реализация интерфейса для получения выбранного снаряжения
+        // 2. Снаряжение
         public void OnEquipmentSelected(List<Equipment> equipment)
         {
             if (equipment == null || equipment.Count == 0)
                 return;
 
-            // Получаем или создаём список снаряжения для участника
             if (!_participantEquipment.TryGetValue(_currentParticipantId, out var participantList))
             {
                 participantList = new List<EquipmentQuantityItem>();
                 _participantEquipment[_currentParticipantId] = participantList;
             }
 
-            // Добавляем новые снаряжения (без дубликатов)
             foreach (var eq in equipment)
             {
                 if (!participantList.Exists(e => e.Equipment.EquipmentId == eq.EquipmentId))
@@ -1200,15 +1087,14 @@ namespace TrackSync.Pages
                     participantList.Add(new EquipmentQuantityItem
                     {
                         Equipment = eq,
-                        Quantity = 1 // Значение по умолчанию
+                        Quantity = 1 
                     });
                 }
             }
 
-            // Обновляем отображение для текущего участника
             UpdateEquipmentUI(_currentParticipantId);
         }
-        // Обновление интерфейса снаряжения для участника
+
         private void UpdateEquipmentUI(int participantId)
         {
             var equipmentStackPanel = FindEquipmentStackPanel(participantId);
@@ -1221,7 +1107,6 @@ namespace TrackSync.Pages
             {
                 foreach (var item in equipmentList)
                 {
-                    // Передаём participantId в метод создания панели
                     var equipmentPanel = CreateEquipmentPanel(item, participantId);
                     equipmentStackPanel.Children.Add(equipmentPanel);
                 }
@@ -1241,7 +1126,7 @@ namespace TrackSync.Pages
                 UpdateEquipmentStats(participantId, new List<EquipmentQuantityItem>());
             }
         }
-        // Создание панели для отображения снаряжения
+
         private StackPanel CreateEquipmentPanel(EquipmentQuantityItem item, int participantId)
         {
             var panel = new StackPanel
@@ -1251,7 +1136,6 @@ namespace TrackSync.Pages
                 Tag = item
             };
 
-            // Название снаряжения
             var nameText = new TextBlock
             {
                 Text = item.Equipment.Title,
@@ -1262,7 +1146,6 @@ namespace TrackSync.Pages
             };
             panel.Children.Add(nameText);
 
-            // Поле для ввода количества
             var quantityTextBox = new TextBox
             {
                 Width = 80,
@@ -1273,7 +1156,6 @@ namespace TrackSync.Pages
                 Style = (Style)FindResource("InputField")
             };
 
-            // Проверяем права для поля ввода
             using var ctx = new TrackSyncContext();
             var currentUser = ctx.Participants
                 .FirstOrDefault(p => p.UserId == SessionManager.CurrentUserId && p.HikeRoomId == _roomId);
@@ -1293,7 +1175,6 @@ namespace TrackSync.Pages
 
             panel.Children.Add(quantityTextBox);
 
-            // Текст "шт."
             var unitText = new TextBlock
             {
                 Text = "шт.",
@@ -1304,7 +1185,6 @@ namespace TrackSync.Pages
             };
             panel.Children.Add(unitText);
 
-            // Вес одного предмета
             var weightText = new TextBlock
             {
                 Text = $"({item.Equipment.Weight}г)",
@@ -1316,7 +1196,6 @@ namespace TrackSync.Pages
             };
             panel.Children.Add(weightText);
 
-            // Кнопка удаления (только если есть права)
             if (canEditEquipment)
             {
                 var removeButton = new Button
@@ -1341,20 +1220,17 @@ namespace TrackSync.Pages
 
             return panel;
         }
-        // Обработчик изменения количества
+
         private void QuantityTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox && textBox.Tag is EquipmentQuantityItem item)
             {
-                // Сохраняем текущее значение для восстановления в случае ошибки
                 int previousQuantity = item.Quantity;
 
-                // Обработка пустой строки — интерпретируем как 0
                 if (string.IsNullOrWhiteSpace(textBox.Text))
                 {
                     item.Quantity = 0;
 
-                    // Автоматически обновляем статистику
                     if (_participantEquipment.TryGetValue(_currentParticipantId, out var equipmentList))
                     {
                         UpdateEquipmentStats(_currentParticipantId, equipmentList);
@@ -1362,15 +1238,12 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Попытка преобразовать в число
                 if (int.TryParse(textBox.Text, out int quantity))
                 {
-                    // Разрешаем 0 и положительные числа
                     if (quantity >= 0)
                     {
                         item.Quantity = quantity;
 
-                        // Автоматически обновляем статистику
                         if (_participantEquipment.TryGetValue(_currentParticipantId, out var equipmentList))
                         {
                             UpdateEquipmentStats(_currentParticipantId, equipmentList);
@@ -1378,20 +1251,18 @@ namespace TrackSync.Pages
                     }
                     else
                     {
-                        // Восстанавливаем предыдущее значение при отрицательном числе
                         textBox.Text = previousQuantity.ToString();
                         textBox.SelectionStart = textBox.Text.Length;
                     }
                 }
                 else
                 {
-                    // Восстанавливаем предыдущее значение при некорректном вводе
                     textBox.Text = previousQuantity.ToString();
                     textBox.SelectionStart = textBox.Text.Length;
                 }
             }
         }
-        // Валидация ввода (только цифры)
+
         private void QuantityTextBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
         {
             foreach (char c in e.Text)
@@ -1403,27 +1274,25 @@ namespace TrackSync.Pages
                 }
             }
         }
-        // Удаление снаряжения
+
         private void RemoveEquipmentButton_Click(object sender, RoutedEventArgs e)
         {
-            // Получаем данные из тега кнопки
             if (sender is Button button &&
                 button.Tag is object tagObj &&
                 tagObj.GetType().GetProperty("Item")?.GetValue(tagObj) is EquipmentQuantityItem item &&
                 tagObj.GetType().GetProperty("ParticipantId")?.GetValue(tagObj) is int participantId)
             {
-                // Получаем список снаряжения именно для этого участника
+
                 if (_participantEquipment.TryGetValue(participantId, out var equipmentList))
                 {
                     equipmentList.Remove(item);
-                    UpdateEquipmentUI(participantId); // Обновляем интерфейс для этого участника
+                    UpdateEquipmentUI(participantId); 
                 }
             }
         }
-        // Обновление статистики снаряжения
+
         private void UpdateEquipmentStats(int participantId, List<EquipmentQuantityItem> equipmentList)
         {
-            // Вычисляем общий вес и количество предметов для данного участника
             int totalWeight = 0;
             int totalItems = 0;
 
@@ -1433,7 +1302,6 @@ namespace TrackSync.Pages
                 totalItems += item.Quantity;
             }
 
-            // Ищем элементы статистики ТОЛЬКО для данного участника
             var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(
                 ParticipantsItemsControl.Items.OfType<Participant>().FirstOrDefault(p => p.ParticipantId == participantId));
 
@@ -1449,7 +1317,7 @@ namespace TrackSync.Pages
                     itemsText.Text = $"{totalItems} шт.";
             }
         }
-        // Поиск стек панели для снаряжения по ID участника (ищем по тегу)
+
         private StackPanel FindEquipmentStackPanel(int participantId)
         {
             foreach (var item in ParticipantsItemsControl.Items)
@@ -1457,7 +1325,6 @@ namespace TrackSync.Pages
                 var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(item);
                 if (container == null) continue;
 
-                // Ищем ТОЛЬКО панели с тегом = participantId
                 var panels = FindAllVisualChildren<StackPanel>(container);
                 foreach (var panel in panels)
                 {
@@ -1469,7 +1336,7 @@ namespace TrackSync.Pages
             }
             return null;
         }
-        // Вспомогательный метод для поиска ВСЕХ дочерних элементов заданного типа
+
         private List<T> FindAllVisualChildren<T>(DependencyObject parent) where T : DependencyObject
         {
             var children = new List<T>();
@@ -1488,7 +1355,7 @@ namespace TrackSync.Pages
 
             return children;
         }
-        // Вспомогательный метод для поиска дочернего элемента с предикатом
+
         private T FindVisualChild<T>(DependencyObject parent, Func<T, bool> predicate) where T : DependencyObject
         {
             if (parent == null) return null;
@@ -1508,7 +1375,7 @@ namespace TrackSync.Pages
 
             return null;
         }
-        // Вспомогательный метод для поиска дочернего элемента 
+
         private T FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
         {
             if (parent == null) return null;
@@ -1528,7 +1395,7 @@ namespace TrackSync.Pages
 
             return null;
         }
-        // Обработчик кнопки "Добавить снаряжение"
+
         private void AddEquipmentButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is int participantId)
@@ -1555,12 +1422,10 @@ namespace TrackSync.Pages
                     int updatedCount = 0;
                     int deletedCount = 0;
 
-                    // Получаем ВСЕ существующие записи снаряжения для этой комнаты из БД
                     var existingRecords = ctx.HikeRoomsEquipments
                         .Where(hre => hre.HikeRoomId == _roomId)
                         .ToList();
 
-                    // Обрабатываем каждого участника
                     foreach (var item in ParticipantsItemsControl.Items)
                     {
                         if (item is Participant participant)
@@ -1569,13 +1434,11 @@ namespace TrackSync.Pages
 
                             if (_participantEquipment.TryGetValue(participantId, out var equipmentList))
                             {
-                                // 1. Добавляем/обновляем снаряжение из интерфейса
                                 foreach (var eqItem in equipmentList)
                                 {
                                     if (eqItem.Quantity <= 0)
-                                        continue; // Пропускаем записи с количеством 0 или меньше
+                                        continue; 
 
-                                    // Ищем существующую запись для этого снаряжения у участника
                                     var existingRecord = existingRecords
                                         .FirstOrDefault(hre =>
                                             hre.ParticipantId == participantId &&
@@ -1583,13 +1446,11 @@ namespace TrackSync.Pages
 
                                     if (existingRecord != null)
                                     {
-                                        // Обновляем существующую запись
                                         existingRecord.Quantity = eqItem.Quantity;
                                         updatedCount++;
                                     }
                                     else
                                     {
-                                        // Создаём новую запись
                                         var newRecord = new HikeRoomsEquipment
                                         {
                                             HikeRoomId = _roomId,
@@ -1602,12 +1463,11 @@ namespace TrackSync.Pages
                                     }
                                 }
 
-                                // 2. Удаляем записи, которых НЕТ в интерфейсе (удалённые пользователем)
                                 var recordsToDelete = existingRecords
                                     .Where(hre => hre.ParticipantId == participantId &&
                                                  !equipmentList.Any(eq =>
                                                      eq.Equipment.EquipmentId == hre.EquipmentId &&
-                                                     eq.Quantity > 0)) // Учитываем только записи с количеством > 0
+                                                     eq.Quantity > 0))
                                     .ToList();
 
                                 foreach (var record in recordsToDelete)
@@ -1632,13 +1492,11 @@ namespace TrackSync.Pages
         }
         private void UpdateEquipmentPermissions(bool canEditEquipment)
         {
-            // Обновляем все контейнеры участников
             foreach (var item in ParticipantsItemsControl.Items)
             {
                 var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(item);
                 if (container == null) continue;
 
-                // Ищем кнопку "Добавить снаряжение" по ToolTip
                 var addButton = FindVisualChild<Button>(container, btn =>
                     btn.ToolTip != null && btn.ToolTip.ToString() == "Добавить снаряжение");
 
@@ -1647,7 +1505,6 @@ namespace TrackSync.Pages
                     addButton.Visibility = canEditEquipment ? Visibility.Visible : Visibility.Collapsed;
                 }
 
-                // Если нет прав, скрываем все кнопки удаления для этого участника
                 if (!canEditEquipment)
                 {
                     var removeButtons = FindAllVisualChildren<Button>(container)
@@ -1658,7 +1515,6 @@ namespace TrackSync.Pages
                         btn.Visibility = Visibility.Collapsed;
                     }
 
-                    // Делаем поля количества только для чтения
                     var quantityTextBoxes = FindAllVisualChildren<TextBox>(container)
                         .Where(tb => tb.Tag is EquipmentQuantityItem);
 
@@ -1671,7 +1527,7 @@ namespace TrackSync.Pages
             }
         }
 
-        // === 3. Продуктовая раскладка ===
+        //  3. Продуктовая раскладка 
         private void UpdateCurrentDayTitle(int dayNumber)
         {
             var currentDay = _allDays.FirstOrDefault(d => d.DayNumber == dayNumber);
@@ -1685,25 +1541,20 @@ namespace TrackSync.Pages
             var currentDay = _allDays.FirstOrDefault(d => d.DayNumber == dayNumber);
             if (currentDay != null)
             {
-                // Отображаем ТОЛЬКО один день в контенте
                 DaysContentControl.ItemsSource = new List<DayViewModel> { currentDay };
                 _currentDay = dayNumber;
 
-                // Обновляем заголовок
                 UpdateCurrentDayTitle(dayNumber);
 
-                // Активируем кнопку с задержкой для гарантии рендеринга
                 Dispatcher.BeginInvoke(() =>
                 {
                     ActivateDayButton(dayNumber);
-                    // Обновляем права для вновь созданного контейнера
                     UpdateMealPlanPermissions(_canEditMealPlan);
                 }, System.Windows.Threading.DispatcherPriority.Render);
             }
         }
         private void ActivateDayButton(int dayNumber)
         {
-            // Ждем пока контейнеры создадутся
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 try
@@ -1780,7 +1631,6 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Парсим тег
                 var parts = _currentMealTypeTag.Split('_');
                 string mealType = parts[0];
                 int dayNumber = int.Parse(parts[1].Replace("day", ""));
@@ -1796,7 +1646,6 @@ namespace TrackSync.Pages
 
                 DateOnly mealDate = room.StartDate.AddDays(dayNumber - 1);
 
-                // Ищем существующую запись рецепта для этого приёма пищи
                 var existing = ctx.HikeRoomsRecipes
                     .FirstOrDefault(hrr => hrr.HikeRoomId == _roomId &&
                                          hrr.MealDate == mealDate &&
@@ -1804,13 +1653,11 @@ namespace TrackSync.Pages
 
                 if (existing != null)
                 {
-                    // Получаем участников этой комнаты
                     var participantsInRoom = ctx.Participants
                         .Where(p => p.HikeRoomId == _roomId)
                         .Select(p => p.ParticipantId)
                         .ToList();
 
-                    // Удаляем только связи с участниками этой комнаты для ЭТОГО РЕЦЕПТА
                     var oldResponsibles = ctx.RecipesParticipants
                         .Where(rp => rp.RecipeId == existing.RecipeId &&
                                    participantsInRoom.Contains(rp.ParticipantId))
@@ -1818,12 +1665,10 @@ namespace TrackSync.Pages
 
                     ctx.RecipesParticipants.RemoveRange(oldResponsibles);
 
-                    // Удаляем запись о рецепте в приёме пищи
                     ctx.HikeRoomsRecipes.Remove(existing);
-                    ctx.SaveChanges(); // Сохраняем удаление
+                    ctx.SaveChanges(); 
                 }
 
-                // Добавляем новую запись рецепта для приёма пищи
                 var newRecipeEntry = new HikeRoomsRecipe
                 {
                     HikeRoomId = _roomId,
@@ -1832,19 +1677,16 @@ namespace TrackSync.Pages
                     MealDate = mealDate
                 };
                 ctx.HikeRoomsRecipes.Add(newRecipeEntry);
-                ctx.SaveChanges(); // Сохраняем чтобы получить ID
+                ctx.SaveChanges(); 
 
-                // Добавляем новых ответственных (только если участник в этой комнате)
                 foreach (var participantId in responsibleParticipantIds)
                 {
-                    // Проверяем, что участник именно из этой комнаты
                     var participantInRoom = ctx.Participants
                         .Any(p => p.ParticipantId == participantId &&
                                  p.HikeRoomId == _roomId);
 
                     if (participantInRoom)
                     {
-                        // Проверяем, не существует ли уже такая связь
                         var existingLink = ctx.RecipesParticipants
                             .FirstOrDefault(rp => rp.RecipeId == recipe.RecipeId &&
                                                  rp.ParticipantId == participantId);
@@ -1862,7 +1704,6 @@ namespace TrackSync.Pages
 
                 ctx.SaveChanges();
 
-                // Перезагружаем раскладку
                 LoadMealPlan();
                 ShowCurrentDay(currentDayToRestore);
             }
@@ -1874,18 +1715,15 @@ namespace TrackSync.Pages
         }
         private void UpdateMealPlanPermissions(bool canEditMealPlan)
         {
-            // Подписываемся на событие создания контейнеров элементов
             DaysContentControl.ItemContainerGenerator.StatusChanged += (sender, args) =>
             {
                 if (DaysContentControl.ItemContainerGenerator.Status == System.Windows.Controls.Primitives.GeneratorStatus.ContainersGenerated)
                 {
-                    // Обновляем кнопки для всех созданных контейнеров
                     for (int i = 0; i < DaysContentControl.Items.Count; i++)
                     {
                         var container = DaysContentControl.ItemContainerGenerator.ContainerFromIndex(i);
                         if (container != null)
                         {
-                            // Ищем все кнопки "Добавить рецепт"
                             var addRecipeButtons = FindAllVisualChildren<Button>(container)
                                 .Where(btn =>
                                     (btn.Content is TextBlock textBlock && textBlock.Text == "Добавить рецепт") ||
@@ -1902,7 +1740,6 @@ namespace TrackSync.Pages
                 }
             };
 
-            // Также сразу проверяем, если контейнеры уже созданы
             Dispatcher.BeginInvoke(new Action(() =>
             {
                 for (int i = 0; i < DaysContentControl.Items.Count; i++)
@@ -1910,7 +1747,6 @@ namespace TrackSync.Pages
                     var container = DaysContentControl.ItemContainerGenerator.ContainerFromIndex(i);
                     if (container != null)
                     {
-                        // Ищем все кнопки "Добавить рецепт"
                         var addRecipeButtons = FindAllVisualChildren<Button>(container)
                             .Where(btn =>
                                 (btn.Content is TextBlock textBlock && textBlock.Text == "Добавить рецепт") ||
@@ -1927,10 +1763,10 @@ namespace TrackSync.Pages
             }), System.Windows.Threading.DispatcherPriority.Render);
         }
 
-        // === 4. Ингердиенты ===
+        //  4. Ингердиенты
         private void RoomTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            // Проверяем, выбрана ли вкладка "Статистика ингредиентов"
+
             if (RoomTabControl.SelectedItem is TabItem selectedTab &&
                 selectedTab.Header?.ToString() == "Статистика ингредиентов")
             {
@@ -1938,7 +1774,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // === Дополнительные кнопки ===
         private void LogoutButton_Click(object sender, EventArgs e)
         {
             FrameContext.MainWindowFrame.Navigate(new MainPage());
@@ -1973,29 +1808,23 @@ namespace TrackSync.Pages
 
             try
             {
-                // Вызываем в UI потоке
                 MyRouteBuilder.MapControl.Dispatcher.Invoke(() =>
                 {
                     try
                     {
-                        // ВРЕМЕННО СКРЫВАЕМ МАРКЕРЫ ПЕРЕД СКРИНШОТОМ
                         MyRouteBuilder.HideAllMarkers();
 
-                        // Ждем, чтобы изменения применились
                         MyRouteBuilder.MapControl.Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
-                        // Используем текущий размер карты
                         double actualWidth = MyRouteBuilder.MapControl.ActualWidth;
                         double actualHeight = MyRouteBuilder.MapControl.ActualHeight;
 
-                        // Если размеры не определены, используем значения по умолчанию
                         if (actualWidth <= 0 || actualHeight <= 0)
                         {
                             actualWidth = 1123;
                             actualHeight = 793;
                         }
 
-                        // Создаем скриншот текущего состояния карты (без маркеров)
                         result = new RenderTargetBitmap(
                             (int)actualWidth,
                             (int)actualHeight,
@@ -2007,7 +1836,6 @@ namespace TrackSync.Pages
                     }
                     catch (Exception ex)
                     {
-                        // В случае ошибки все равно пытаемся восстановить маркеры
                         MyRouteBuilder.ShowAllMarkers();
                         throw;
                     }
@@ -2026,7 +1854,6 @@ namespace TrackSync.Pages
         {
             try
             {
-                // Создаем контекстное меню с тремя опциями
                 var contextMenu = new ContextMenu();
 
                 // Опция 1: Скачать в PDF
@@ -2056,7 +1883,6 @@ namespace TrackSync.Pages
                 gpxAllItem.Click += (s, args) => ExportAllTracksAsSeparateFiles();
                 contextMenu.Items.Add(gpxAllItem);
 
-                // Показываем меню под кнопкой
                 contextMenu.PlacementTarget = sender as Button;
                 contextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
                 contextMenu.IsOpen = true;
@@ -2071,7 +1897,6 @@ namespace TrackSync.Pages
         {
             try
             {
-                // Получаем скриншот карты
                 var mapScreenshot = GetMapScreenshot();
 
                 if (mapScreenshot == null)
@@ -2081,11 +1906,9 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Получаем название комнаты для имени файла
                 string roomTitle = RoomTitleText.Text;
                 string safeFileName = RemoveInvalidFileNameChars(roomTitle);
 
-                // Получаем текущий зум карты
                 double zoom = MyRouteBuilder.MapControl.Zoom;
                 double lat = MyRouteBuilder.MapControl.Position.Lat;
                 double metersPerPixel = EquatorMetersPerPixel * Math.Cos(lat * Math.PI / 180) / Math.Pow(2, zoom);
@@ -2093,10 +1916,8 @@ namespace TrackSync.Pages
                 double realScale = metersPerPixel * (screenDpi / 0.0254);
                 double roundedScale = Math.Round(realScale / 10000) * 10000;
 
-                // Создаём генератор с зумом
                 var generator = new HikeRoomPdfGenerator(_roomId, mapScreenshot, roundedScale);
 
-                // Диалог сохранения
                 var saveDialog = new SaveFileDialog
                 {
                     Filter = "PDF files (*.pdf)|*.pdf",
@@ -2184,7 +2005,6 @@ namespace TrackSync.Pages
 
         private XElement CreateTrackPointElement(Waypoint waypoint, int index, XNamespace gpxNs)
         {
-            // Используем последовательное время с интервалом в 1 минуту
             DateTime pointTime = DateTime.UtcNow.AddMinutes(index);
 
             return new XElement(gpxNs + "trkpt",
@@ -2210,7 +2030,6 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Используем SaveFileDialog для выбора папки и базового имени
                 var saveDialog = new SaveFileDialog
                 {
                     Filter = "GPX files (*.gpx)|*.gpx",
@@ -2224,7 +2043,6 @@ namespace TrackSync.Pages
                     Mouse.OverrideCursor = Cursors.Wait;
                     try
                     {
-                        // Получаем путь к папке и базовое имя файла
                         string selectedPath = System.IO.Path.GetDirectoryName(saveDialog.FileName);
                         string baseFileName = System.IO.Path.GetFileNameWithoutExtension(saveDialog.FileName);
 
@@ -2252,11 +2070,9 @@ namespace TrackSync.Pages
                             string safeCreatorName = RemoveInvalidFileNameChars(creatorName);
                             string safeTrackName = RemoveInvalidFileNameChars(track.Title ?? $"Маршрут_{safeCreatorName}");
 
-                            // Создаем уникальное имя файла
                             string fileName = $"{baseFileName}_{safeTrackName}_{track.TrackId}.gpx";
                             string filePath = System.IO.Path.Combine(selectedPath, fileName);
 
-                            // Проверяем, нет ли уже файла с таким именем
                             int counter = 1;
                             while (File.Exists(filePath))
                             {
@@ -2265,7 +2081,6 @@ namespace TrackSync.Pages
                                 counter++;
                             }
 
-                            // Создаем GPX файл для отдельного трека
                             string gpxContent = GenerateSingleTrackGpx(track, waypoints);
                             File.WriteAllText(filePath, gpxContent, Encoding.UTF8);
                             savedCount++;
@@ -2281,14 +2096,13 @@ namespace TrackSync.Pages
                                 message += $"\nПропущено {skippedCount} маршрутов (слишком мало точек)";
                             }
 
-                            // Открываем папку в проводнике
                             try
                             {
                                 Process.Start("explorer.exe", selectedPath);
                             }
                             catch
                             {
-                                // Игнорируем ошибку, если не удалось открыть проводник
+
                             }
                         }
                         else
@@ -2332,11 +2146,9 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Находим ID текущего участника
                 int currentParticipantId = TrackSyncManagerList.GetCurrentParticipantId(
                     SessionManager.CurrentUserId, _roomId);
 
-                // Ищем трек текущего пользователя
                 var currentUserTrack = allTracks.FirstOrDefault(t => t.ParticipantId == currentParticipantId);
 
                 if (currentUserTrack == null)
@@ -2354,7 +2166,6 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Диалог сохранения
                 var saveDialog = new SaveFileDialog
                 {
                     Filter = "GPX files (*.gpx)|*.gpx",
@@ -2407,20 +2218,16 @@ namespace TrackSync.Pages
         {
             var waypoints = new List<Waypoint>();
 
-            // Проверяем, что сегменты вообще есть
             if (track?.Segments == null || !track.Segments.Any()) return waypoints;
 
-            // Сортируем строго по ID, чтобы не было "паутины"
             var sortedSegments = track.Segments.OrderBy(s => s.SegmentId).ToList();
 
-            // Берем начальную точку первого сегмента
             var first = sortedSegments.First();
             if (first.StartWaypoint != null)
             {
                 waypoints.Add(first.StartWaypoint);
             }
 
-            // Добавляем конечные точки всех сегментов по порядку
             foreach (var s in sortedSegments)
             {
                 if (s.EndWaypoint != null)
@@ -2432,14 +2239,12 @@ namespace TrackSync.Pages
             return waypoints;
         }
 
-        // Обновляем существующий метод ExtractPoints, чтобы он использовал ExtractWaypoints
         private List<GMap.NET.PointLatLng> ExtractPoints(Track track)
         {
             var waypoints = ExtractWaypoints(track);
             return waypoints.Select(wp => new GMap.NET.PointLatLng((double)wp.Latitude, (double)wp.Longitude)).ToList();
         }
 
-        // Вспомогательный метод для удаления недопустимых символов из имени файла
         private string RemoveInvalidFileNameChars(string fileName)
         {
             if (string.IsNullOrEmpty(fileName)) return fileName;
@@ -2447,16 +2252,13 @@ namespace TrackSync.Pages
             var invalidChars = System.IO.Path.GetInvalidFileNameChars();
             var result = new string(fileName.Where(ch => !invalidChars.Contains(ch)).ToArray());
 
-            // Также удаляем пробелы в начале и конце
             result = result.Trim();
 
-            // Если после очистки строка пустая, возвращаем дефолтное значение
             if (string.IsNullOrEmpty(result))
             {
                 return "Маршрут";
             }
 
-            // Ограничиваем длину имени файла
             if (result.Length > 100)
             {
                 result = result.Substring(0, 100);
@@ -2469,13 +2271,11 @@ namespace TrackSync.Pages
         {
             if (sender is Button button && button.Tag is MealViewModel meal)
             {
-                // Проверяем, есть ли рецепт и описание
                 if (meal.Recipe == null || string.IsNullOrWhiteSpace(meal.RecipeDescription))
                 {
-                    return; // Ничего не делаем, если нет рецепта или описания
+                    return; 
                 }
 
-                // Найти DescriptionText в визуальном дереве
                 var container = button.Parent as StackPanel;
                 if (container != null)
                 {
@@ -2489,7 +2289,6 @@ namespace TrackSync.Pages
                             Visibility.Collapsed :
                             Visibility.Visible;
 
-                        // Изменить текст кнопки
                         var arrowText = (button.Content as StackPanel)?.Children
                             .OfType<TextBlock>()
                             .LastOrDefault();

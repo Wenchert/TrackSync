@@ -12,7 +12,6 @@ namespace TrackSync.Pages
 {
     public partial class CatalogEquipmentsPage : Page
     {
-        // Вспомогательный класс для отслеживания выбора
         public class EquipmentWithSelection
         {
             public Equipment Equipment { get; set; }
@@ -51,20 +50,16 @@ namespace TrackSync.Pages
             };
         }
 
-        /// Загрузка снаряжений из базы данных с учётом фильтрации
-        /// </summary>
         private void LoadEquipment()
         {
             List<Equipment> equipmentList;
 
             if (_showOnlyMyItems)
             {
-                // Показываем только снаряжение, созданное текущим пользователем
                 equipmentList = TrackSyncManagerList.GetUserEquipment(SessionManager.CurrentUserId);
             }
             else
             {
-                // Показываем все снаряжение (системное + созданное пользователем)
                 equipmentList = TrackSyncManagerList.GetAllEquipmentForUser(SessionManager.CurrentUserId);
             }
 
@@ -82,15 +77,11 @@ namespace TrackSync.Pages
             }
             else
             {
-                // Если нет снаряжения, показываем пустое сообщение
                 var emptyList = new List<EquipmentWithSelection>();
                 EquipmentsListBox.ItemsSource = emptyList;
             }
         }
 
-        /// <summary>
-        /// Обработка клика по кнопке "Все"
-        /// </summary>
         private void AllButton_Click(object sender, RoutedEventArgs e)
         {
             _showOnlyMyItems = false;
@@ -98,9 +89,6 @@ namespace TrackSync.Pages
             LoadEquipment();
         }
 
-        /// <summary>
-        /// Обработка клика по кнопке "Мои"
-        /// </summary>
         private void MyButton_Click(object sender, RoutedEventArgs e)
         {
             _showOnlyMyItems = true;
@@ -108,33 +96,26 @@ namespace TrackSync.Pages
             LoadEquipment();
         }
 
-        /// <summary>
-        /// Обновление состояния кнопок фильтрации
-        /// </summary>
         private void UpdateFilterButtons()
         {
             if (AllButton != null && MyButton != null)
             {
                 if (_showOnlyMyItems)
                 {
-                    // Кнопка "Мои" активна
                     MyButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3498DB"));
                     MyButton.Foreground = new SolidColorBrush(Colors.White);
                     MyButton.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3498DB"));
 
-                    // Кнопка "Все" неактивна
                     AllButton.Background = Brushes.Transparent;
                     AllButton.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2C3E50"));
                     AllButton.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9ECEF"));
                 }
                 else
                 {
-                    // Кнопка "Все" активна
                     AllButton.Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3498DB"));
                     AllButton.Foreground = new SolidColorBrush(Colors.White);
                     AllButton.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#3498DB"));
 
-                    // Кнопка "Мои" неактивна
                     MyButton.Background = Brushes.Transparent;
                     MyButton.Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#2C3E50"));
                     MyButton.BorderBrush = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E9ECEF"));
@@ -142,9 +123,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Обработка поиска
-        /// </summary>
         private void SearchTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (_equipmentItems == null)
@@ -167,9 +145,6 @@ namespace TrackSync.Pages
             EquipmentsListBox.ItemsSource = _filteredItems;
         }
 
-        /// <summary>
-        /// Обработка клика по элементу снаряжения
-        /// </summary>
         private void EquipmentItem_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             if (sender is Border border && border.Tag is EquipmentWithSelection item)
@@ -179,7 +154,6 @@ namespace TrackSync.Pages
 
                 ErrorMessageHide();
 
-                // Обновляем интерфейс
                 EquipmentsListBox.Items.Refresh();
             }
         }
@@ -194,11 +168,8 @@ namespace TrackSync.Pages
                 return;
             }
 
-
-            // Передаём выбранное снаряжение через коллбэк
             _callback.OnEquipmentSelected(selected.Select(eq => eq.Equipment).ToList());
 
-            // Возвращаемся назад
             if (NavigationService.CanGoBack)
                 NavigationService.GoBack();
         }
@@ -231,14 +202,10 @@ namespace TrackSync.Pages
                 NavigationService.GoBack();
         }
 
-        /// <summary>
-        /// Обработка клика по кнопке редактирования
-        /// </summary>
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is EquipmentWithSelection item)
             {
-                // Блокируем редактирование системных объектов (на всякий случай)
                 if (!item.IsUserEquipment)
                 {
                     MessageBox.Show("Вы не можете редактировать системное снаряжение.", "Доступ запрещён",
@@ -251,9 +218,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Обработка клика по кнопке удаления
-        /// </summary>
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is EquipmentWithSelection item)
@@ -262,9 +226,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Удаление снаряжения
-        /// </summary>
         private void DeleteEquipment(Equipment equipment)
         {
             try
@@ -275,7 +236,6 @@ namespace TrackSync.Pages
 
                     if (equipmentToRemove != null)
                     { 
-                        // Просто удаляем - каскадное удаление произойдет автоматически
                         ctx.Equipments.Remove(equipmentToRemove);
                         ctx.SaveChanges();
                         LoadEquipment();

@@ -22,7 +22,6 @@ namespace TrackSync.Pages
             LoadUserProfile();
         }
 
-        // Загрузка данных текущего пользователя
         private void LoadUserProfile()
         {
             try
@@ -34,22 +33,18 @@ namespace TrackSync.Pages
 
                 if (_currentUser != null)
                 {
-                    // Загружаем почту (только для чтения)
                     EmailTextBox.Text = _currentUser.Email;
 
-                    // Загружаем имя
                     if (!string.IsNullOrWhiteSpace(_currentUser.Name))
                     {
                         NameTextBox.Text = _currentUser.Name;
                     }
 
-                    // Загружаем контакты
                     if (!string.IsNullOrWhiteSpace(_currentUser.Contacts))
                     {
                         ContactsTextBox.Text = _currentUser.Contacts;
                     }
 
-                    // Загружаем рост и вес
                     HeightText.Text = _currentUser.Height.ToString();
                     WeightText.Text = _currentUser.Weight.ToString();
                 }
@@ -64,31 +59,25 @@ namespace TrackSync.Pages
             }
         }
 
-        // Сохранение изменений профиля (вкладка "Профиль")
         private void SaveProfileButton_Click(object sender, RoutedEventArgs e)
         {
             HideMessage(ErrorMessage);
 
-            // Валидация имени
             if (!ValidateName())
                 return;
 
-            // Валидация роста и веса
             if (!ValidateHeightWeight())
                 return;
 
-            // Валидация контактов
             if (!ValidateContacts())
                 return;
 
-            // Сохраняем изменения
             if (SaveProfileChanges())
             {
                 ShowMessage(ErrorMessage, "*Настройки успешно сохранены!", true);
             }
         }
 
-        // Валидация имени
         private bool ValidateName()
         {
             if (string.IsNullOrWhiteSpace(NameTextBox.Text))
@@ -118,7 +107,6 @@ namespace TrackSync.Pages
             return true;
         }
 
-        // Сохранение изменений профиля
         private bool SaveProfileChanges()
         {
             try
@@ -129,20 +117,16 @@ namespace TrackSync.Pages
                 if (user == null)
                     throw new Exception("Пользователь не найден");
 
-                // Сохраняем имя
                 user.Name = NameTextBox.Text.Trim();
 
-                // Сохраняем контакты
                 string contacts = ContactsTextBox.Text.Trim();
                 user.Contacts = string.IsNullOrWhiteSpace(contacts) ? null : contacts;
 
-                // Сохраняем рост и вес
                 user.Height = int.Parse(HeightText.Text);
                 user.Weight = int.Parse(WeightText.Text);
 
                 ctx.SaveChanges();
 
-                // Обновляем локальную копию
                 _currentUser = user;
                 return true;
             }
@@ -167,35 +151,28 @@ namespace TrackSync.Pages
             HideMessage(ErrorMessage);
         }
 
-        // Изменение пароля (вкладка "Безопасность")
         private void ChangePasswordButton_Click(object sender, RoutedEventArgs e)
         {
             HideMessage(PasswordMessage);
 
-            // Валидация полей пароля
             if (!ValidatePasswordChange())
                 return;
 
-            // Проверка текущего пароля
             if (!VerifyCurrentPassword())
                 return;
 
-            // Сохраняем новый пароль
             if (ChangeUserPassword(NewPasswordBox.Password))
             {
                 ShowMessage(PasswordMessage, "*Пароль успешно изменён!", true);
 
-                // Очищаем поля
                 CurrentPasswordBox.Clear();
                 NewPasswordBox.Clear();
                 ConfirmPasswordBox.Clear();
             }
         }
 
-        // Валидация роста и веса
         private bool ValidateHeightWeight()
         {
-            // Проверка роста
             if (string.IsNullOrWhiteSpace(HeightText.Text))
             {
                 ShowMessage(ErrorMessage, "*Пожалуйста, укажите ваш рост", false);
@@ -208,7 +185,6 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка веса
             if (string.IsNullOrWhiteSpace(WeightText.Text))
             {
                 ShowMessage(ErrorMessage, "*Пожалуйста, укажите ваш вес", false);
@@ -224,7 +200,6 @@ namespace TrackSync.Pages
             return true;
         }
 
-        // Валидация полей пароля
         private bool ValidatePasswordChange()
         {
             if (string.IsNullOrWhiteSpace(CurrentPasswordBox.Password))
@@ -254,7 +229,6 @@ namespace TrackSync.Pages
             return true;
         }
 
-        // Проверка текущего пароля
         private bool VerifyCurrentPassword()
         {
             try
@@ -276,7 +250,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Изменение пароля пользователя
         private bool ChangeUserPassword(string newPassword)
         {
             try
@@ -287,12 +260,10 @@ namespace TrackSync.Pages
                 if (user == null)
                     throw new Exception("Пользователь не найден");
 
-                // Хешируем новый пароль
                 user.Password = BCrypt.Net.BCrypt.HashPassword(newPassword);
 
                 ctx.SaveChanges();
 
-                // Обновляем локальную копию
                 _currentUser = user;
                 return true;
             }
@@ -303,14 +274,12 @@ namespace TrackSync.Pages
             }
         }
 
-        // Отмена изменений
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             if (NavigationService.CanGoBack)
                 NavigationService.GoBack();
         }
 
-        // Универсальные методы для работы с сообщениями
         private void ShowMessage(TextBlock messageBlock, string message, bool isSuccess)
         {
             messageBlock.Visibility = Visibility.Visible;
@@ -333,7 +302,6 @@ namespace TrackSync.Pages
             messageBlock.Visibility = Visibility.Collapsed;
         }
 
-        // Обработчик кнопки выхода
         private void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
             try

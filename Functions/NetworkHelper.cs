@@ -14,7 +14,6 @@ public static class NetworkHelper
         }
         catch
         {
-            // Если нет интернета, используем локальный IP
             var host = Dns.GetHostEntry(Dns.GetHostName());
             foreach (var ip in host.AddressList)
             {

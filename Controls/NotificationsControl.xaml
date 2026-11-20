@@ -29,7 +29,6 @@
                            Text="Приглашения в походы и заявки от пользователей будут отображаться здесь"/>
         </StackPanel>
 
-        <!-- Список уведомлений БЕЗ внутреннего ScrollViewer -->
         <ItemsControl x:Name="NotificationsList"
                           Grid.Row="1"
                           Visibility="Collapsed">

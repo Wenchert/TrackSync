@@ -14,12 +14,9 @@ namespace TrackSync.Pages
 {
     public partial class CreateIngredientPage : Page
     {
-        private readonly int? _editingIngredientId; // ID редактируемого ингредиента
-        private readonly bool _isEditMode; // Флаг режима редактирования
+        private readonly int? _editingIngredientId;
+        private readonly bool _isEditMode;
 
-        /// <summary>
-        /// Конструктор для создания НОВОГО ингредиента
-        /// </summary>
         public CreateIngredientPage()
         {
             InitializeComponent();
@@ -27,9 +24,6 @@ namespace TrackSync.Pages
             InitializePage();
         }
 
-        /// <summary>
-        /// Конструктор для РЕДАКТИРОВАНИЯ существующего ингредиента
-        /// </summary>
         public CreateIngredientPage(Ingredient ingredient)
         {
             InitializeComponent();
@@ -37,25 +31,19 @@ namespace TrackSync.Pages
             _isEditMode = true;
             InitializePage();
 
-            // Загружаем данные для редактирования
             LoadIngredientData();
         }
 
-        /// <summary>
-        /// Инициализация страницы (заголовок и кнопка)
-        /// </summary>
         private void InitializePage()
         {
             if (_isEditMode)
             {
-                // Простой способ изменить заголовок (рекомендуется добавить x:Name="PageTitle" в XAML)
                 var titleBlock = this.FindName("PageTitle") as TextBlock;
                 if (titleBlock != null)
                 {
                     titleBlock.Text = "Редактирование ингредиента";
                 }
 
-                // Меняем текст кнопки
                 var buttonContent = CreateButton.Content as StackPanel;
                 if (buttonContent != null)
                 {
@@ -71,9 +59,6 @@ namespace TrackSync.Pages
             }
         }
 
-        /// <summary>
-        /// Загрузка данных ингредиента из БД
-        /// </summary>
         private void LoadIngredientData()
         {
             try
@@ -89,7 +74,6 @@ namespace TrackSync.Pages
                         return;
                     }
 
-                    // Заполняем поля
                     TitleTextBox.Text = ingredient.Title;
                     CaloriesTextBox.Text = ingredient.Calories.ToString();
                     FatsTextBox.Text = ingredient.Fats.ToString();
@@ -105,7 +89,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Методы для работы с сообщением об ошибке
         private void ErrorMessageVisible(string message)
         {
             ErrorMessage.Visibility = Visibility.Visible;
@@ -117,7 +100,6 @@ namespace TrackSync.Pages
             ErrorMessage.Visibility = Visibility.Collapsed;
         }
 
-        // Ввод - только цифры
         private void NumberPreviewTextInput(object sender, TextCompositionEventArgs e)
         {
             foreach (char c in e.Text)
@@ -150,7 +132,6 @@ namespace TrackSync.Pages
                 {
                     if (_isEditMode)
                     {
-                        // ===== РЕДАКТИРОВАНИЕ =====
                         var ingredientToUpdate = ctx.Ingredients
                             .FirstOrDefault(i => i.IngredientId == _editingIngredientId);
 
@@ -160,7 +141,6 @@ namespace TrackSync.Pages
                             return;
                         }
 
-                        // Обновляем данные
                         ingredientToUpdate.Title = TitleTextBox.Text.Trim();
                         ingredientToUpdate.Calories = int.Parse(CaloriesTextBox.Text);
                         ingredientToUpdate.Fats = int.Parse(FatsTextBox.Text);
@@ -175,7 +155,6 @@ namespace TrackSync.Pages
                     }
                     else
                     {
-                        // ===== СОЗДАНИЕ =====
                         var newIngredient = new Ingredient(
                             title: TitleTextBox.Text.Trim(),
                             calories: int.Parse(CaloriesTextBox.Text),
@@ -193,7 +172,6 @@ namespace TrackSync.Pages
                         ctx.SaveChanges();
                     }
 
-                    // Возврат на предыдущую страницу
                     if (FrameContext.MainWindowFrame.CanGoBack)
                         FrameContext.MainWindowFrame.GoBack();
                 }
@@ -206,7 +184,6 @@ namespace TrackSync.Pages
 
         private bool ValidateFields()
         {
-            // Проверка названия
             if (string.IsNullOrWhiteSpace(TitleTextBox?.Text))
             {
                 ErrorMessageVisible("*Название ингредиента не может быть пустым");
@@ -219,7 +196,6 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка калорийности
             if (string.IsNullOrWhiteSpace(CaloriesTextBox?.Text))
             {
                 ErrorMessageVisible("*Калорийность не может быть пустой");
@@ -238,7 +214,6 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка белков
             if (string.IsNullOrWhiteSpace(ProteinsTextBox?.Text))
             {
                 ErrorMessageVisible("*Белки не могут быть пустыми");
@@ -257,7 +232,6 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка жиров
             if (string.IsNullOrWhiteSpace(FatsTextBox?.Text))
             {
                 ErrorMessageVisible("*Жиры не могут быть пустыми");
@@ -276,7 +250,6 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка углеводов
             if (string.IsNullOrWhiteSpace(CarbsTextBox?.Text))
             {
                 ErrorMessageVisible("*Углеводы не могут быть пустыми");
@@ -295,7 +268,6 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка цены
             if (string.IsNullOrWhiteSpace(PriceTextBox?.Text))
             {
                 ErrorMessageVisible("*Цена не может быть пустой");
@@ -314,7 +286,6 @@ namespace TrackSync.Pages
                 return false;
             }
 
-            // Проверка рекомендованного веса (необязательное поле)
             if (!string.IsNullOrWhiteSpace(RecommendedWeightTextBox?.Text))
             {
                 if (RecommendedWeightTextBox.Text.Length > 40)

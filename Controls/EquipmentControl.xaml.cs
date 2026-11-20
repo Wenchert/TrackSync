@@ -18,19 +18,16 @@ namespace TrackSync.Controls
 {
     public partial class EquipmentControl : UserControl, IEquipmentCallback
     {
-        // Вспомогательный класс для хранения снаряжения с количеством
         private class EquipmentQuantityItem
         {
             public Equipment Equipment { get; set; }
             public int Quantity { get; set; }
         }
 
-        // Событие для оповещения родительской страницы
         public event EventHandler EquipmentSaved;
         public event EventHandler<int> AddEquipmentRequested;
         private readonly Dictionary<int, StackPanel> _participantStackPanels = new();
 
-        // Dependency Properties для привязки данных
         public static readonly DependencyProperty RoomIdProperty =
             DependencyProperty.Register("RoomId", typeof(int), typeof(EquipmentControl),
                 new PropertyMetadata(0, OnRoomIdChanged));
@@ -51,7 +48,6 @@ namespace TrackSync.Controls
             set => SetValue(CanEditEquipmentProperty, value);
         }
 
-        // Внутренние переменные
         private int _currentParticipantId = 1;
         private readonly Dictionary<int, List<EquipmentQuantityItem>> _participantEquipment = new();
 
@@ -69,7 +65,6 @@ namespace TrackSync.Controls
 
         private void EquipmentControl_Loaded(object sender, RoutedEventArgs e)
         {
-            // Если RoomId уже установлен, загружаем данные
             if (RoomId > 0)
             {
                 LoadParticipants();
@@ -94,7 +89,6 @@ namespace TrackSync.Controls
             }
         }
 
-        // Загрузка участников комнаты со снаряжением
         private void LoadParticipants()
         {
             try
@@ -103,10 +97,8 @@ namespace TrackSync.Controls
 
                 if (participants != null && participants.Any())
                 {
-                    // Очищаем словарь перед загрузкой новых данных
                     _participantEquipment.Clear();
 
-                    // Загружаем снаряжение для каждого участника из БД
                     foreach (var participant in participants)
                     {
                         var equipmentList = new List<EquipmentQuantityItem>();
@@ -122,19 +114,15 @@ namespace TrackSync.Controls
                             }
                         }
 
-                        // Сохраняем список снаряжения для участника в словарь
                         _participantEquipment[participant.ParticipantId] = equipmentList;
                     }
 
-                    // Устанавливаем источник данных для отображения участников
                     ParticipantsItemsControl.ItemsSource = participants;
 
-                    // Подписываемся на событие загрузки контейнера для отложенного обновления интерфейса
                     ParticipantsItemsControl.Loaded += (s, e) =>
                     {
                         Dispatcher.BeginInvoke(new Action(() =>
                         {
-                            // Обновляем интерфейс снаряжения для КАЖДОГО участника
                             foreach (var participant in participants)
                             {
                                 UpdateEquipmentUI(participant.ParticipantId);
@@ -158,7 +146,6 @@ namespace TrackSync.Controls
                                     _participantStackPanels[item.ParticipantId] = stackPanel;
                                 }
                             }
-                            // После заполнения словаря обновим UI для всех участников
                             foreach (var kvp in _participantEquipment)
                                 UpdateEquipmentUI(kvp.Key);
                         }
@@ -172,12 +159,10 @@ namespace TrackSync.Controls
             }
         }
 
-        // Обновление интерфейса снаряжения для участника
         private void UpdateEquipmentUI(int participantId)
         {
             if (!_participantStackPanels.TryGetValue(participantId, out var equipmentStackPanel))
             {
-                // Если панель не найдена – возможно, контейнер ещё не готов
                 Dispatcher.BeginInvoke(new Action(() => UpdateEquipmentUI(participantId)),
                                        DispatcherPriority.Render);
                 return;
@@ -192,7 +177,6 @@ namespace TrackSync.Controls
             {
                 foreach (var item in equipmentList)
                 {
-                    // Передаём participantId в метод создания панели
                     var equipmentPanel = CreateEquipmentPanel(item, participantId);
                     equipmentStackPanel.Children.Add(equipmentPanel);
                 }
@@ -213,7 +197,6 @@ namespace TrackSync.Controls
             }
         }
 
-        // Создание панели для отображения снаряжения
         private StackPanel CreateEquipmentPanel(EquipmentQuantityItem item, int participantId)
         {
             var panel = new StackPanel
@@ -223,7 +206,6 @@ namespace TrackSync.Controls
                 Tag = item
             };
 
-            // Название снаряжения
             var nameText = new TextBlock
             {
                 Text = item.Equipment.Title,
@@ -234,7 +216,6 @@ namespace TrackSync.Controls
             };
             panel.Children.Add(nameText);
 
-            // Поле для ввода количества
             var quantityTextBox = new TextBox
             {
                 Width = 80,
@@ -258,7 +239,6 @@ namespace TrackSync.Controls
 
             panel.Children.Add(quantityTextBox);
 
-            // Текст "шт."
             var unitText = new TextBlock
             {
                 Text = "шт.",
@@ -269,7 +249,6 @@ namespace TrackSync.Controls
             };
             panel.Children.Add(unitText);
 
-            // Вес одного предмета
             var weightText = new TextBlock
             {
                 Text = $"({item.Equipment.Weight}г)",
@@ -281,7 +260,6 @@ namespace TrackSync.Controls
             };
             panel.Children.Add(weightText);
 
-            // Кнопка удаления (только если есть права)
             if (CanEditEquipment)
             {
                 var removeButton = new Button
@@ -307,20 +285,16 @@ namespace TrackSync.Controls
             return panel;
         }
 
-        // Обработчик изменения количества
         private void QuantityTextBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox && textBox.Tag is EquipmentQuantityItem item)
             {
-                // Сохраняем текущее значение для восстановления в случае ошибки
                 int previousQuantity = item.Quantity;
 
-                // Обработка пустой строки — интерпретируем как 0
                 if (string.IsNullOrWhiteSpace(textBox.Text))
                 {
                     item.Quantity = 0;
 
-                    // Автоматически обновляем статистику
                     if (_participantEquipment.TryGetValue(_currentParticipantId, out var equipmentList))
                     {
                         UpdateEquipmentStats(_currentParticipantId, equipmentList);
@@ -328,15 +302,12 @@ namespace TrackSync.Controls
                     return;
                 }
 
-                // Попытка преобразовать в число
                 if (int.TryParse(textBox.Text, out int quantity))
                 {
-                    // Разрешаем 0 и положительные числа
                     if (quantity >= 0)
                     {
                         item.Quantity = quantity;
 
-                        // Автоматически обновляем статистику
                         if (_participantEquipment.TryGetValue(_currentParticipantId, out var equipmentList))
                         {
                             UpdateEquipmentStats(_currentParticipantId, equipmentList);
@@ -344,21 +315,18 @@ namespace TrackSync.Controls
                     }
                     else
                     {
-                        // Восстанавливаем предыдущее значение при отрицательном числе
                         textBox.Text = previousQuantity.ToString();
                         textBox.SelectionStart = textBox.Text.Length;
                     }
                 }
                 else
                 {
-                    // Восстанавливаем предыдущее значение при некорректном вводе
                     textBox.Text = previousQuantity.ToString();
                     textBox.SelectionStart = textBox.Text.Length;
                 }
             }
         }
 
-        // Валидация ввода (только цифры)
         private void QuantityTextBox_PreviewTextInput(object sender, System.Windows.Input.TextCompositionEventArgs e)
         {
             foreach (char c in e.Text)
@@ -371,28 +339,23 @@ namespace TrackSync.Controls
             }
         }
 
-        // Удаление снаряжения
         private void RemoveEquipmentButton_Click(object sender, RoutedEventArgs e)
         {
-            // Получаем данные из тега кнопки
             if (sender is Button button &&
                 button.Tag is object tagObj &&
                 tagObj.GetType().GetProperty("Item")?.GetValue(tagObj) is EquipmentQuantityItem item &&
                 tagObj.GetType().GetProperty("ParticipantId")?.GetValue(tagObj) is int participantId)
             {
-                // Получаем список снаряжения именно для этого участника
                 if (_participantEquipment.TryGetValue(participantId, out var equipmentList))
                 {
                     equipmentList.Remove(item);
-                    UpdateEquipmentUI(participantId); // Обновляем интерфейс для этого участника
+                    UpdateEquipmentUI(participantId);
                 }
             }
         }
 
-        // Обновление статистики снаряжения
         private void UpdateEquipmentStats(int participantId, List<EquipmentQuantityItem> equipmentList)
         {
-            // Вычисляем общий вес и количество предметов для данного участника
             int totalWeight = 0;
             int totalItems = 0;
 
@@ -402,7 +365,6 @@ namespace TrackSync.Controls
                 totalItems += item.Quantity;
             }
 
-            // Ищем элементы статистики ТОЛЬКО для данного участника
             var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(
                 ParticipantsItemsControl.Items.OfType<Participant>().FirstOrDefault(p => p.ParticipantId == participantId));
 
@@ -419,7 +381,6 @@ namespace TrackSync.Controls
             }
         }
 
-        // Поиск стек панели для снаряжения по ID участника (ищем по тегу)
         private StackPanel FindEquipmentStackPanel(int participantId)
         {
             foreach (var item in ParticipantsItemsControl.Items)
@@ -451,7 +412,6 @@ namespace TrackSync.Controls
             return null;
         }
 
-        // Вспомогательный метод для поиска ВСЕХ дочерних элементов заданного типа
         private List<T> FindAllVisualChildren<T>(DependencyObject parent) where T : DependencyObject
         {
             var children = new List<T>();
@@ -471,7 +431,6 @@ namespace TrackSync.Controls
             return children;
         }
 
-        // Вспомогательный метод для поиска дочернего элемента с предикатом
         private T FindVisualChild<T>(DependencyObject parent, Func<T, bool> predicate) where T : DependencyObject
         {
             if (parent == null) return null;
@@ -492,7 +451,6 @@ namespace TrackSync.Controls
             return null;
         }
 
-        // Обработчик кнопки "Добавить снаряжение"
         private void AddEquipmentButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is int participantId)
@@ -502,7 +460,6 @@ namespace TrackSync.Controls
             }
         }
 
-        // Сохранение изменений
         private void SaveChangesButton_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -513,12 +470,10 @@ namespace TrackSync.Controls
                     int updatedCount = 0;
                     int deletedCount = 0;
 
-                    // Получаем ВСЕ существующие записи снаряжения для этой комнаты из БД
                     var existingRecords = ctx.HikeRoomsEquipments
                         .Where(hre => hre.HikeRoomId == RoomId)
                         .ToList();
 
-                    // Обрабатываем каждого участника
                     foreach (var item in ParticipantsItemsControl.Items)
                     {
                         if (item is Participant participant)
@@ -527,13 +482,11 @@ namespace TrackSync.Controls
 
                             if (_participantEquipment.TryGetValue(participantId, out var equipmentList))
                             {
-                                // 1. Добавляем/обновляем снаряжение из интерфейса
                                 foreach (var eqItem in equipmentList)
                                 {
                                     if (eqItem.Quantity <= 0)
-                                        continue; // Пропускаем записи с количеством 0 или меньше
+                                        continue;
 
-                                    // Ищем существующую запись для этого снаряжения у участника
                                     var existingRecord = existingRecords
                                         .FirstOrDefault(hre =>
                                             hre.ParticipantId == participantId &&
@@ -541,13 +494,11 @@ namespace TrackSync.Controls
 
                                     if (existingRecord != null)
                                     {
-                                        // Обновляем существующую запись
                                         existingRecord.Quantity = eqItem.Quantity;
                                         updatedCount++;
                                     }
                                     else
                                     {
-                                        // Создаём новую запись
                                         var newRecord = new HikeRoomsEquipment
                                         {
                                             HikeRoomId = RoomId,
@@ -560,12 +511,11 @@ namespace TrackSync.Controls
                                     }
                                 }
 
-                                // 2. Удаляем записи, которых НЕТ в интерфейсе (удалённые пользователем)
                                 var recordsToDelete = existingRecords
                                     .Where(hre => hre.ParticipantId == participantId &&
                                                  !equipmentList.Any(eq =>
                                                      eq.Equipment.EquipmentId == hre.EquipmentId &&
-                                                     eq.Quantity > 0)) // Учитываем только записи с количеством > 0
+                                                     eq.Quantity > 0))
                                     .ToList();
 
                                 foreach (var record in recordsToDelete)
@@ -580,7 +530,6 @@ namespace TrackSync.Controls
                     ShowMessage("Изменения сохранены", true);
                     ctx.SaveChanges();
 
-                    // Оповещаем родительскую страницу
                     EquipmentSaved?.Invoke(this, EventArgs.Empty);
                 }
             }
@@ -591,18 +540,15 @@ namespace TrackSync.Controls
             }
         }
 
-        // Обновление прав доступа
         private void ApplyPermissions()
         {
             SaveChangesButton.Visibility = CanEditEquipment ? Visibility.Visible : Visibility.Collapsed;
 
-            // Обновляем все контейнеры участников
             foreach (var item in ParticipantsItemsControl.Items)
             {
                 var container = ParticipantsItemsControl.ItemContainerGenerator.ContainerFromItem(item);
                 if (container == null) continue;
 
-                // Ищем кнопку "Добавить снаряжение" по ToolTip
                 var addButton = FindVisualChild<Button>(container, btn =>
                     btn.ToolTip != null && btn.ToolTip.ToString() == "Добавить снаряжение");
 
@@ -611,7 +557,6 @@ namespace TrackSync.Controls
                     addButton.Visibility = CanEditEquipment ? Visibility.Visible : Visibility.Collapsed;
                 }
 
-                // Если нет прав, скрываем все кнопки удаления для этого участника
                 if (!CanEditEquipment)
                 {
                     var removeButtons = FindAllVisualChildren<Button>(container)
@@ -622,7 +567,6 @@ namespace TrackSync.Controls
                         btn.Visibility = Visibility.Collapsed;
                     }
 
-                    // Делаем поля количества только для чтения
                     var quantityTextBoxes = FindAllVisualChildren<TextBox>(container)
                         .Where(tb => tb.Tag is EquipmentQuantityItem);
 
@@ -635,7 +579,6 @@ namespace TrackSync.Controls
             }
         }
 
-        // Показ сообщения
         private void ShowMessage(string message, bool isSuccess)
         {
             SaveSuccessMessage.Visibility = Visibility.Visible;
@@ -651,7 +594,6 @@ namespace TrackSync.Controls
             timer.Start();
         }
 
-        // Реализация интерфейса IEquipmentCallback
         public void OnEquipmentSelected(List<Equipment> equipment)
         {
             if (equipment == null || equipment.Count == 0 || _currentParticipantId <= 0)
@@ -660,14 +602,12 @@ namespace TrackSync.Controls
                 return;
             }
 
-            // Получаем или создаём список снаряжения для участника
             if (!_participantEquipment.TryGetValue(_currentParticipantId, out var participantList))
             {
                 participantList = new List<EquipmentQuantityItem>();
                 _participantEquipment[_currentParticipantId] = participantList;
             }
 
-            // Добавляем новые снаряжения (без дубликатов)
             foreach (var eq in equipment)
             {
                 if (!participantList.Exists(e => e.Equipment.EquipmentId == eq.EquipmentId))
@@ -675,7 +615,7 @@ namespace TrackSync.Controls
                     participantList.Add(new EquipmentQuantityItem
                     {
                         Equipment = eq,
-                        Quantity = 1 // Значение по умолчанию
+                        Quantity = 1
                     });
                 }
             }

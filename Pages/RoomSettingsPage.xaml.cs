@@ -18,10 +18,9 @@ namespace TrackSync.Pages
         private HikeRoom _currentRoom;
         private readonly int _currentUserId;
         private bool _isLeader;
-        private int _completedStatusId = 3; // ID статуса "Завершён"
+        private int _completedStatusId = 3;
         private int _cancelledStatusId = 4;
 
-        // Вспомогательный класс для отображения участника с правами
         private class ParticipantViewModel : INotifyPropertyChanged
         {
             private bool _editMealPlan;
@@ -127,7 +126,7 @@ namespace TrackSync.Pages
             {
                 using var ctx = new TrackSyncContext();
                 _currentRoom = ctx.HikeRooms
-                    .Include(r => r.Leader) // Загружаем лидера для проверки прав
+                    .Include(r => r.Leader)
                     .FirstOrDefault(r => r.HikeRoomId == _roomId);
 
                 if (_currentRoom == null)
@@ -137,10 +136,8 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Проверяем лидерство через поле LeaderId
                 _isLeader = _currentRoom.LeaderId == _currentUserId;
 
-                // Заполняем поля формы
                 TitleTextBox.Text = _currentRoom.Title;
                 DescriptionTextBox.Text = _currentRoom.Description ?? string.Empty;
                 StartDatePicker.SelectedDate = _currentRoom.StartDate.ToDateTime(TimeOnly.MinValue);
@@ -155,7 +152,6 @@ namespace TrackSync.Pages
                     PrivateRoomRadio.IsChecked = true;
                 }
 
-                // Обновляем видимость панели пароля
                 PasswordPanel.Visibility = !_currentRoom.AccessType ? Visibility.Visible : Visibility.Collapsed;
             }
             catch (Exception ex)
@@ -187,7 +183,6 @@ namespace TrackSync.Pages
                         StatusComboBox.SelectedItem = item;
                     }
 
-                    // Находим ID статуса "Завершён"
                     if (status.Title == "Завершён")
                     {
                         _completedStatusId = status.StatusId;
@@ -205,7 +200,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Загрузка участников с правами
         // Загрузка участников с правами
         private void LoadParticipants()
         {
@@ -246,7 +240,7 @@ namespace TrackSync.Pages
                         EditTrack = participant.EditTrack ?? false,
                         EditEquipment = participant.EditEquipment ?? false,
                         IsEditable = _isLeader && !isLeader,
-                        CanExclude = _isLeader && !isLeader // Только лидер может исключать, и нельзя исключить себя (лидера)
+                        CanExclude = _isLeader && !isLeader
                     });
                 }
 
@@ -258,12 +252,10 @@ namespace TrackSync.Pages
             }
         }
 
-        // Применение прав редактирования в зависимости от роли
         private void ApplyEditPermissions()
         {
             bool isEditable = _isLeader;
 
-            // Поля комнаты
             TitleTextBox.IsReadOnly = !isEditable;
             DescriptionTextBox.IsReadOnly = !isEditable;
             PublicRoomRadio.IsEnabled = isEditable;
@@ -272,13 +264,11 @@ namespace TrackSync.Pages
             EndDatePicker.IsEnabled = isEditable;
             StatusComboBox.IsEnabled = isEditable;
 
-            // Пароль: видим только для приватной комнаты
             bool isPrivateRoom = PrivateRoomRadio.IsChecked == true;
             PasswordPanel.Visibility = isPrivateRoom ? Visibility.Visible : Visibility.Collapsed;
             PasswordBox.IsEnabled = isEditable && isPrivateRoom;
         }
 
-        // Обработчик кнопки исключения участника
         private void ExcludeButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && button.Tag is int participantId)
@@ -287,10 +277,8 @@ namespace TrackSync.Pages
             }
         }
 
-        // Исключение участника из комнаты
         private void ExcludeParticipant(int participantId)
         {
-            // Подтверждение действия
             var result = MessageBox.Show("Вы уверены, что хотите исключить этого участника из комнаты?",
                 "Подтверждение исключения",
                 MessageBoxButton.YesNo,
@@ -303,7 +291,6 @@ namespace TrackSync.Pages
             {
                 using var ctx = new TrackSyncContext();
 
-                // Находим участника
                 var participant = ctx.Participants
                     .Include(p => p.User)
                     .FirstOrDefault(p => p.ParticipantId == participantId && p.HikeRoomId == _roomId);
@@ -315,7 +302,6 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Проверяем, что текущий пользователь - лидер
                 if (!_isLeader)
                 {
                     MessageBox.Show("Только лидер комнаты может исключать участников", "Ошибка",
@@ -323,15 +309,12 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Проверяем, что не пытаемся исключить лидера
                 if (participant.UserId == _currentRoom.LeaderId)
                 {
                     MessageBox.Show("Нельзя исключить лидера комнаты", "Ошибка",
                         MessageBoxButton.OK, MessageBoxImage.Error);
                     return;
                 }
-
-                // Удаляем связанные данные участника в правильном порядке
 
                 // 1. Удаляем снаряжение участника
                 var equipment = ctx.HikeRoomsEquipments
@@ -378,7 +361,6 @@ namespace TrackSync.Pages
 
                 ctx.SaveChanges();
 
-                // Обновляем список участников
                 LoadParticipants();
             }
             catch (Exception ex)
@@ -388,13 +370,11 @@ namespace TrackSync.Pages
             }
         }
 
-        // Обработчик изменения типа комнаты
         private void RoomTypeRadio_Checked(object sender, RoutedEventArgs e)
         {
             bool isPrivate = PrivateRoomRadio.IsChecked == true;
             PasswordPanel.Visibility = isPrivate ? Visibility.Visible : Visibility.Collapsed;
 
-            // Очищаем пароль при переключении на публичную комнату
             if (!isPrivate)
             {
                 PasswordBox.Password = string.Empty;
@@ -403,7 +383,6 @@ namespace TrackSync.Pages
             ErrorMessageHide();
         }
 
-        // Валидация и сохранение
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {
             ErrorMessageHide();
@@ -425,7 +404,6 @@ namespace TrackSync.Pages
                     return;
                 }
 
-                // Получаем выбранный статус
                 int selectedStatusId = 0;
                 string selectedStatusName = "";
                 if (StatusComboBox.SelectedItem is ComboBoxItem selectedItem && selectedItem.Tag is int statusId)
@@ -433,16 +411,14 @@ namespace TrackSync.Pages
                     selectedStatusId = statusId;
                 }
 
-                // Проверяем, если выбран статус "Завершён" или "Отменён"
                 bool isDeletionStatus = selectedStatusId == _completedStatusId ||
                                         selectedStatusId == _cancelledStatusId;
 
                 if (isDeletionStatus && selectedStatusId != 0)
                 {
-                    // Определяем глагол для сообщения в зависимости от статуса
+
                     string actionVerb = selectedStatusId == _completedStatusId ? "завершить" : "отменить";
 
-                    // Запрашиваем подтверждение у пользователя
                     var result = MessageBox.Show(
                         $"Вы собираетесь установить статус '{selectedStatusName}'. " +
                         $"При этом комната будет удалена вместе со всеми данными (снаряжение, рецепты, маршруты).\n\n" +
@@ -453,14 +429,11 @@ namespace TrackSync.Pages
 
                     if (result != MessageBoxResult.Yes)
                     {
-                        // Пользователь отказался, не сохраняем изменения
                         return;
                     }
 
-                    // Удаляем комнату и все связанные данные
                     DeleteRoomWithAllData(ctx, room);
 
-                    // Сообщение в зависимости от статуса
                     string completionMessage = selectedStatusId == _completedStatusId
                         ? "Поход успешно завершён и комната удалена."
                         : "Поход успешно отменён и комната удалена.";
@@ -468,13 +441,10 @@ namespace TrackSync.Pages
                     MessageBox.Show(completionMessage,
                         "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
 
-                    // Переходим на главную страницу или страницу списка комнат
-                    // Замените MainPage на нужную страницу (например, RoomsPage)
                     FrameContext.MainWindowFrame.Navigate(new MainPage());
                     return;
                 }
 
-                // Обычное обновление данных комнаты (если статус не требует удаления)
                 room.Title = TitleTextBox.Text.Trim();
                 room.Description = string.IsNullOrWhiteSpace(DescriptionTextBox.Text)
                     ? null
@@ -486,10 +456,8 @@ namespace TrackSync.Pages
                 if (EndDatePicker.SelectedDate.HasValue)
                     room.EndDate = DateOnly.FromDateTime(EndDatePicker.SelectedDate.Value.Date);
 
-                // Обновляем статус
                 room.StatusId = selectedStatusId;
 
-                // Обновляем пароль ТОЛЬКО если он был изменён и комната приватная
                 if (!room.AccessType)
                 {
                     if (!string.IsNullOrWhiteSpace(PasswordBox.Password))
@@ -504,14 +472,11 @@ namespace TrackSync.Pages
                 }
                 else
                 {
-                    // Для публичной комнаты очищаем пароль
                     room.Password = null;
                 }
 
-                // Сохраняем изменения комнаты
                 ctx.SaveChanges();
 
-                // Обновляем права участников (только если лидер)
                 if (_isLeader && ParticipantsItemsControl.ItemsSource is List<ParticipantViewModel> participants)
                 {
                     UpdateParticipantsPermissions(ctx, participants);
@@ -525,7 +490,6 @@ namespace TrackSync.Pages
             }
         }
 
-        // Удаление комнаты со всеми связанными данными
         private void DeleteRoomWithAllData(TrackSyncContext ctx, HikeRoom room)
         {
             try
@@ -606,7 +570,6 @@ namespace TrackSync.Pages
         {
             foreach (var vm in participants)
             {
-                // Пропускаем лидера — его права не должны изменяться
                 if (vm.IsLeader)
                     continue;
 
@@ -622,13 +585,11 @@ namespace TrackSync.Pages
             ctx.SaveChanges();
         }
 
-        // Отмена/назад
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
             FrameContext.MainWindowFrame.Navigate(new HikeRoomPage(_roomId));
         }
 
-        // Валидация формы
         private bool ValidateForm()
         {
             if (string.IsNullOrWhiteSpace(TitleTextBox.Text))
@@ -669,7 +630,6 @@ namespace TrackSync.Pages
 
             if (PrivateRoomRadio.IsChecked == true)
             {
-                // Проверяем пароль только если поле не пустое (новый пароль)
                 if (!string.IsNullOrWhiteSpace(PasswordBox.Password) && PasswordBox.Password.Length < 8)
                 {
                     ErrorMessageVisible("*Пароль должен содержать минимум 8 символов");
@@ -680,7 +640,6 @@ namespace TrackSync.Pages
             return true;
         }
 
-        // Вспомогательные методы для ошибок
         private void ErrorMessageVisible(string message)
         {
             ErrorMessage.Visibility = Visibility.Visible;
@@ -692,7 +651,6 @@ namespace TrackSync.Pages
             ErrorMessage.Visibility = Visibility.Collapsed;
         }
 
-        // Обработчики для скрытия ошибок при вводе
         private void TitleTextBox_TextChanged(object sender, TextChangedEventArgs e) => ErrorMessageHide();
         private void DescriptionTextBox_TextChanged(object sender, TextChangedEventArgs e) => ErrorMessageHide();
         private void StartDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e) => ErrorMessageHide();

@@ -1,2 +1,225 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<ClassDiagram /> 
+<ClassDiagram MajorVersion="1" MinorVersion="1" MembersFormat="FullSignature">
+  <Class Name="TrackSync.DataBase.Model.Bid">
+    <Position X="2" Y="0.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAAAAAAAEBAAAAAAAgAAAAAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>DataBase\Model\Bid.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Equipment">
+    <Position X="6.25" Y="0.5" Width="5.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAEAAAAAAAAAAICAAAgABAAAAABAAAAA=</HashCode>
+      <FileName>DataBase\Model\Equipment.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.HikeRoom">
+    <Position X="26.75" Y="15.75" Width="9.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAMAUAgAEBAAAAAAEAxAAAAAoACACAAAEAgAAA=</HashCode>
+      <FileName>DataBase\Model\HikeRoom.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.HikeRoomsEquipment">
+    <Position X="13.25" Y="3.75" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAABAgAAAAAQAIAAAAAAAAKAAhAAAAAA=</HashCode>
+      <FileName>DataBase\Model\HikeRoomsEquipment.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.HikeRoomsRecipe">
+    <Position X="14.5" Y="0.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAABAAAAACADAAAAAAAAAAAAAAAAEAAAADAAAAAA=</HashCode>
+      <FileName>DataBase\Model\HikeRoomsRecipe.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Ingredient">
+    <Position X="17.75" Y="0.5" Width="8.5" />
+    <TypeIdentifier>
+      <HashCode>IAAAAAAgAQAAAkAAAAAAABACAAAAEBABAAAAABAAAAA=</HashCode>
+      <FileName>DataBase\Model\Ingredient.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.IngredientsRecipe">
+    <Position X="14" Y="6.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAABABgAAAAAAAAAAAAAAAAACAEAAAAAAAACAAAAAA=</HashCode>
+      <FileName>DataBase\Model\IngredientsRecipe.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Invitation">
+    <Position X="17" Y="5.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAAAAAAAABAAAAAAAgAAAAAAAAAAAAABEAAAAA=</HashCode>
+      <FileName>DataBase\Model\Invitation.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Loginattempt">
+    <Position X="19.75" Y="8.75" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAACAAAAAAAACAAAAAAgCAAAAAAAAAQAAAAAA=</HashCode>
+      <FileName>DataBase\Model\Loginattempt.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Participant">
+    <Position X="35" Y="1.5" Width="6" />
+    <TypeIdentifier>
+      <HashCode>AAABAAAAAEABAABAAAAAAAwAAAAAAgAACIAABAAACAA=</HashCode>
+      <FileName>DataBase\Model\Participant.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Recipe">
+    <Position X="4.75" Y="6.5" Width="5.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAEAAAAAAAAAAAAAAEAABAAAACBAgCQA=</HashCode>
+      <FileName>DataBase\Model\Recipe.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.RecipesParticipant">
+    <Position X="18.75" Y="11.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAKAACAAAAAg=</HashCode>
+      <FileName>DataBase\Model\RecipesParticipant.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Segment">
+    <Position X="24" Y="4.75" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAgAAAAAAEAEAAAAAAAAAAAAAAAEBABABAAAAAAAAAI=</HashCode>
+      <FileName>DataBase\Model\Segment.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Status">
+    <Position X="27.25" Y="1" Width="3.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAIAAAAAEAAAAAAAAAAAAAAAAAAAAAABAAAAAA=</HashCode>
+      <FileName>DataBase\Model\Status.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Track">
+    <Position X="6.25" Y="19" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAEBAAAAAAAAAACAEAAAAAKAAhAAAAAA=</HashCode>
+      <FileName>DataBase\Model\Track.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.TypeMeal">
+    <Position X="3.5" Y="10.25" Width="4.25" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAgAAA=</HashCode>
+      <FileName>DataBase\Model\TypeMeal.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.User">
+    <Position X="27.25" Y="4" Width="4.25" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAABSAAAAAAAAAAICwBACAAAAACACAABAAAAAA=</HashCode>
+      <FileName>DataBase\Model\User.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.Model.Waypoint">
+    <Position X="8.75" Y="10.5" Width="4" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABGAAAEAgAAAIAAAIAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>DataBase\Model\Waypoint.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.WorkWithDB.TrackSyncContext">
+    <Position X="19.75" Y="13.75" Width="4.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAACAAQUAQAAAEAAAAIiABECAAEgAEACAABAAgCgA=</HashCode>
+      <FileName>DataBase\WorkWithDB\TrackSyncContext.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.DataBase.WorkWithDB.TrackSyncManagerList">
+    <Position X="33" Y="6" Width="8" />
+    <NestedTypes>
+      <Class Name="TrackSync.DataBase.WorkWithDB.TrackSyncManagerList.MealPlanDay" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>DataBase\WorkWithDB\TrackSyncManagerList.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="TrackSync.DataBase.WorkWithDB.TrackSyncManagerList.MealPlanMeal" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>DataBase\WorkWithDB\TrackSyncManagerList.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AQAgAEAS0ghgAAAAIENBAQQCIAQEAEAAAAAQAEGQMAQ=</HashCode>
+      <FileName>DataBase\WorkWithDB\TrackSyncManagerList.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.Functions.CustomFontResolver" BaseTypeListCollapsed="true">
+    <Position X="4.5" Y="13.75" Width="5.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAACAAQAAAAAAAAAAAAAAEgAAAAAACAAAAAAAAA=</HashCode>
+      <FileName>Functions\CustomFontResolver.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" Collapsed="true" />
+  </Class>
+  <Class Name="TrackSync.Functions.HikeRoomPdfGenerator">
+    <Position X="12.5" Y="16.5" Width="5.5" />
+    <NestedTypes>
+      <Class Name="TrackSync.Functions.HikeRoomPdfGenerator.RouteStatItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Functions\HikeRoomPdfGenerator.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+      <Class Name="TrackSync.Functions.HikeRoomPdfGenerator.IngredientStatItem" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Functions\HikeRoomPdfGenerator.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AgAAAAIAQAFABAAAACAQAAAQAAAAAAAACQAAAAAAgAA=</HashCode>
+      <FileName>Functions\HikeRoomPdfGenerator.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.Functions.SessionManager">
+    <Position X="14" Y="11.5" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAIAAAAAAAEAEACAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Functions\SessionManager.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="NetworkHelper">
+    <Position X="5.25" Y="17" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Functions\NetworkHelper.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="TrackSync.Windows.FrameContext">
+    <Position X="31" Y="1" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAABAAAAAAAAAAAAACAAAAAAAAAA=</HashCode>
+      <FileName>Windows\FrameContext.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="TrackSync.Interfaces.IEquipmentCallback">
+    <Position X="26.25" Y="11" Width="5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEA=</HashCode>
+      <FileName>Interface\IEquipmentCallback.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TrackSync.Interfaces.IRecipeCallback">
+    <Position X="26.25" Y="13.5" Width="5" />
+    <TypeIdentifier>
+      <HashCode>AAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interface\IRecipeCallback.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="TrackSync.Interface.IRecipeIngredientCallback">
+    <Position X="26.25" Y="12.25" Width="5" />
+    <TypeIdentifier>
+      <HashCode>AAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Interface\IRecipeIngredientCallback.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

@@ -67,7 +67,6 @@ namespace TrackSync.Pages
             _callback = null;
             _roomId = 0;
 
-            // В обычном режиме скрываем кнопку добавления
             if (AddSelectedButton != null)
                 AddSelectedButton.Visibility = System.Windows.Visibility.Collapsed;
 
@@ -92,7 +91,6 @@ namespace TrackSync.Pages
         {
             if (_roomId == 0) return;
 
-            // Используем существующий метод для загрузки участников
             _roomParticipants = TrackSyncManagerList.GetParticipantsByRoomId(_roomId)
                 ?? new List<Participant>();
         }
@@ -152,17 +150,14 @@ namespace TrackSync.Pages
         {
             if (sender is Border border && border.Tag is RecipeWithSelection item)
             {
-                // Снимаем выбор со всех рецептов
                 foreach (var recipe in _filteredItems)
                     recipe.IsSelected = false;
 
-                // Выбираем только текущий
                 item.IsSelected = true;
                 _selectedRecipe = item;
                 RecipesListBox.Items.Refresh();
                 ErrorMessageHide();
 
-                // Если есть комната, показываем панель выбора ответственных
                 if (_roomId > 0)
                 {
                     ShowResponsibleSelectionPanel();
@@ -178,10 +173,8 @@ namespace TrackSync.Pages
                 return;
             }
 
-            // Сбрасываем предыдущие выборы
             _selectedParticipantIds.Clear();
 
-            // Заполняем CheckBox'ы для каждого участника
             ParticipantsList.Children.Clear();
             foreach (var participant in _roomParticipants)
             {
@@ -200,10 +193,8 @@ namespace TrackSync.Pages
                 ParticipantsList.Children.Add(checkBox);
             }
 
-            // Показываем панель выбора
             ResponsibleSelectionPanel.Visibility = System.Windows.Visibility.Visible;
 
-            // Прокручиваем к панели выбора
             Dispatcher.BeginInvoke(new System.Action(() =>
             {
                 ResponsibleSelectionPanel.BringIntoView();
@@ -234,7 +225,6 @@ namespace TrackSync.Pages
             ResponsibleSelectionPanel.Visibility = System.Windows.Visibility.Collapsed;
             _selectedRecipe = null;
 
-            // Снимаем выделение с рецептов
             foreach (var recipe in _filteredItems)
                 recipe.IsSelected = false;
             RecipesListBox.Items.Refresh();
@@ -248,14 +238,12 @@ namespace TrackSync.Pages
                 return;
             }
 
-            // Проверяем, выбраны ли ответственные
             if (_selectedParticipantIds == null || !_selectedParticipantIds.Any())
             {
                 ErrorMessageVisible("Выберите хотя бы одного ответственного участника");
                 return;
             }
 
-            // Передаём выбранный рецепт и ответственных обратно в раскладку
             _callback?.OnRecipeSelected(_selectedRecipe.Recipe, _selectedParticipantIds);
 
             if (NavigationService?.CanGoBack == true)
